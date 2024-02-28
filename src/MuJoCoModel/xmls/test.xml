@@ -1,0 +1,48 @@
+<mujoco>
+
+    <asset>
+        <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+        <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+    </asset>
+
+    <compiler autolimits="true"/>
+
+    <worldbody>
+
+    <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1"/>
+    <geom type="plane" size="100 100 .01" material="grid"/>
+
+    <body name="ball 1" pos="-5 0 2">
+        <geom name="geom ball 1" type="box" size="0.5 0.5 1"/>
+        <site name="site ball 1" pos="0 0 -1"/>
+        <joint type="ball" name="ball joint1" pos="0 0 1"/>
+    
+    </body>
+
+    <body name="ball 2" pos="-7 0 2">
+        <geom name="geom ball 2" type="box" size="0.5 0.5 1"/>
+        <site name="site ball 2" pos="0 0 -1"/>
+        <joint type="ball" name="ball joint2" pos="0 0 1"/>
+    
+    </body>
+
+    </worldbody>
+
+    <tendon>
+        <fixed name="ball tendon2">
+            <joint joint="ball joint1" coef="10000"/>
+            <!-- <joint joint="ball joint2" coef="10000"/> -->
+        </fixed>
+
+        <spatial name="ball tendon" limited="true" range="1 2" width="0.05">
+            <site site="site ball 1"/>
+            <site site="site ball 2"/>
+        </spatial>
+
+    </tendon>
+
+    <actuator>
+        <motor name="ball tendond motor" tendon="ball tendon" ctrlrange="-1 1"/>
+    </actuator>
+
+</mujoco>

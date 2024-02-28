@@ -7,16 +7,19 @@
     </asset>
 
     <default>
-        <joint damping=".03" actuatorfrcrange="-0.5 0.5"/>
+    
+        <joint damping=".03" actuatorfrcrange="-1000 1000" stiffness="0.01"/>
 
         <default class="wheel">
             <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1"/>
         </default>
 
-
     </default>
 
     <worldbody>
+    
+    <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1"/>
+
     <geom type="plane" size="100 100 .01" material="grid"/>
 
     <body name="car" pos="0 0 5">
@@ -27,44 +30,55 @@
 
         <geom name="chasis" type="box" size="1 0.5 0.25"/>
 
-        <body name="left back wheel" pos="-0.5 0.5 0" zaxis="0 1 0">
+        <body name="left back wheel" pos="-0.6 0.5 0" zaxis="0 1 0">
             <joint name="left back"/>
             <geom class="wheel"/>
         </body>
 
-        <body name="right back wheel" pos="-0.5 -0.5 0" zaxis="0 1 0">
+        <body name="right back wheel" pos="-0.6 -0.5 0" zaxis="0 1 0">
             <joint name="right back"/>
             <geom class="wheel"/>
         </body>
 
-        <body name="left front wheel" pos="0.5 0.5 0" zaxis="0 1 0">
+        <body name="left front wheel" pos="0.6 0.5 0" zaxis="0 1 0">
+            <joint name="left front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
             <joint name="left front"/>
             <geom class="wheel"/>
         </body>
 
-        <body name="right front wheel" pos="0.5 -0.5 0" zaxis="0 1 0">
+        <body name="right front wheel" pos="0.6 -0.5 0" zaxis="0 1 0">
+            <joint name="right front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
             <joint name="right front"/>
             <geom class="wheel"/>
         </body>
 
     </body>
 
+    <camera name="cam1" pos="-5 0 10" euler="0 -45 -90" fovy="90" mode="trackcom" target="car"/>
+
     </worldbody>
 
     <tendon>
         <fixed name="forward">
-            <joint joint="left back" coef=".5"/>
-            <joint joint="right back" coef=".5"/>
+            <joint joint="left back" coef="1000"/>
+            <joint joint="right back" coef="1000"/>
+        </fixed>
+
+         <fixed name="turn">
+            <joint joint="left front turn" coef="10"/>
+            <joint joint="right front turn" coef="10"/>
         </fixed>
     </tendon>
 
     <actuator>
         <motor name="forward" tendon="forward" ctrlrange="-1 1"/>
+        <motor name="turn" tendon="turn" ctrlrange="-45 45"/>
     </actuator>
 
-    <sensor>
+    <!-- <sensor>
         <jointactuatorfrc name="right back" joint="right back"/>
         <jointactuatorfrc name="left back" joint="left back"/>
-    </sensor>
+    </sensor> -->
 
+    
 </mujoco>

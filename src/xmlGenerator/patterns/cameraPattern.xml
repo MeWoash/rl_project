@@ -1,0 +1,1 @@
+<camera name="{cam_name}" pos="{cam_pos}" euler="{cam_euler}" fovy="{cam_fov}"/>

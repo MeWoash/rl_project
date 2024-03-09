@@ -7,13 +7,9 @@
     </asset>
 
     <default>
-    
         <joint damping=".03" actuatorfrcrange="-1000 1000" stiffness="0.01"/>
 
-        <default class="wheel">
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1"/>
-        </default>
-
+        
     </default>
 
     <worldbody>
@@ -63,22 +59,15 @@
             <joint joint="left back" coef="1000"/>
             <joint joint="right back" coef="1000"/>
         </fixed>
-
-         <fixed name="turn">
-            <joint joint="left front turn" coef="10"/>
-            <joint joint="right front turn" coef="10"/>
-        </fixed>
     </tendon>
 
     <actuator>
         <motor name="forward" tendon="forward" ctrlrange="-1 1"/>
-        <motor name="turn" tendon="turn" ctrlrange="-45 45"/>
+
+        <position joint="left front turn" kp="10000"/>
+        <position joint="right front turn" kp="10000"/>
     </actuator>
 
-    <!-- <sensor>
-        <jointactuatorfrc name="right back" joint="right back"/>
-        <jointactuatorfrc name="left back" joint="left back"/>
-    </sensor> -->
 
     
 </mujoco>

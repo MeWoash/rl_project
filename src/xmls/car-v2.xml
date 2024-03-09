@@ -106,7 +106,6 @@
 	<actuator>
 		<motor name="forward motor" tendon="forward" ctrlrange="-1 1" />
         <position name="steer" cranksite="cranksite" slidersite="wheel site left" cranklength="0.1"/>
-        <!-- <motor name="steer" tendon="steer" ctrlrange="-1 1" /> -->
 	</actuator>
 
     <contact>

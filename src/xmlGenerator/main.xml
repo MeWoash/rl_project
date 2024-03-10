@@ -1,38 +1,53 @@
 <mujoco>
     <worldbody>
     <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1" />
-    <geom name="main_ground_ground" type="plane" size="10 15 0.1" material="grid" />
-<geom name="main_ground_left" type="box" size="0.1 15 2" pos="-10.1 0 2" material="grid" />
-<geom name="main_ground_right" type="box" size="0.1 15 2" pos="10.1 0 2" material="grid" />
-<geom name="main_ground_front" type="box" size="10 0.1 2" pos="0 15.1 2" material="grid" />
-<geom name="main_ground_back" type="box" size="10 0.1 2" pos="0 -15.1 2" material="grid" />
-<camera name="TopDownCam" pos="0 0 36.21320343559643" euler="0 0 -90" fovy="45" /><body name="car1" pos="1.7617613988845502 -2.5908834150808406 0.5">
+    <geom name="main_ground_ground" type="plane" size="10.0 10.0 0.1" material="grid" />
+<geom name="main_ground_left" type="box" size="0.1 10.0 1.0" pos="-10.1 0 1.0" material="grid" />
+<geom name="main_ground_right" type="box" size="0.1 10.0 1.0" pos="10.1 0 1.0" material="grid" />
+<geom name="main_ground_front" type="box" size="10.0 0.1 1.0" pos="0 10.1 1.0" material="grid" />
+<geom name="main_ground_back" type="box" size="10.0 0.1 1.0" pos="0 -10.1 1.0" material="grid" />
+<camera name="TopDownCam1" pos="0 0 48.2842712474619" euler="0 0 -90" fovy="45" /><body name="car1" pos="0 0 5">
         <freejoint />
 
-        <light dir="1 0 0" pos="1.2 0 0.125" diffuse="1 1 1" />
+
+        <body name="car1_front_lights" pos="2.5 0 0">
+            <body name="car1_front_left_light" pos="0 0.6 0">
+                <light dir="1 0 0" diffuse="1 1 1" />
+                <geom type="sphere" size="0.05" rgba="1 1 0 1" />
+            </body>
+            <body name="car1_front_right_light" pos="0 -0.6 0">
+                <light dir="1 0 0" diffuse="1 1 1" />
+                <geom type="sphere" size="0.05" rgba="1 1 0 1" />
+            </body>
+        </body>
         
-        <geom name="car1_chasis" type="box" size="1 0.5 0.25" />
+        <body>
+            <geom name="car1_chasis" type="box" size="2.5 1.0 0.125" mass="1500" />
 
-        <body name="car1_left_back_wheel" pos="-0.6 0.5 0" zaxis="0 1 0">
-            <joint name="car1_left_back" />
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1" />
-        </body>
+            <body name="car1_left_front_wheel" pos="1.5 -1.0 0.0" zaxis="0 1 0">
+                <joint name="car1_left_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
+                <joint name="car1_left_front" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" />
+            </body>
 
-        <body name="car1_right_back_wheel" pos="-0.6 -0.5 0" zaxis="0 1 0">
-            <joint name="car1_right_back" />
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1" />
-        </body>
+            <body name="car1_right front wheel" pos="1.5 1.0 0.0" zaxis="0 1 0">
+                <joint name="car1_right_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
+                <joint name="car1_right_front" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" />
+            </body>
 
-        <body name="car1_left_front_wheel" pos="0.6 0.5 0" zaxis="0 1 0">
-            <joint name="car1_left_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
-            <joint name="car1_left_front" />
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1" />
-        </body>
+            <body name="car1_left_back_wheel" pos="-1.5 -1.0 0.0" zaxis="0 1 0">
+                <joint name="car1_left_back" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" />
+            </body>
 
-        <body name="car1_right front wheel" pos="0.6 -0.5 0" zaxis="0 1 0">
-            <joint name="car1_right_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
-            <joint name="car1_right_front" />
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1" />
+            <body name="car1_right_back_wheel" pos="-1.5 1.0 0.0" zaxis="0 1 0">
+                <joint name="car1_right_back" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" />
+            </body>
+
+
+
         </body>
 
     </body></worldbody> 

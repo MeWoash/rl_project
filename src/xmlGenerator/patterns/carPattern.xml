@@ -1,30 +1,45 @@
     <body name="{car_name}" pos="{car_pos}">
         <freejoint/>
 
-        <light dir="1 0 0" pos="1.2 0 0.125" diffuse="1 1 1"/>
+
+        <body name="{car_name}_front_lights"  pos="{car_front_lights_pos}">
+            <body name="{car_name}_front_left_light" pos="{car_front_left_light_pos}">
+                <light dir="1 0 0" diffuse="1 1 1"/>
+                <geom type="sphere" size="0.05" rgba="1 1 0 1"/>
+            </body>
+            <body name="{car_name}_front_right_light" pos="{car_front_right_light_pos}">
+                <light dir="1 0 0" diffuse="1 1 1"/>
+                <geom type="sphere" size="0.05" rgba="1 1 0 1"/>
+            </body>
+        </body>
         
-        <geom name="{car_name}_chasis" type="box" size="1 0.5 0.25"/>
+        <body>
+            <geom name="{car_name}_chasis" type="box" size="{car_size}" mass="{car_mass}"/>
 
-        <body name="{car_name}_left_back_wheel" pos="-0.6 0.5 0" zaxis="0 1 0">
-            <joint name="{car_name}_left_back"/>
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1"/>
-        </body>
+            <body name="{car_name}_left_front_wheel" pos="{left_front_wheel_pos}" zaxis="0 1 0">
+                <joint name="{car_name}_left_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
+                <joint name="{car_name}_left_front"/>
+                <geom type="cylinder" size="{car_wheel_size}" rgba=".5 .5 1 1" mass="{car_wheel_mass}"/>
+            </body>
 
-        <body name="{car_name}_right_back_wheel" pos="-0.6 -0.5 0" zaxis="0 1 0">
-            <joint name="{car_name}_right_back"/>
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1"/>
-        </body>
+            <body name="{car_name}_right front wheel" pos="{right_front_wheel_pos}" zaxis="0 1 0">
+                <joint name="{car_name}_right_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
+                <joint name="{car_name}_right_front"/>
+                <geom type="cylinder" size="{car_wheel_size}" rgba=".5 .5 1 1" mass="{car_wheel_mass}"/>
+            </body>
 
-        <body name="{car_name}_left_front_wheel" pos="0.6 0.5 0" zaxis="0 1 0">
-            <joint name="{car_name}_left_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
-            <joint name="{car_name}_left_front"/>
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1"/>
-        </body>
+            <body name="{car_name}_left_back_wheel" pos="{left_back_wheel_pos}" zaxis="0 1 0">
+                <joint name="{car_name}_left_back"/>
+                <geom type="cylinder" size="{car_wheel_size}" rgba=".5 .5 1 1" mass="{car_wheel_mass}"/>
+            </body>
 
-        <body name="{car_name}_right front wheel" pos="0.6 -0.5 0" zaxis="0 1 0">
-            <joint name="{car_name}_right_front turn" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
-            <joint name="{car_name}_right_front"/>
-            <geom type="cylinder" size="0.4 0.1" rgba=".5 .5 1 1"/>
+            <body name="{car_name}_right_back_wheel" pos="{right_back_wheel_pos}" zaxis="0 1 0">
+                <joint name="{car_name}_right_back"/>
+                <geom type="cylinder" size="{car_wheel_size}" rgba=".5 .5 1 1" mass="{car_wheel_mass}"/>
+            </body>
+
+
+
         </body>
 
     </body>

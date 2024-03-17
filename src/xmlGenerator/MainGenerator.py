@@ -17,55 +17,9 @@ GENERATOR_PARTS = SELF_DIR_PATH/"GeneratorParts"
 try:
     sys.path.append(str(GENERATOR_PARTS))
     from GeneratorParts.CarGenerator import CarGenerator
+    from GeneratorParts.WorldGenerator import WorldGenerator
 except:
     raise ImportError
-
-
-def generateCarProperties(carName: str,
-                          chassisLength: Annotated[float, "length in meters"],
-                          chassisWidth: Annotated[float, "width in meters"],
-                          chassisHeight: Annotated[float, "height in meters"],
-                          carMass: Annotated[float, "Car mass in kgs"] = 1500,
-                          wheelRadius: Annotated[float,
-                                                 "Car wheel/tire radius in meters"] = 0.5,
-                          wheelThickness: Annotated[float,
-                                                    "wheel/tire thickness in meters"] = 0.2,
-                          wheelMass: Annotated[float,
-                                               "wheel/tire mass in kgs"] = 30,
-                          wheelFriction: Annotated[
-                              Tuple[float, float, float], "Sliding, Torsional, Rolling friction"] = (1e3, 1e-3, 1e-3),
-                          wheelAxisSpacing: Annotated[
-                              float, "spacing of axis from center to edge, range: 0 to 1"] = 0.6,
-                          wheelSpacing: Annotated[float,
-                                                  "Distance between wheels, range: 0 to 1"] = 1,
-                          wheelMountHeight: Annotated[float,
-                                                      "range: -1 to 1"] = 0,
-                          lightsSpacing: Annotated[float, "range: 0 to 1"] = 0.6):
-    chassisXSize = chassisLength / 2
-    chassisYsize = chassisWidth / 2
-    chassisZsize = chassisHeight / 2
-
-    prop = {
-        "car_name": f"{carName}",
-        "car_pos": "0 0 5",
-        "car_size": f"{chassisXSize} {chassisYsize} {chassisZsize}",
-        "car_mass": f"{carMass}",
-
-        "car_wheel_size": f"{wheelRadius} {wheelThickness / 2}",
-        "car_wheel_mass": f"{wheelMass}",
-        "car_wheel_friction": f"{wheelFriction[0]} {wheelFriction[1]} {wheelFriction[2]}",
-        "left_front_wheel_pos": f"{chassisXSize * wheelAxisSpacing} {-chassisYsize * wheelSpacing} {chassisHeight * wheelMountHeight}",
-        "right_front_wheel_pos": f"{chassisXSize * wheelAxisSpacing} {chassisYsize * wheelSpacing} {chassisHeight * wheelMountHeight}",
-        "left_back_wheel_pos": f"{-chassisXSize * wheelAxisSpacing} {-chassisYsize * wheelSpacing} {chassisHeight * wheelMountHeight}",
-        "right_back_wheel_pos": f"{-chassisXSize * wheelAxisSpacing} {chassisYsize * wheelSpacing} {chassisHeight * wheelMountHeight}",
-
-        "car_front_lights_pos": f"{chassisXSize} 0 0",
-        "car_front_right_light_pos": f"0 {-chassisYsize * lightsSpacing} 0",
-        "car_front_left_light_pos": f"0 {chassisYsize * lightsSpacing} 0",
-
-    }
-
-    return prop
 
 
 # def generateTopDownCamProperties(cameraName: str, xlen: float, ylen: float, camFov=90):
@@ -142,11 +96,11 @@ def generateWallsProperties(name: str, xlen: float, ylen: float, hlen: float, tl
 
 class MujocoXMLGenerator():
     PATTERN = """\
-<mujoco>
-    <worldbody>
-    <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1"/>
-    </worldbody> 
-</mujoco>"""
+    <mujoco>
+        <worldbody>
+        <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1"/>
+        </worldbody> 
+    </mujoco>"""
 
     def __init__(self) -> None:
         self._initTree()
@@ -156,23 +110,28 @@ class MujocoXMLGenerator():
         self.tree = ET.ElementTree(self.root)
         self.worldbodyNode = self.tree.find("worldbody")
 
-    def saveTree(self):
+    def createGround(self):
+        worldGenerator = WorldGenerator("ground", 100, 100, 10)
+        worldGenerator.attachToMujoco(self.root)
+
+    def createCar(self):
+        carGenerator = CarGenerator("car1",
+                                    2,
+                                    1,
+                                    0.5)
+        carGenerator.attachToMujoco(self.root)
+
+    def _saveTree(self):
         self.tree.write(MAIN_MODEL)
 
     def runSimulation(self):
-        self.saveTree()
-        # self.model = mujoco.MjModel.from_xml_path(MAIN_MODEL)
+        self._saveTree()
         mujoco.viewer.launch_from_path(str(MAIN_MODEL))
 
 
 if __name__ == "__main__":
 
     generator = MujocoXMLGenerator()
-    carGenerator = CarGenerator("car1",
-                                2,
-                                1,
-                                0.5)
-
-    carGenerator.attachToMujoco(generator.tree)
-
+    generator.createGround()
+    generator.createCar()
     generator.runSimulation()

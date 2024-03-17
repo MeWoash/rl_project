@@ -4,12 +4,12 @@ from GeneratorBaseClass import BaseGenerator
 
 class WheelGenerator(BaseGenerator):
     TEMPLATES = {
-        "body": """\
-<body name="{wheel_name}" pos="{wheel_pos}" zaxis="0 1 0">
-    <joint name="{wheel_name}_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
-    <joint name="{wheel_name}_joint_roll"/>
-    <geom type="cylinder" size="{wheel_size}" rgba=".5 .5 1 1" mass="{wheel_mass}" friction="{wheel_friction}"/>
-</body>"""}
+        "wheelNode": """\
+        <body name="{wheel_name}" pos="{wheel_pos}" zaxis="0 1 0">
+            <joint name="{wheel_name}_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>
+            <joint name="{wheel_name}_joint_roll"/>
+            <geom type="cylinder" size="{wheel_size}" rgba=".5 .5 1 1" mass="{wheel_mass}" friction="{wheel_friction}"/>
+        </body>"""}
 
     def __init__(self,
                  wheel_name="default_wheel_name",
@@ -65,11 +65,14 @@ class WheelGenerator(BaseGenerator):
         }
         return self
 
-    def generateNodes(self):
-        return super().generateNodes()[0]
+    def generateNodes(self) -> dict:
+        return super().generateNodes()
 
     def attachToMujoco(self, mujocoNode: ET.Element):
-        pass
+        """
+        Wheel should be only attached in CarGenerator.
+        """
+        raise NotImplementedError
 
 
 if __name__ == "__main__":

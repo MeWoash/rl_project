@@ -12,7 +12,7 @@ class WheelGenerator(BaseGenerator):
             </body>""",
 
         "steeringPart": """
-            <joint name="{wheel_name}_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45"/>"""
+            <joint name="{wheel_name}_joint_steer" type="hinge" axis="0 1 0" limited="true" range="{wheel_angle_limit}"/>"""
     }
 
     def __init__(self,
@@ -21,7 +21,8 @@ class WheelGenerator(BaseGenerator):
                  wheel_size=(0.5, 0.2),
                  wheel_mass=30,
                  wheel_friction=(1, 1e-3, 1e-3),
-                 is_steering=False) -> None:
+                 is_steering=False,
+                 wheel_angle_limit=(-45, 45)) -> None:
         """
         Wheel generator class.
 
@@ -32,6 +33,7 @@ class WheelGenerator(BaseGenerator):
             wheel_mass (int, optional): Wheel mass[kg]. Defaults to 30.
             wheel_friction (tuple, optional): Wheel friction. Defaults to (1, 1e-3, 1e-3).
             is_steering (bool, optional): Is Steering wheel. Defaults to False.
+            wheel_angle_limit (tuple, optional): wheelAngleLimit. Defaults to (-45, 45) degrees.
         """
         super().__init__()
         self.wheelName = wheel_name
@@ -40,6 +42,7 @@ class WheelGenerator(BaseGenerator):
         self.wheelMass = wheel_mass
         self.wheelFriction = wheel_friction
         self.isSteering = is_steering
+        self.wheelAngleLimit = wheel_angle_limit
         self._calculateProperties()
 
     def with_wheelName(self, atr):
@@ -72,7 +75,8 @@ class WheelGenerator(BaseGenerator):
             "wheel_pos": f"{self.wheelPos[0]} {self.wheelPos[1]} {self.wheelPos[2]}",
             "wheel_size": f"{self.wheelSize[0]} {self.wheelSize[1]}",
             "wheel_mass": f"{self.wheelMass}",
-            "wheel_friction": f"{self.wheelFriction[0]} {self.wheelFriction[1]} {self.wheelFriction[2]}"
+            "wheel_friction": f"{self.wheelFriction[0]} {self.wheelFriction[1]} {self.wheelFriction[2]}",
+            "wheel_angle_limit": f"{self.wheelAngleLimit[0]} {self.wheelAngleLimit[1]}"
         }
         return self
 

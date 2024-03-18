@@ -1,3 +1,4 @@
+import math
 import xml.etree.ElementTree as ET
 from GeneratorBaseClass import BaseGenerator
 from WheelGenerator import WheelGenerator
@@ -14,7 +15,23 @@ class CarGenerator(BaseGenerator):
                 <geom name="{car_name}_chassis_geom" type="box" size="{car_size}" mass="{car_mass}"/>
                 <!-- WHEELS HERE -->
             </body>
-        </body>"""
+        </body>""",
+
+        "backWheelsTendon": """\
+            <tendon>
+                <fixed name="{car_name}_back_wheels_tendon">
+                    <joint joint="{car_name}_wheel3_joint_roll" coef="1000" />
+                    <joint joint="{car_name}_wheel4_joint_roll" coef="1000" />
+                </fixed>
+            </tendon>""",
+
+        "carControls": """\
+            <actuator>
+                <motor name="{car_name}_engine_power" tendon="{car_name}_back_wheels_tendon" ctrlrange="-1 1" />
+                <position name="{car_name}_wheel1_angle" joint="{car_name}_wheel1_joint_steer" kp="1000" ctrlrange="{wheel_control_angle_range}"/>
+                <position name="{car_name}_wheel2_angle" joint="{car_name}_wheel2_joint_steer" kp="1000" ctrlrange="{wheel_control_angle_range}"/>    
+            </actuator>
+            """
     }
 
     def __init__(
@@ -28,6 +45,7 @@ class CarGenerator(BaseGenerator):
         wheelThickness: float = 0.2,
         wheelMass: float = 30,
         wheelFriction: Tuple[float, float, float] = (1, 1e-3, 1e-3),
+        wheelAngleLimit: Tuple[float, float, float] = (-45, 45),
         wheelAxisSpacing: float = 0.6,
         wheelSpacing: float = 1,
         wheelMountHeight: float = 0,
@@ -63,6 +81,7 @@ class CarGenerator(BaseGenerator):
         self.wheelThickness: float = wheelThickness
         self.wheelMass: float = wheelMass
         self.wheelFriction: Tuple[float, float, float] = wheelFriction
+        self.wheelAngleLimit: Tuple[float, float] = wheelAngleLimit
         self.wheelAxisSpacing: float = wheelAxisSpacing
         self.wheelSpacing: float = wheelSpacing
         self.wheelMountHeight: float = wheelMountHeight
@@ -76,6 +95,8 @@ class CarGenerator(BaseGenerator):
         chassisXSize = self.chassisLength / 2
         chassisYsize = self.chassisWidth / 2
         chassisZsize = self.chassisHeight / 2
+        wheelControlRange = (math.radians(
+            self.wheelAngleLimit[0]), math.radians(self.wheelAngleLimit[1]))
 
         self.props = {
             "car_name": f"{self.carName}",
@@ -84,14 +105,16 @@ class CarGenerator(BaseGenerator):
             "car_mass": f"{self.carMass}",
             "car_wheel_size": (self.wheelRadius, self.wheelThickness / 2),
             "car_wheel_mass": self.wheelMass,
-            "car_wheel_friction": (self.wheelFriction[0], self.wheelFriction[1], self.wheelFriction[2]),
-            "left_front_wheel_pos": (chassisXSize * self.wheelAxisSpacing, -chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
-            "right_front_wheel_pos": (chassisXSize * self.wheelAxisSpacing, chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
-            "left_back_wheel_pos": (-chassisXSize * self.wheelAxisSpacing, -chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
-            "right_back_wheel_pos": (-chassisXSize * self.wheelAxisSpacing, chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
+            "car_wheel_friction": self.wheelFriction,
+            "car_wheel_angle_limit": self.wheelAngleLimit,
+            "wheel1_pos": (chassisXSize * self.wheelAxisSpacing, -chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
+            "wheel2_pos": (chassisXSize * self.wheelAxisSpacing, chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
+            "wheel3_pos": (-chassisXSize * self.wheelAxisSpacing, -chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
+            "wheel4_pos": (-chassisXSize * self.wheelAxisSpacing, chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
             "car_front_lights_pos": f"{chassisXSize} 0 0",
             "car_front_right_light_pos": f"0 {-chassisYsize * self.lightsSpacing} 0",
             "car_front_left_light_pos": f"0 {chassisYsize * self.lightsSpacing} 0",
+            "wheel_control_angle_range": f"{wheelControlRange[0]} {wheelControlRange[1]}"
         }
 
     def generateNodes(self) -> Dict[str, ET.Element]:
@@ -110,12 +133,13 @@ class CarGenerator(BaseGenerator):
             wheel_mass=self.props["car_wheel_mass"],
             wheel_size=self.props["car_wheel_size"],
             wheel_friction=self.props["car_wheel_friction"],
+            wheel_angle_limit=self.props["car_wheel_angle_limit"]
         )
 
         carChassis.append(
             *wheelGen
-            .with_wheelName(f"{self.carName}_wheel_front_left")
-            .with_wheelPos(self.props["left_front_wheel_pos"])
+            .with_wheelName(f"{self.carName}_wheel1")
+            .with_wheelPos(self.props["wheel1_pos"])
             .with_isSteering(True)
             ._calculateProperties()
             .generateNodes()
@@ -123,8 +147,8 @@ class CarGenerator(BaseGenerator):
         )
         carChassis.append(
             *wheelGen
-            .with_wheelName(f"{self.carName}_wheel_front_right")
-            .with_wheelPos(self.props["right_front_wheel_pos"])
+            .with_wheelName(f"{self.carName}_wheel2")
+            .with_wheelPos(self.props["wheel2_pos"])
             .with_isSteering(True)
             ._calculateProperties()
             .generateNodes()
@@ -132,8 +156,8 @@ class CarGenerator(BaseGenerator):
         )
         carChassis.append(
             *wheelGen
-            .with_wheelName(f"{self.carName}_wheel_back_left")
-            .with_wheelPos(self.props["left_back_wheel_pos"])
+            .with_wheelName(f"{self.carName}_wheel3")
+            .with_wheelPos(self.props["wheel3_pos"])
             .with_isSteering(False)
             ._calculateProperties()
             .generateNodes()
@@ -141,8 +165,8 @@ class CarGenerator(BaseGenerator):
         )
         carChassis.append(
             *wheelGen
-            .with_wheelName(f"{self.carName}_wheel_back_right")
-            .with_wheelPos(self.props["right_back_wheel_pos"])
+            .with_wheelName(f"{self.carName}_wheel4")
+            .with_wheelPos(self.props["wheel4_pos"])
             .with_isSteering(False)
             ._calculateProperties()
             .generateNodes()
@@ -152,9 +176,10 @@ class CarGenerator(BaseGenerator):
         return nodeDict
 
     def attachToMujoco(self, mujocoNode: ET.Element) -> None:
-        carBody, = self.generateNodes().values()
-        worldBody = mujocoNode.find("worldbody")
-        worldBody.append(carBody)
+        nodesDict: Dict[str, ET.Element] = self.generateNodes()
+        mujocoNode.find("worldbody").append(nodesDict['carBody'])
+        mujocoNode.append(nodesDict['backWheelsTendon'])
+        mujocoNode.append(nodesDict['carControls'])
 
 
 if __name__ == "__main__":

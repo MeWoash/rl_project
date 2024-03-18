@@ -1,27 +1,36 @@
 <mujoco>
         <worldbody>
         <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1" />
-        <geom name="ground_bottom" type="plane" size="50.0 50.0 0.1" material="grid" friction="1.0 0.005 0.0001" /><geom name="ground_left" type="box" size="0.1 50.0 5.0" pos="-50.1 0 5.0" material="grid" /><geom name="ground_right" type="box" size="0.1 50.0 5.0" pos="50.1 0 5.0" material="grid" /><geom name="ground_front" type="box" size="50.0 0.1 5.0" pos="0 50.1 5.0" material="grid" /><geom name="ground_back" type="box" size="50.0 0.1 5.0" pos="0 -50.1 5.0" material="grid" /><body name="car1" pos="0 0 5">
+        <geom name="ground_bottom" type="plane" size="10.0 10.0 0.1" material="grid" friction="1.0 0.005 0.0001" /><geom name="ground_left" type="box" size="0.1 10.0 5.0" pos="-10.1 0 5.0" material="grid" /><geom name="ground_right" type="box" size="0.1 10.0 5.0" pos="10.1 0 5.0" material="grid" /><geom name="ground_front" type="box" size="10.0 0.1 5.0" pos="0 10.1 5.0" material="grid" /><geom name="ground_back" type="box" size="10.0 0.1 5.0" pos="0 -10.1 5.0" material="grid" /><camera name="TopDownCam" pos="0 0 9.999999999999998" euler="0 0 -90" fovy="90" /><body name="car1" pos="0 0 5">
             <freejoint />
             <body name="car1_front_lights" pos="1.0 0 0" />
             <body name="car1_chassis">
                 <geom name="car1_chassis_geom" type="box" size="1.0 0.5 0.25" mass="1500" />
                 
-            <body name="car1_wheel_front_left" pos="0.6 -0.5 0.0" zaxis="0 1 0">
-                <joint name="car1_wheel_front_left_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" /><joint name="car1_wheel_front_left_joint_roll" />
+            <body name="car1_wheel1" pos="0.6 -0.5 0.0" zaxis="0 1 0">
+                <joint name="car1_wheel1_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" /><joint name="car1_wheel1_joint_roll" />
                 <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
-            </body><body name="car1_wheel_front_right" pos="0.6 0.5 0.0" zaxis="0 1 0">
-                <joint name="car1_wheel_front_right_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" /><joint name="car1_wheel_front_right_joint_roll" />
+            </body><body name="car1_wheel2" pos="0.6 0.5 0.0" zaxis="0 1 0">
+                <joint name="car1_wheel2_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" /><joint name="car1_wheel2_joint_roll" />
                 <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
-            </body><body name="car1_wheel_back_left" pos="-0.6 -0.5 0.0" zaxis="0 1 0">
-                <joint name="car1_wheel_back_left_joint_roll" />
+            </body><body name="car1_wheel3" pos="-0.6 -0.5 0.0" zaxis="0 1 0">
+                <joint name="car1_wheel3_joint_roll" />
                 <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
-            </body><body name="car1_wheel_back_right" pos="-0.6 0.5 0.0" zaxis="0 1 0">
-                <joint name="car1_wheel_back_right_joint_roll" />
+            </body><body name="car1_wheel4" pos="-0.6 0.5 0.0" zaxis="0 1 0">
+                <joint name="car1_wheel4_joint_roll" />
                 <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
             </body></body>
         </body></worldbody> 
     <asset>
                 <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4" />
                 <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance="0" />
-            </asset></mujoco>
+            </asset><tendon>
+                <fixed name="car1_back_wheels_tendon">
+                    <joint joint="car1_wheel3_joint_roll" coef="1000" />
+                    <joint joint="car1_wheel4_joint_roll" coef="1000" />
+                </fixed>
+            </tendon><actuator>
+                <motor name="car1_engine_power" tendon="car1_back_wheels_tendon" ctrlrange="-1 1" />
+                <position name="car1_wheel1_angle" joint="car1_wheel1_joint_steer" kp="1000" ctrlrange="-0.7853981633974483 0.7853981633974483" />
+                <position name="car1_wheel2_angle" joint="car1_wheel2_joint_steer" kp="1000" ctrlrange="-0.7853981633974483 0.7853981633974483" />    
+            </actuator></mujoco>

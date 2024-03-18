@@ -1,5 +1,0 @@
-<mujoco>
-    <worldbody>
-    <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1"/>
-    </worldbody> 
-</mujoco>

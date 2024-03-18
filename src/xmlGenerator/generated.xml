@@ -8,22 +8,18 @@
                 <geom name="car1_chassis_geom" type="box" size="1.0 0.5 0.25" mass="1500" />
                 
             <body name="car1_wheel_front_left" pos="0.6 -0.5 0.0" zaxis="0 1 0">
-            <joint name="car1_wheel_front_left_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
-            <joint name="car1_wheel_front_left_joint_roll" />
-            <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
-        </body><body name="car1_wheel_front_right" pos="0.6 0.5 0.0" zaxis="0 1 0">
-            <joint name="car1_wheel_front_right_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
-            <joint name="car1_wheel_front_right_joint_roll" />
-            <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
-        </body><body name="car1_wheel_back_left" pos="-0.6 -0.5 0.0" zaxis="0 1 0">
-            <joint name="car1_wheel_back_left_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
-            <joint name="car1_wheel_back_left_joint_roll" />
-            <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
-        </body><body name="car1_wheel_back_right" pos="-0.6 0.5 0.0" zaxis="0 1 0">
-            <joint name="car1_wheel_back_right_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" />
-            <joint name="car1_wheel_back_right_joint_roll" />
-            <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
-        </body></body>
+                <joint name="car1_wheel_front_left_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" /><joint name="car1_wheel_front_left_joint_roll" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
+            </body><body name="car1_wheel_front_right" pos="0.6 0.5 0.0" zaxis="0 1 0">
+                <joint name="car1_wheel_front_right_joint_steer" type="hinge" axis="0 1 0" limited="true" range="-45 45" /><joint name="car1_wheel_front_right_joint_roll" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
+            </body><body name="car1_wheel_back_left" pos="-0.6 -0.5 0.0" zaxis="0 1 0">
+                <joint name="car1_wheel_back_left_joint_roll" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
+            </body><body name="car1_wheel_back_right" pos="-0.6 0.5 0.0" zaxis="0 1 0">
+                <joint name="car1_wheel_back_right_joint_roll" />
+                <geom type="cylinder" size="0.5 0.1" rgba=".5 .5 1 1" mass="30" friction="1 0.001 0.001" />
+            </body></body>
         </body></worldbody> 
     <asset>
                 <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4" />

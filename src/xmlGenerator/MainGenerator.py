@@ -121,11 +121,10 @@ class MujocoXMLGenerator():
                                     0.5)
         carGenerator.attachToMujoco(self.root)
 
-    def _saveTree(self):
+    def saveTree(self):
         self.tree.write(MAIN_MODEL)
 
     def runSimulation(self):
-        self._saveTree()
         mujoco.viewer.launch_from_path(str(MAIN_MODEL))
 
 
@@ -134,4 +133,5 @@ if __name__ == "__main__":
     generator = MujocoXMLGenerator()
     generator.createGround()
     generator.createCar()
+    generator.saveTree()
     generator.runSimulation()

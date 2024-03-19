@@ -10,9 +10,9 @@ import sys
 
 
 SELF_DIR_PATH = Path(__file__).parent
-PATTERN_DIR = SELF_DIR_PATH / "patterns"
-MAIN_MODEL = SELF_DIR_PATH / "generated.xml"
-GENERATOR_PARTS = SELF_DIR_PATH/"GeneratorParts"
+
+MAIN_MODEL: Path = SELF_DIR_PATH.joinpath("generated.xml")
+GENERATOR_PARTS: Path = SELF_DIR_PATH.joinpath("GeneratorParts")
 
 try:
     sys.path.append(str(GENERATOR_PARTS))

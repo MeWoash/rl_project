@@ -10,8 +10,8 @@ import sys
 
 
 SELF_DIR_PATH = Path(__file__).parent
-
-MAIN_MODEL: Path = SELF_DIR_PATH.joinpath("generated.xml")
+XMLS_PATH = SELF_DIR_PATH.joinpath("../xmls")
+MAIN_MODEL: Path = XMLS_PATH.joinpath("generated.xml")
 GENERATOR_PARTS: Path = SELF_DIR_PATH.joinpath("GeneratorParts")
 
 try:
@@ -27,7 +27,7 @@ class MujocoXMLGenerator():
     PATTERN = """\
     <mujoco>
         <worldbody>
-        </worldbody> 
+        </worldbody>
     </mujoco>"""
 
     def __init__(self) -> None:
@@ -55,6 +55,7 @@ class MujocoXMLGenerator():
         carGenerator.attachToMujoco(self.root)
 
     def saveTree(self):
+        ET.indent(self.tree, space="    ", level=0)
         self.tree.write(MAIN_MODEL)
 
     def runSimulation(self):
@@ -64,7 +65,7 @@ class MujocoXMLGenerator():
 if __name__ == "__main__":
 
     generator = MujocoXMLGenerator()
-    GROUND_SIZE: Tuple[int, int, int] = (50, 50, 10, 20)
+    GROUND_SIZE: Tuple[int, int, int] = (50, 50, 20, 1)
     generator.createGround(GROUND_SIZE)
     generator.createCamera(GROUND_SIZE)
     generator.createCar()

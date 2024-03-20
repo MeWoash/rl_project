@@ -46,6 +46,7 @@ class CarGenerator(BaseGenerator):
         chassisLength: float,
         chassisWidth: float,
         chassisHeight: float,
+        carPosition = (0, 0, 2),
         carMass: float = 1500,
         wheelRadius: float = 0.3,
         wheelThickness: float = 0.2,
@@ -82,6 +83,7 @@ class CarGenerator(BaseGenerator):
         self.chassisLength: float = chassisLength
         self.chassisWidth: float = chassisWidth
         self.chassisHeight: float = chassisHeight
+        self.carPosition = carPosition
         self.carMass: float = carMass
         self.wheelRadius: float = wheelRadius
         self.wheelThickness: float = wheelThickness
@@ -107,7 +109,7 @@ class CarGenerator(BaseGenerator):
 
         self.props = {
             "car_name": f"{self.carName}",
-            "car_pos": "0 0 5",
+            "car_pos": f"{self.carPosition[0]} {self.carPosition[1]} {self.carPosition[2]}",
             "car_size": f"{chassisXSize} {chassisYsize} {chassisZsize}",
             "car_mass": f"{self.carMass}",
             "car_wheel_size": (self.wheelRadius, self.wheelThickness / 2),

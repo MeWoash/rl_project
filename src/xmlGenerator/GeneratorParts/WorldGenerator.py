@@ -28,23 +28,24 @@ class WorldGenerator(BaseGenerator):
     TEMPLATES: dict[str, str] = {
         "asset": """\
             <asset>
-                <texture name="sky_texture" type="skybox" file="D:/kody/rl_project/src/xmls/assets/Wispy_Sky-Night_03-512x512.png"/>
+                <texture name="sky_texture" type="skybox" file="assets/Wispy_Sky-Night_03-512x512.png"/>
 
-                <texture name="wall_texture" type="2d" file="D:/kody/rl_project/src/xmls/assets/Fuzzy_Sky-Night_01-512x512.png"/>
+                <texture name="wall_texture" type="2d" file="assets/Fuzzy_Sky-Night_01-512x512.png"/>
                 <material name="wall_material" rgba = "0 0 0 0"/>
 
-                <texture name="ground_texture" type="2d" file="D:/kody/rl_project/src/xmls/assets/ground.png"/>
+                <texture name="ground_texture" type="2d" file="assets/ground.png"/>
                 <material name="ground_material" texture="ground_texture" texrepeat="25 25"/>
                 
             </asset>""",
 
         "ground": '<geom name="{ground_name}_bottom" type="plane" size="{board_size}" material="ground_material" friction="1.0 0.005 0.0001"/>',
+        "top": '<geom name="{ground_name}_top" type="box" size="{board_size}" pos="{top_pos}" material="wall_material"/>',
         "wall1": '<geom name="{ground_name}_left" type="box" size="{wall1_size}" pos="{wall1_pos}" material="wall_material"/>',
         "wall2": '<geom name="{ground_name}_right" type="box" size="{wall2_size}" pos="{wall2_pos}" material="wall_material"/>',
         "wall3": '<geom name="{ground_name}_front" type="box" size="{wall3_size}" pos="{wall3_pos}" material="wall_material"/>',
         "wall4": '<geom name="{ground_name}_back" type="box" size="{wall4_size}" pos="{wall4_pos}" material="wall_material"/>',
 
-        "mainLight": '<light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1" castshadow="true"/>',
+        "mainLight": '<light dir="0 0 -1" pos="0 0 100" diffuse="1 1 1" castshadow="true"/>',
         "light1": '<light dir="{light1_dir}" pos="{light1_pos}" diffuse="{light_dffuse}" castshadow="false"/>',
         "light2": '<light dir="{light2_dir}" pos="{light2_pos}" diffuse="{light_dffuse}" castshadow="false"/>',
         "light3": '<light dir="{light3_dir}" pos="{light3_pos}" diffuse="{light_dffuse}" castshadow="false"/>',
@@ -101,6 +102,8 @@ class WorldGenerator(BaseGenerator):
             "wall4_size": f"{x} {t} {h}",
             "wall4_pos": f"0 {-(y + t)} {h}",
 
+            "top_pos": f"0 0 {self.hlen}",
+
             "light_dffuse": f"{lightDiffuse[0]} {lightDiffuse[1]} {lightDiffuse[2]}",
 
             "light1_pos": f"{light1Pos[0]} {light1Pos[1]} {light1Pos[2]}",
@@ -127,8 +130,9 @@ class WorldGenerator(BaseGenerator):
         worldBodyNode.append(nodeDict['wall2'])
         worldBodyNode.append(nodeDict['wall3'])
         worldBodyNode.append(nodeDict['wall4'])
+        worldBodyNode.append(nodeDict['top'])
         worldBodyNode.append(nodeDict['mainLight'])
-        worldBodyNode.append(nodeDict['light1'])
-        worldBodyNode.append(nodeDict['light2'])
-        worldBodyNode.append(nodeDict['light3'])
-        worldBodyNode.append(nodeDict['light4'])
+        # worldBodyNode.append(nodeDict['light1'])
+        # worldBodyNode.append(nodeDict['light2'])
+        # worldBodyNode.append(nodeDict['light3'])
+        # worldBodyNode.append(nodeDict['light4'])

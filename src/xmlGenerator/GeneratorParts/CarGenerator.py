@@ -7,12 +7,18 @@ from typing import Dict, Tuple
 
 class CarGenerator(BaseGenerator):
     TEMPLATES: dict[str, str] = {
+
+        "asset": """\
+            <asset>
+                <material name="{car_name}_chassis_material" rgba="{car_chassis_color}" reflectance="0" shininess="1" emission="0.0" specular="0.0"/>
+            </asset>""",
+
         "carBody": """\
         <body name="{car_name}" pos="{car_pos}">
             <freejoint/>
             <body name="{car_name}_front_lights"  pos="{car_front_lights_pos}"></body>
             <body name="{car_name}_chassis">
-                <geom name="{car_name}_chassis_geom" type="box" size="{car_size}" mass="{car_mass}"/>
+                <geom name="{car_name}_chassis_geom" material="{car_name}_chassis_material" type="box" size="{car_size}" mass="{car_mass}"/>
                 <!-- WHEELS HERE -->
             </body>
         </body>""",
@@ -41,14 +47,14 @@ class CarGenerator(BaseGenerator):
         chassisWidth: float,
         chassisHeight: float,
         carMass: float = 1500,
-        wheelRadius: float = 0.5,
+        wheelRadius: float = 0.3,
         wheelThickness: float = 0.2,
         wheelMass: float = 30,
         wheelFriction: Tuple[float, float, float] = (1, 1e-3, 1e-3),
         wheelAngleLimit: Tuple[float, float, float] = (-45, 45),
         wheelAxisSpacing: float = 0.6,
         wheelSpacing: float = 1,
-        wheelMountHeight: float = 0,
+        wheelMountHeight: float = -0.25,
         lightsSpacing: float = 0.6,
     ) -> None:
         """
@@ -86,6 +92,7 @@ class CarGenerator(BaseGenerator):
         self.wheelSpacing: float = wheelSpacing
         self.wheelMountHeight: float = wheelMountHeight
         self.lightsSpacing: float = lightsSpacing
+        self.carChassisColorRGBA = (0.8, 0.102, 0.063, 1)
         self._calculateProperties()
 
     def _calculateProperties(self) -> None:
@@ -107,6 +114,7 @@ class CarGenerator(BaseGenerator):
             "car_wheel_mass": self.wheelMass,
             "car_wheel_friction": self.wheelFriction,
             "car_wheel_angle_limit": self.wheelAngleLimit,
+            "car_chassis_color": f"{self.carChassisColorRGBA[0]} {self.carChassisColorRGBA[1]} {self.carChassisColorRGBA[2]} {self.carChassisColorRGBA[3]}",
             "wheel1_pos": (chassisXSize * self.wheelAxisSpacing, -chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
             "wheel2_pos": (chassisXSize * self.wheelAxisSpacing, chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
             "wheel3_pos": (-chassisXSize * self.wheelAxisSpacing, -chassisYsize * self.wheelSpacing, self.chassisHeight * self.wheelMountHeight),
@@ -137,41 +145,38 @@ class CarGenerator(BaseGenerator):
         )
 
         carChassis.append(
-            *wheelGen
+            wheelGen
             .with_wheelName(f"{self.carName}_wheel1")
             .with_wheelPos(self.props["wheel1_pos"])
             .with_isSteering(True)
             ._calculateProperties()
-            .generateNodes()
-            .values()
+            .generateNodes()['wheelNode']
         )
         carChassis.append(
-            *wheelGen
+            wheelGen
             .with_wheelName(f"{self.carName}_wheel2")
             .with_wheelPos(self.props["wheel2_pos"])
             .with_isSteering(True)
             ._calculateProperties()
-            .generateNodes()
-            .values()
+            .generateNodes()['wheelNode']
         )
         carChassis.append(
-            *wheelGen
+            wheelGen
             .with_wheelName(f"{self.carName}_wheel3")
             .with_wheelPos(self.props["wheel3_pos"])
             .with_isSteering(False)
             ._calculateProperties()
-            .generateNodes()
-            .values()
+            .generateNodes()['wheelNode']
         )
         carChassis.append(
-            *wheelGen
+            wheelGen
             .with_wheelName(f"{self.carName}_wheel4")
             .with_wheelPos(self.props["wheel4_pos"])
             .with_isSteering(False)
             ._calculateProperties()
-            .generateNodes()
-            .values()
+            .generateNodes()['wheelNode']
         )
+        nodeDict['wheelAsset'] = wheelGen.generateNodes()['wheelAsset']
 
         return nodeDict
 
@@ -180,6 +185,8 @@ class CarGenerator(BaseGenerator):
         mujocoNode.find("worldbody").append(nodesDict['carBody'])
         mujocoNode.append(nodesDict['backWheelsTendon'])
         mujocoNode.append(nodesDict['carControls'])
+        mujocoNode.insert(0, nodesDict["asset"])
+        mujocoNode.insert(0, nodesDict["wheelAsset"])
 
 
 if __name__ == "__main__":

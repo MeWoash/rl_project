@@ -2,13 +2,23 @@ from typing import Tuple
 import xml.etree.ElementTree as ET
 from GeneratorBaseClass import BaseGenerator
 
+# reflectance
+# shininess - matte -> glossy look
+# emission - light emited by material
+# specular - mirror-like reflection of light sources
+
 
 class WheelGenerator(BaseGenerator):
     TEMPLATES = {
+        "wheelAsset": """\
+            <asset>
+                <material name="wheel_material" rgba="{wheel_color}" reflectance="0" shininess="0" emission="0" specular="0.1"/>
+            </asset>""",
+
         "wheelNode": """\
             <body name="{wheel_name}" pos="{wheel_pos}" zaxis="0 1 0">
                 <joint name="{wheel_name}_joint_roll"/>
-                <geom type="cylinder" size="{wheel_size}" rgba=".5 .5 1 1" mass="{wheel_mass}" friction="{wheel_friction}"/>
+                <geom type="cylinder" size="{wheel_size}" material="wheel_material" mass="{wheel_mass}" friction="{wheel_friction}"/>
             </body>""",
 
         "steeringPart": """
@@ -43,6 +53,7 @@ class WheelGenerator(BaseGenerator):
         self.wheelFriction = wheel_friction
         self.isSteering = is_steering
         self.wheelAngleLimit = wheel_angle_limit
+        self.wheelColor = (0, 0, 0, 1)
         self._calculateProperties()
 
     def with_wheelName(self, atr):
@@ -76,7 +87,8 @@ class WheelGenerator(BaseGenerator):
             "wheel_size": f"{self.wheelSize[0]} {self.wheelSize[1]}",
             "wheel_mass": f"{self.wheelMass}",
             "wheel_friction": f"{self.wheelFriction[0]} {self.wheelFriction[1]} {self.wheelFriction[2]}",
-            "wheel_angle_limit": f"{self.wheelAngleLimit[0]} {self.wheelAngleLimit[1]}"
+            "wheel_angle_limit": f"{self.wheelAngleLimit[0]} {self.wheelAngleLimit[1]}",
+            "wheel_color": f"{self.wheelColor[0]} {self.wheelColor[1]} {self.wheelColor[2]} {self.wheelColor[3]}"
         }
         return self
 
@@ -86,7 +98,8 @@ class WheelGenerator(BaseGenerator):
         if self.isSteering:
             nodesDict['wheelNode'].insert(0, nodesDict['steeringPart'])
 
-        return {"wheelNode": nodesDict['wheelNode']}
+        del nodesDict['steeringPart']
+        return nodesDict
 
     def attachToMujoco(self, mujocoNode: ET.Element):
         """

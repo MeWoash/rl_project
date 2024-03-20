@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 
 
 SELF_DIR = Path(__file__).parent.resolve()
-XML_FOLDER = SELF_DIR.joinpath("xmls")
+XML_FOLDER = SELF_DIR.joinpath("../xmls")
+print(XML_FOLDER)
 MODEL_PATH = os.path.join(str(XML_FOLDER), "generated.xml")
 
 

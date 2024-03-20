@@ -27,7 +27,6 @@ class MujocoXMLGenerator():
     PATTERN = """\
     <mujoco>
         <worldbody>
-        <light dir="0 0 -1" pos="0 0 1000" diffuse="1 1 1"/>
         </worldbody> 
     </mujoco>"""
 
@@ -52,7 +51,7 @@ class MujocoXMLGenerator():
         carGenerator = CarGenerator("car1",
                                     2,
                                     1,
-                                    0.5)
+                                    0.25)
         carGenerator.attachToMujoco(self.root)
 
     def saveTree(self):
@@ -65,7 +64,7 @@ class MujocoXMLGenerator():
 if __name__ == "__main__":
 
     generator = MujocoXMLGenerator()
-    GROUND_SIZE: Tuple[int, int, int] = (20, 20, 10)
+    GROUND_SIZE: Tuple[int, int, int] = (50, 50, 10, 20)
     generator.createGround(GROUND_SIZE)
     generator.createCamera(GROUND_SIZE)
     generator.createCar()

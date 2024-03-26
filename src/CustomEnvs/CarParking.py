@@ -17,12 +17,29 @@ import matplotlib.pyplot as plt
 
 SELF_DIR = Path(__file__).parent.resolve()
 XML_FOLDER = SELF_DIR.joinpath("../xmls")
-print(XML_FOLDER)
 MODEL_PATH = os.path.join(str(XML_FOLDER), "generated.xml")
 
 
 WHEEL_ANGLE_RANGE = (-45, 45)
-CAR_NAME = "car1"
+CAR_NAME = "mainCar"
+
+
+def quat_to_euler(quat):
+    w, x, y, z = quat
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + y * y)
+    roll_x = math.atan2(t0, t1)
+
+    t2 = +2.0 * (w * y - z * x)
+    t2 = +1.0 if t2 > +1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    pitch_y = math.asin(t2)
+
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (y * y + z * z)
+    yaw_z = math.atan2(t3, t4)
+
+    return roll_x, pitch_y, yaw_z
 
 
 class CarParkingEnv(gymnasium.Env):
@@ -113,20 +130,35 @@ class CarParkingEnv(gymnasium.Env):
         self._do_simulation(self.frame_skip)
 
         observation = self._get_obs()
-        reward = 0
+        reward = 1/observation[0]
+
         terminated = False
+        if observation[0] <= 0.1 and observation[4] <= math.radians(5):
+            terminated = True
+
         info = ""
 
         return observation, reward, terminated, False, info
 
     def _get_obs(self):
-        carPosition = self.data.body(CAR_NAME).xpos
-        observation = np.array([carPosition])
+        # carPositionGlobal = self.data.sensor('mainCar_posGlobal_sensor').data
+        carPositionParking = self.data.sensor('mainCar_posTarget_sensor').data
+
+        distToTarget = np.linalg.norm(carPositionParking[:1])
+
+        carQuat = self.data.body('mainCar').xquat
+        roll_x, pitch_y, yaw_z = quat_to_euler(carQuat)
+
+        targetQuat = self.data.body('target_space').xquat
+        targetroll_x, targetpitch_y, targetyaw_z = quat_to_euler(targetQuat)
+
+        angleDiff = abs(targetyaw_z-yaw_z)
+
+        observation = np.array(
+            (distToTarget, roll_x, pitch_y, yaw_z, angleDiff))
         return observation
 
     def reset_model(self):
-        qpos = self.init_qpos
-        qvel = self.init_qvel
         self._reset_simulation()
 
         observation = self._get_obs()
@@ -135,6 +167,7 @@ class CarParkingEnv(gymnasium.Env):
 
 if __name__ == "__main__":
     env = CarParkingEnv(render_mode="human")
+
     while True:
         action = env.action_space.sample()
         observation, reward, terminated, truncated, info = env.step(action)

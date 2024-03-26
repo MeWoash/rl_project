@@ -19,6 +19,7 @@ try:
     from GeneratorParts.CarGenerator import CarGenerator
     from GeneratorParts.WorldGenerator import WorldGenerator
     from GeneratorParts.CameraGenerator import CameraGenerator
+    from GeneratorParts.TargetGenerator import TargetGenerator
 except:
     raise ImportError
 
@@ -38,36 +39,43 @@ class MujocoXMLGenerator():
         self.tree = ET.ElementTree(self.root)
         self.worldbodyNode = self.tree.find("worldbody")
 
-    def createGround(self, groundSize: Tuple):
-        worldGenerator = WorldGenerator("ground", *groundSize)
-        worldGenerator.attachToMujoco(self.root)
-
-    def createCamera(self, groundSize):
-        cameraGenerator: CameraGenerator = CameraGenerator(
-            "TopDownCam", groundSize[0], groundSize[1])
-        cameraGenerator.attachToMujoco(self.root)
-
-    def createCar(self):
-        carGenerator = CarGenerator("car1",
-                                    2,
-                                    1,
-                                    0.25)
-        carGenerator.attachToMujoco(self.root)
-
-    def saveTree(self):
+    def saveTree(self, outputPath=MAIN_MODEL):
         ET.indent(self.tree, space="    ", level=0)
-        self.tree.write(MAIN_MODEL)
+        self.tree.write(outputPath)
 
-    def runSimulation(self):
-        mujoco.viewer.launch_from_path(str(MAIN_MODEL))
+    def runSimulation(self, outputPath=MAIN_MODEL):
+        mujoco.viewer.launch_from_path(str(outputPath))
+
+
+def sampleWorldCreation() -> MujocoXMLGenerator:
+
+    GROUND_SIZE: Tuple[int, int, int] = (20, 20, 20, 5)
+    CAR_SIZE: Tuple[int, int, int] = (2, 1, 0.25)
+
+    generator = MujocoXMLGenerator()
+    # GROUND
+    worldGenerator = WorldGenerator("ground", *GROUND_SIZE)
+    worldGenerator.attachToMujoco(generator.root)
+
+    # CAMERA
+    cameraGenerator: CameraGenerator = CameraGenerator(
+        "TopDownCam", GROUND_SIZE[0], GROUND_SIZE[1])
+    cameraGenerator.attachToMujoco(generator.root)
+
+    # CAR
+    carGenerator = CarGenerator("mainCar", *CAR_SIZE)
+    carGenerator.attachToMujoco(generator.root)
+
+    # TARGET - PARKING SPOT
+    targetGenerator = TargetGenerator(CAR_SIZE,
+                                      targetPos=(5, 5, 0))
+    targetGenerator.attachToMujoco(generator.root)
+
+    generator.saveTree()
+    return generator
 
 
 if __name__ == "__main__":
 
-    generator = MujocoXMLGenerator()
-    GROUND_SIZE: Tuple[int, int, int] = (50, 50, 20, 1)
-    generator.createGround(GROUND_SIZE)
-    generator.createCamera(GROUND_SIZE)
-    generator.createCar()
-    generator.saveTree()
+    generator: MujocoXMLGenerator = sampleWorldCreation()
     generator.runSimulation()

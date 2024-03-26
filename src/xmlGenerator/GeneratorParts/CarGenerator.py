@@ -16,6 +16,7 @@ class CarGenerator(BaseGenerator):
         "carBody": """\
         <body name="{car_name}" pos="{car_pos}">
             <freejoint/>
+            <site name="{car_name}_center" type="cylinder" size="0.1 0.001"/>
             <body name="{car_name}_front_lights"  pos="{car_front_lights_pos}"></body>
             <body name="{car_name}_chassis">
                 <geom name="{car_name}_chassis_geom" material="{car_name}_chassis_material" type="box" size="{car_size}" mass="{car_mass}"/>
@@ -36,8 +37,13 @@ class CarGenerator(BaseGenerator):
                 <motor name="{car_name}_engine_power" tendon="{car_name}_back_wheels_tendon" ctrlrange="-1 1" />
                 <position name="{car_name}_wheel1_angle" joint="{car_name}_wheel1_joint_steer" kp="1000" ctrlrange="{wheel_control_angle_range}"/>
                 <position name="{car_name}_wheel2_angle" joint="{car_name}_wheel2_joint_steer" kp="1000" ctrlrange="{wheel_control_angle_range}"/>    
-            </actuator>
-            """
+            </actuator>""",
+
+        "carSensors": """\
+            <sensor>
+                <framepos name="{car_name}_posGlobal_sensor" objtype="site" objname="{car_name}_center"/>
+                <framepos name="{car_name}_posTarget_sensor" objtype="site" objname="{car_name}_center" reftype="site" refname="parking_spot_center"/>
+            </sensor>"""
     }
 
     def __init__(
@@ -46,7 +52,7 @@ class CarGenerator(BaseGenerator):
         chassisLength: float,
         chassisWidth: float,
         chassisHeight: float,
-        carPosition = (0, 0, 2),
+        carPosition=(0, 0, 2),
         carMass: float = 1500,
         wheelRadius: float = 0.3,
         wheelThickness: float = 0.2,
@@ -187,6 +193,7 @@ class CarGenerator(BaseGenerator):
         mujocoNode.find("worldbody").append(nodesDict['carBody'])
         mujocoNode.append(nodesDict['backWheelsTendon'])
         mujocoNode.append(nodesDict['carControls'])
+        mujocoNode.append(nodesDict['carSensors'])
         mujocoNode.insert(0, nodesDict["asset"])
         mujocoNode.insert(0, nodesDict["wheelAsset"])
 

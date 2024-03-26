@@ -47,10 +47,15 @@ listener.start()
 
 if __name__ == "__main__":
     env = CarParking.CarParkingEnv(render_mode="human")
+    np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
+    i = 0
     while True:
         observation, reward, terminated, truncated, info = env.step(
             current_action)
-        print(current_action)
+        if i % 200 == 0:
+            print(f"reward: {reward}")
+            print(f"obs: {observation}")
         env.render()
         if terminated or truncated:
             env.reset_model()
+        i += 1

@@ -54,7 +54,7 @@
                 </body>
             </body>
         </body>
-        <body name="target_space" pos="5 5 0" euler="0 0 45">
+        <body name="target_space" pos="5 5 0">
             <site name="parking_spot_center" type="cylinder" size="0.1 0.001" material="target_material" />
             <geom name="parking_area" type="box" size="1.4 0.85 0.001" pos="0 0 0" friction="1.0 0.005 0.0001" material="target_material" rgba="0 0 0 0" />
             <geom name="parking_edge_1" type="box" size="0.1 0.85 0.001" pos="1.2999999999999998 0 0" friction="1.0 0.005 0.0001" material="target_material" />

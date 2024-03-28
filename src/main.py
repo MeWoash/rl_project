@@ -16,3 +16,4 @@ if __name__ == "__main__":
                        n_envs=8, vec_env_cls=SubprocVecEnv)
     model = A2C("MlpPolicy", env, device="cpu")
     model.learn(total_timesteps=25_000)
+ 

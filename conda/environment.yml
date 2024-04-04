@@ -14,12 +14,14 @@ dependencies:
   - brotli-bin=1.1.0=hcfcfb64_1
   - brotli-python=1.1.0=py310h00ffb61_1
   - bzip2=1.0.8=hcfcfb64_5
+  - c-ares=1.28.1=hcfcfb64_0
   - ca-certificates=2024.2.2=h56e8100_0
   - cairo=1.18.0=h1fef639_0
   - certifi=2024.2.2=pyhd8ed1ab_0
   - cffi=1.16.0=py310h8d17308_0
   - charset-normalizer=3.3.2=pyhd8ed1ab_0
   - cloudpickle=3.0.0=pyhd8ed1ab_0
+  - colorama=0.4.6=pyhd8ed1ab_0
   - contourpy=1.2.0=py310h232114e_0
   - cryptography=42.0.5=py310h6e82f81_0
   - cuda=11.7.1=0
@@ -82,6 +84,7 @@ dependencies:
   - glib-tools=2.80.0=h0a98069_1
   - gmpy2=2.1.2=py310hf735c17_1
   - graphite2=1.3.14=hd77b12b_1
+  - grpcio=1.62.1=py310hb84602e_0
   - gym=0.21.0=py310hbbfc1a7_2
   - gym-box2d=0.21.0=py310h5588dad_2
   - gym-notices=0.0.8=pyhd8ed1ab_0
@@ -90,6 +93,7 @@ dependencies:
   - icu=73.2=h63175ca_0
   - idna=3.6=pyhd8ed1ab_0
   - imageio=2.34.0=pyh4b66e23_0
+  - importlib-metadata=7.1.0=pyha770c72_0
   - importlib_resources=6.4.0=pyhd8ed1ab_0
   - intel-openmp=2023.2.0=h57928b3_50497
   - jax-jumpy=1.0.0=pyhd8ed1ab_0
@@ -121,6 +125,7 @@ dependencies:
   - libffi=3.4.4=hd77b12b_0
   - libflac=1.4.3=h63175ca_0
   - libglib=2.80.0=h39d0aa6_1
+  - libgrpc=1.62.1=h5273850_0
   - libhwloc=2.9.3=default_haede6df_1009
   - libiconv=1.17=hcfcfb64_2
   - libjpeg-turbo=2.1.4=hcfcfb64_0
@@ -135,6 +140,8 @@ dependencies:
   - libogg=1.3.5=h2bbff1b_1
   - libopus=1.3.1=h8ffe710_1
   - libpng=1.6.43=h19919ed_0
+  - libprotobuf=4.25.3=h503648d_0
+  - libre2-11=2023.09.01=hf8d8778_2
   - libsqlite=3.45.2=hcfcfb64_0
   - libtiff=4.5.0=h8a3f274_0
   - libuv=1.48.0=hcfcfb64_0
@@ -151,8 +158,11 @@ dependencies:
   - m2w64-gcc-libs-core=5.3.0=7
   - m2w64-gmp=6.1.0=2
   - m2w64-libwinpthread-git=5.0.0.4634.697f757=2
+  - markdown=3.6=pyhd8ed1ab_0
+  - markdown-it-py=3.0.0=pyhd8ed1ab_0
   - markupsafe=2.1.5=py310h8d17308_0
   - matplotlib-base=3.8.3=py310hc9baf74_0
+  - mdurl=0.1.2=pyhd8ed1ab_0
   - mkl=2023.2.0=h6a75c08_50497
   - mkl-service=2.4.1=py310h49a50da_0
   - mkl_fft=1.3.8=py310h042f14a_1
@@ -181,10 +191,10 @@ dependencies:
   - packaging=24.0=pyhd8ed1ab_0
   - pandas=2.2.1=py310hecd3228_0
   - pcre2=10.43=h17e33f8_0
-  - pillow=10.2.0=py310h2bbff1b_0
   - pip=24.0=pyhd8ed1ab_0
   - pixman=0.43.4=h63175ca_0
   - portmidi=2.0.4=h63175ca_2
+  - protobuf=4.25.3=py310hf536535_0
   - pthread-stubs=0.4=hcd874cb_1001
   - pthreads-win32=2.9.1=hfa6e2cd_3
   - pybind11-abi=4=hd8ed1ab_3
@@ -192,6 +202,7 @@ dependencies:
   - pygame=2.2.0=py310hf962f48_0
   - pyglet=1.5.27=py310h5588dad_4
   - pyglfw=2.7.0=py310h5588dad_0
+  - pygments=2.17.2=pyhd8ed1ab_0
   - pynput=1.7.6=py310h5588dad_1
   - pyopengl=3.1.6=pyhd8ed1ab_1
   - pyopenssl=24.0.0=pyhd8ed1ab_0
@@ -208,7 +219,9 @@ dependencies:
   - pytz=2024.1=pyhd8ed1ab_0
   - pyyaml=6.0.1=py310h8d17308_1
   - qhull=2020.2=h70d2c02_2
+  - re2=2023.09.01=hd3b24a8_2
   - requests=2.31.0=pyhd8ed1ab_0
+  - rich=13.7.1=pyhd8ed1ab_0
   - sdl2=2.28.5=h63175ca_1
   - sdl2_image=2.6.3=h090e09f_0
   - sdl2_mixer=2.6.3=he8f0768_1
@@ -216,12 +229,15 @@ dependencies:
   - setuptools=69.2.0=pyhd8ed1ab_0
   - six=1.16.0=pyh6c4a22f_0
   - sqlite=3.45.2=hcfcfb64_0
-  - stable-baselines3=2.2.1=pyhd8ed1ab_0
+  - stable-baselines3=2.3.0=pyhd8ed1ab_0
   - svt-av1=1.4.1=h63175ca_0
   - sympy=1.12=pyh04b8f61_3
   - tbb=2021.11.0=h91493d7_1
+  - tensorboard=2.16.2=pyhd8ed1ab_0
+  - tensorboard-data-server=0.7.0=py310h5588dad_1
   - tinyxml2=10.0.0=h63175ca_0
   - tk=8.6.13=h5226925_1
+  - tqdm=4.66.2=pyhd8ed1ab_0
   - typing-extensions=4.10.0=hd8ed1ab_0
   - typing_extensions=4.10.0=pyha770c72_0
   - tzdata=2024a=h0c530f3_0
@@ -231,6 +247,7 @@ dependencies:
   - vc=14.3=hcf57466_18
   - vc14_runtime=14.38.33130=h82b7239_18
   - vs2015_runtime=14.38.33130=hcb4865c_18
+  - werkzeug=3.0.2=pyhd8ed1ab_0
   - wheel=0.43.0=pyhd8ed1ab_1
   - win_inet_pton=1.1.0=pyhd8ed1ab_6
   - x264=1!164.3095=h8ffe710_2
@@ -245,6 +262,7 @@ dependencies:
   - pip:
       - fsspec==2023.12.2
       - opencv-python==4.9.0.80
+      - pillow==10.3.0
       - torchaudio==2.1.2
       - torchvision==0.16.2
 prefix: C:\Users\zubi1\anaconda3\envs\rl_project

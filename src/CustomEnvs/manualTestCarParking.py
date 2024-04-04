@@ -57,5 +57,5 @@ if __name__ == "__main__":
             print(f"obs: {observation}")
         env.render()
         if terminated or truncated:
-            env.reset_model()
+            env.reset()
         i += 1

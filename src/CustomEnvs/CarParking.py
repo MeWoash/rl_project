@@ -12,16 +12,23 @@ from typing import Dict, Tuple, Union
 import sys
 import os
 import math
-import matplotlib.pyplot as plt
 
+from enum import IntEnum
 
 SELF_DIR = Path(__file__).parent.resolve()
 XML_FOLDER = SELF_DIR.joinpath("../xmls")
 MODEL_PATH = os.path.join(str(XML_FOLDER), "generated.xml")
 
+MAP_SIZE = (20, 20, 20, 5)
+
 
 WHEEL_ANGLE_RANGE = (-45, 45)
 CAR_NAME = "mainCar"
+
+
+class ObsIndex(IntEnum):
+    DISTANCE = 0
+    ANGLE_DIFF = 1
 
 
 def quat_to_euler(quat):
@@ -65,9 +72,11 @@ class CarParkingEnv(gymnasium.Env):
         # TODO CAMERA SETTINGS
         self.camera_name = None
         self.camera_id = None
+        self.init_obs = None
 
         self._initialize_simulation()
         self._set_default_action_space()
+        self._set_default_observation_space()
 
     def _set_default_action_space(self):
 
@@ -85,6 +94,20 @@ class CarParkingEnv(gymnasium.Env):
 
         self.action_space = Box(low=low, high=high, dtype=np.float64)
         return self.action_space
+
+    def _set_default_observation_space(self):
+
+        maxDistanceToTarget = math.sqrt(MAP_SIZE[2]**2 +
+                                        math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2))
+
+        distRange = np.array([0, maxDistanceToTarget])
+        angleDiff = np.array([-np.pi, np.pi])
+
+        low = np.array([distRange[0], angleDiff[0]])
+        high = np.array([distRange[1], angleDiff[1]])
+
+        self.observation_space = Box(low=low, high=high, dtype=np.float64)
+        return self.observation_space
 
     def _initialize_simulation(self):
         # source MujocoEnv
@@ -130,15 +153,40 @@ class CarParkingEnv(gymnasium.Env):
         self._do_simulation(self.frame_skip)
 
         observation = self._get_obs()
-        reward = 1/observation[0]
 
+        if self.init_obs is None:
+            self.init_obs = observation
+
+        reward = self._calculate_reward(observation)
+
+        terminated = self._check_terminate_condition(observation)
+        truncated = self._check_truncated_condition(observation)
+
+        self.prev_obs = observation
+
+        info = {}
+        renderRetVal = self.render()
+
+        return observation, reward, terminated, truncated, info
+
+    def _calculate_reward(self, observation):
+        reward = 10/observation[0]
+        return reward
+
+    def _check_terminate_condition(self, observation):
         terminated = False
-        if observation[0] <= 0.1 and observation[4] <= math.radians(5):
+        if observation[0] <= 0.1 and \
+                math.radians(-5) <= observation[1] <= math.radians(5):
             terminated = True
 
-        info = ""
+        return terminated
 
-        return observation, reward, terminated, False, info
+    def _check_truncated_condition(self, observation):
+        truncated = False
+
+        if observation[0] > self.init_obs[0]*1.1 or self.data.time > 10:
+            truncated = True
+        return truncated
 
     def _get_obs(self):
         # carPositionGlobal = self.data.sensor('mainCar_posGlobal_sensor').data
@@ -152,17 +200,17 @@ class CarParkingEnv(gymnasium.Env):
         targetQuat = self.data.body('target_space').xquat
         targetroll_x, targetpitch_y, targetyaw_z = quat_to_euler(targetQuat)
 
-        angleDiff = abs(targetyaw_z-yaw_z)
+        angleDiff = yaw_z - targetyaw_z
 
         observation = np.array(
-            (distToTarget, roll_x, pitch_y, yaw_z, angleDiff))
+            (distToTarget, angleDiff))
         return observation
 
-    def reset_model(self):
+    def reset(self, **kwargs):
         self._reset_simulation()
 
         observation = self._get_obs()
-        return observation
+        return observation, {}
 
 
 if __name__ == "__main__":

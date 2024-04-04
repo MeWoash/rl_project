@@ -18,11 +18,9 @@ def on_press(key):
         elif key == keyboard.Key.down:
             current_action[0] = -1.0
         if key == keyboard.Key.left:
-            current_action[1] = math.radians(
-                CarParking.WHEEL_ANGLE_RANGE[0])
+            current_action[1] = -1
         elif key == keyboard.Key.right:
-            current_action[1] = math.radians(
-                CarParking.WHEEL_ANGLE_RANGE[1])
+            current_action[1] = 1
     except BaseException as e:
         print(e)
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from tabnanny import check
 import numpy as np
 
 import gymnasium
@@ -20,15 +21,23 @@ XML_FOLDER = SELF_DIR.joinpath("../xmls")
 MODEL_PATH = os.path.join(str(XML_FOLDER), "generated.xml")
 
 MAP_SIZE = (20, 20, 20, 5)
+MAX_X_Y_DIST = math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2)
+MAX_X_Y_Z_DIST = math.sqrt(MAP_SIZE[2]**2 +
+                           math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2))
 
 
-WHEEL_ANGLE_RANGE = (-45, 45)
+WHEEL_ANGLE_RANGE = (math.radians(-45), math.radians(45))
 CAR_NAME = "mainCar"
 
 
 class ObsIndex(IntEnum):
     DISTANCE = 0
     ANGLE_DIFF = 1
+
+
+def normalize_data(x, dst_a, dst_b, min_x=-1, max_x=1):
+    normalized = dst_a + ((x - min_x)*(dst_b-dst_a))/(max_x-min_x)
+    return normalized
 
 
 def quat_to_euler(quat):
@@ -72,7 +81,7 @@ class CarParkingEnv(gymnasium.Env):
         # TODO CAMERA SETTINGS
         self.camera_name = None
         self.camera_id = None
-        self.init_obs = None
+        self.prev_obs = None
 
         self._initialize_simulation()
         self._set_default_action_space()
@@ -84,8 +93,8 @@ class CarParkingEnv(gymnasium.Env):
             [-1,
              1])
         wheelAngleCtrlRange = np.array(
-            [math.radians(WHEEL_ANGLE_RANGE[0]),
-             math.radians(WHEEL_ANGLE_RANGE[1])])
+            [-1,
+             1])
 
         low = np.array(
             [engineCtrlRange[0], wheelAngleCtrlRange[0]])
@@ -97,8 +106,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _set_default_observation_space(self):
 
-        maxDistanceToTarget = math.sqrt(MAP_SIZE[2]**2 +
-                                        math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2))
+        maxDistanceToTarget = MAX_X_Y_DIST
 
         distRange = np.array([0, maxDistanceToTarget])
         angleDiff = np.array([-np.pi, np.pi])
@@ -133,7 +141,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _apply_forces(self, action=None):
         enginePowerCtrl = action[0]
-        wheelsAngleCtrl = action[1]
+        wheelsAngleCtrl = normalize_data(action[1], *WHEEL_ANGLE_RANGE)
 
         self.data.actuator(f"{CAR_NAME}_engine_power").ctrl = enginePowerCtrl
         self.data.actuator(f"{CAR_NAME}_wheel1_angle").ctrl = wheelsAngleCtrl
@@ -152,40 +160,55 @@ class CarParkingEnv(gymnasium.Env):
         self._apply_forces(action)
         self._do_simulation(self.frame_skip)
 
-        observation = self._get_obs()
+        self.observation = self._get_obs()
+        if self.prev_obs is None:
+            self.prev_obs = self.observation
 
-        if self.init_obs is None:
-            self.init_obs = observation
+        self.reward = self._calculate_reward()
 
-        reward = self._calculate_reward(observation)
+        self.terminated = self._check_terminate_condition()
+        self.truncated = self._check_truncated_condition()
 
-        terminated = self._check_terminate_condition(observation)
-        truncated = self._check_truncated_condition(observation)
-
-        self.prev_obs = observation
-
-        info = {}
+        self.info = {}
         renderRetVal = self.render()
 
-        return observation, reward, terminated, truncated, info
+        self.prev_obs = self.observation
+        # print(self.reward)
+        return self.observation, self.reward, self.terminated, self.truncated, self.info
 
-    def _calculate_reward(self, observation):
-        reward = 10/observation[0]
+    def _calculate_reward(self):
+
+        normdist = normalize_data(
+            self.observation[0], 0, 1, 0, MAX_X_Y_DIST)
+        total_dist_reward = 1 - normdist
+
+        normangle = normalize_data(abs(self.observation[1]), 0, 0.05, 0, np.pi)
+        total_angle_reward = 0.1 - normangle
+
+        distance_improvement_reward = 0.1 if self.prev_obs[0] > self.observation[0] else 0
+        angle_improvement_reward = 0.01 if abs(self.prev_obs[1]) > abs(
+            self.observation[1]) else 0
+
+        # print(total_dist_reward, "\t\t", total_angle_reward)
+
+        reward = total_dist_reward + total_angle_reward + \
+            distance_improvement_reward + angle_improvement_reward
         return reward
 
-    def _check_terminate_condition(self, observation):
+    def _check_terminate_condition(self):
         terminated = False
-        if observation[0] <= 0.1 and \
-                math.radians(-5) <= observation[1] <= math.radians(5):
+        if self.observation[0] <= 0.1 and \
+                math.radians(-5) <= self.observation[1] <= math.radians(5):
             terminated = True
-
+        self.reward += 1000
         return terminated
 
-    def _check_truncated_condition(self, observation):
+    def _check_truncated_condition(self):
         truncated = False
 
-        if observation[0] > self.init_obs[0]*1.1 or self.data.time > 10:
+        if self.data.time > 10:
             truncated = True
+        self.reward -= 100
         return truncated
 
     def _get_obs(self):
@@ -208,7 +231,6 @@ class CarParkingEnv(gymnasium.Env):
 
     def reset(self, **kwargs):
         self._reset_simulation()
-
         observation = self._get_obs()
         return observation, {}
 
@@ -216,8 +238,5 @@ class CarParkingEnv(gymnasium.Env):
 if __name__ == "__main__":
     env = CarParkingEnv(render_mode="human")
 
-    while True:
-        action = env.action_space.sample()
-        observation, reward, terminated, truncated, info = env.step(action)
-        # print(action)
-        env.render()
+    from stable_baselines3.common.env_checker import check_env
+    check_env(env)

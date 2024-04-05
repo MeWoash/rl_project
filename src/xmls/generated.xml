@@ -28,7 +28,7 @@
         <light dir="0.6963106238227914 0.6963106238227914 0.17407765595569785" pos="-10.0 -10.0 2.5" diffuse="0.3 0.3 0.3" castshadow="false" />
         <light dir="-0.6963106238227914 0.6963106238227914 0.17407765595569785" pos="10.0 -10.0 2.5" diffuse="0.3 0.3 0.3" castshadow="false" />
         <camera name="TopDownCam" pos="0 0 9.999999999999998" euler="0 0 -90" fovy="90" />
-        <body name="mainCar" pos="0 0 2">
+        <body name="mainCar" pos="0 0 0.3625">
             <freejoint />
             <site name="mainCar_center" type="cylinder" size="0.1 0.001" />
             <body name="mainCar_front_lights" pos="1.0 0 0" />

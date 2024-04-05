@@ -63,8 +63,8 @@ def sampleWorldCreation() -> MujocoXMLGenerator:
     cameraGenerator.attachToMujoco(generator.root)
 
     # CAR
-    carPos = (0, 0, )
-    carGenerator = CarGenerator("mainCar", *CAR_SIZE, )
+    carPos = (0, 0, 0.3 + CAR_SIZE[2] * 0.25)
+    carGenerator = CarGenerator("mainCar", *CAR_SIZE, carPosition=carPos)
     carGenerator.attachToMujoco(generator.root)
 
     # TARGET - PARKING SPOT

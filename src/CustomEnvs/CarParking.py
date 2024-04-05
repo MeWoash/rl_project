@@ -98,7 +98,7 @@ class CarParkingEnv(gymnasium.Env):
         self.fullpath = xml_file
         self.render_mode = render_mode
         self.frame_skip = frame_skip
-        self.step_velocity_not_low = None
+        self.time_velocity_not_low = None
 
         # TODO CAMERA SETTINGS
         self.camera_name = None
@@ -241,10 +241,10 @@ class CarParkingEnv(gymnasium.Env):
         truncated = False
 
         if abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.1:
-            self.step_velocity_not_low = self.data.step
+            self.time_velocity_not_low = self.data.time
 
-        if self.step_velocity_not_low is not None:
-            if self.step_velocity_not_low*self.model.opt.timestep >= 2:
+        if self.time_velocity_not_low is not None:
+            if self.data.time - self.time_velocity_not_low >= 5:
                 truncated = True
 
         if self.data.time > 30:
@@ -291,7 +291,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def reset(self, **kwargs):
         self._reset_simulation()
-        self.step_velocity_not_low = None
+        self.time_velocity_not_low = None
         observation = self._get_obs()
         return observation, {}
 

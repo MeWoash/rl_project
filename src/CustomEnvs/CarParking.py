@@ -101,7 +101,7 @@ class CarParkingEnv(gymnasium.Env):
         high = np.array(
             [engineCtrlRange[1], wheelAngleCtrlRange[1]])
 
-        self.action_space = Box(low=low, high=high, dtype=np.float64)
+        self.action_space = Box(low=low, high=high, dtype=np.float32)
         return self.action_space
 
     def _set_default_observation_space(self):
@@ -114,7 +114,7 @@ class CarParkingEnv(gymnasium.Env):
         low = np.array([distRange[0], angleDiff[0]])
         high = np.array([distRange[1], angleDiff[1]])
 
-        self.observation_space = Box(low=low, high=high, dtype=np.float64)
+        self.observation_space = Box(low=low, high=high, dtype=np.float32)
         return self.observation_space
 
     def _initialize_simulation(self):
@@ -226,7 +226,7 @@ class CarParkingEnv(gymnasium.Env):
         angleDiff = yaw_z - targetyaw_z
 
         observation = np.array(
-            (distToTarget, angleDiff))
+            (distToTarget, angleDiff), dtype=np.float32)
         return observation
 
     def reset(self, **kwargs):

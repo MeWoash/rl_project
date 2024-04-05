@@ -43,5 +43,5 @@ def test_vec_env(preset):
 
 
 if __name__ == "__main__":
-    test_vec_env(A2C_PRESET)
-    # test_env(SAC_PRESET)
+    # test_vec_env(A2C_PRESET)
+    test_env(TD3_PRESET)

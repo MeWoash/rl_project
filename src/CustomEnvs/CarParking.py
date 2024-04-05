@@ -1,5 +1,6 @@
 from pathlib import Path
 from tabnanny import check
+from traceback import print_tb
 import numpy as np
 
 import gymnasium
@@ -24,10 +25,12 @@ MAP_SIZE = (20, 20, 20, 5)
 MAX_X_Y_DIST = math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2)
 MAX_X_Y_Z_DIST = math.sqrt(MAP_SIZE[2]**2 +
                            math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2))
+MAX_SENSOR_VAL = 5
 
 
 WHEEL_ANGLE_RANGE = (math.radians(-45), math.radians(45))
 CAR_NAME = "mainCar"
+N_RANGE_SENSORS = 8
 
 
 class ObsIndex(IntEnum):
@@ -106,15 +109,23 @@ class CarParkingEnv(gymnasium.Env):
 
     def _set_default_observation_space(self):
 
-        maxDistanceToTarget = MAX_X_Y_DIST
+        carSpeedRange = np.array([-10, 10]).reshape(2, 1)
+        distRange = np.array([0, MAX_X_Y_DIST]).reshape(2, 1)
+        angleDiff = np.array([-np.pi, np.pi]).reshape(2, 1)
+        contactRange = np.array([0, MAX_SENSOR_VAL]).reshape(2, 1)
+        range_sensorsRange = np.tile(
+            np.array([0, MAX_SENSOR_VAL]).reshape(2, 1), (1, N_RANGE_SENSORS))
+        carPositionGlobalRange = np.array(
+            [[-MAP_SIZE[0]/2, -MAP_SIZE[1]/2, 0],
+             [MAP_SIZE[0]/2, -MAP_SIZE[1]/2, MAP_SIZE[2]]])
+        car_eulerRange = np.tile(
+            np.array([-np.pi, np.pi]).reshape(2, 1), (1, 3))
 
-        distRange = np.array([0, maxDistanceToTarget])
-        angleDiff = np.array([-np.pi, np.pi])
+        boundMatrix = np.hstack(
+            [carSpeedRange, distRange, angleDiff, contactRange, range_sensorsRange, carPositionGlobalRange, car_eulerRange])
 
-        low = np.array([distRange[0], angleDiff[0]])
-        high = np.array([distRange[1], angleDiff[1]])
-
-        self.observation_space = Box(low=low, high=high, dtype=np.float32)
+        self.observation_space = Box(
+            low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)
         return self.observation_space
 
     def _initialize_simulation(self):
@@ -200,7 +211,7 @@ class CarParkingEnv(gymnasium.Env):
         if self.observation[0] <= 0.1 and \
                 math.radians(-5) <= self.observation[1] <= math.radians(5):
             terminated = True
-        self.reward += 1000
+            self.reward += 1000
         return terminated
 
     def _check_truncated_condition(self):
@@ -208,25 +219,42 @@ class CarParkingEnv(gymnasium.Env):
 
         if self.data.time > 10:
             truncated = True
-        self.reward -= 100
+            self.reward -= 100
+        elif self.data.sensor(f"{CAR_NAME}_chassis_touch_sensor").data[0] > 0:
+            truncated = True
         return truncated
 
     def _get_obs(self):
-        # carPositionGlobal = self.data.sensor('mainCar_posGlobal_sensor').data
-        carPositionParking = self.data.sensor('mainCar_posTarget_sensor').data
+        carPositionGlobal = self.data.sensor(
+            f'{CAR_NAME}_posGlobal_sensor').data
+
+        carPositionParking = self.data.sensor(
+            f'{CAR_NAME}_posTarget_sensor').data
+
+        carSpeed = self.data.sensor(f'{CAR_NAME}_speed_sensor').data[0]
+
+        range_sensors = []
+        for i in range(N_RANGE_SENSORS):
+            range_sensors.append(self.data.sensor(
+                f'mainCar_sensor_{i}').data[0])
 
         distToTarget = np.linalg.norm(carPositionParking[:1])
 
-        carQuat = self.data.body('mainCar').xquat
-        roll_x, pitch_y, yaw_z = quat_to_euler(carQuat)
+        contact_data = self.data.sensor(
+            f"{CAR_NAME}_chassis_touch_sensor").data[0]
+
+        carQuat = self.data.body(CAR_NAME).xquat
+        # roll_x, pitch_y, yaw_z
+        car_euler = quat_to_euler(carQuat)
 
         targetQuat = self.data.body('target_space').xquat
-        targetroll_x, targetpitch_y, targetyaw_z = quat_to_euler(targetQuat)
+        # targetroll_x, targetpitch_y, targetyaw_z
+        target_euler = quat_to_euler(targetQuat)
 
-        angleDiff = yaw_z - targetyaw_z
+        angleDiff = car_euler[2] - target_euler[2]
 
         observation = np.array(
-            (distToTarget, angleDiff), dtype=np.float32)
+            [carSpeed, distToTarget, angleDiff, contact_data, *range_sensors, *carPositionGlobal, *car_euler], dtype=np.float32)
         return observation
 
     def reset(self, **kwargs):

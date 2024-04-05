@@ -4,7 +4,7 @@ import numpy as np
 import gymnasium
 from gymnasium.spaces import Box
 import math
-import CarParking
+from CarParking import CarParkingEnv, ObsIndex
 
 
 current_action = np.array([0.0, 0.0])
@@ -45,25 +45,25 @@ listener.start()
 
 def describe_obs(obs):
     d = f"""
-speed:      {obs[0]}    
-dist:       {obs[1]}
-adiff:      {obs[2]}
-contact:    {obs[3]}
-range:      {obs[4:11]}
-pos:        {obs[12:15]}
-eul:        {obs[16:]}"""
+speed:      {obs[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}    
+dist:       {obs[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}
+adiff:      {obs[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}
+contact:    {obs[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}
+range:      {obs[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}
+pos:        {obs[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}
+eul:        {obs[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"""
 
     return d
 
 
 if __name__ == "__main__":
-    env = CarParking.CarParkingEnv(render_mode="human")
+    env = CarParkingEnv(render_mode="human")
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
     i = 0
     while True:
         observation, reward, terminated, truncated, info = env.step(
             current_action)
-        if i % 200 == 0:
+        if i % 50 == 0:
             described = describe_obs(observation)
             print(described)
             print(f"reward: {reward}")

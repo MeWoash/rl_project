@@ -24,7 +24,7 @@ A2C_PRESET = {
         },
     "learnModelArgs":
         {
-            "n_steps": 100_000
+            "n_steps": 1_000_000
         }
 }
 
@@ -50,7 +50,7 @@ SAC_PRESET = {
         },
     "learnModelArgs":
         {
-            "n_steps": 100_000
+            "n_steps": 250_000
         }
 }
 

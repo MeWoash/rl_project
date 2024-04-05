@@ -63,7 +63,8 @@ def sampleWorldCreation() -> MujocoXMLGenerator:
     cameraGenerator.attachToMujoco(generator.root)
 
     # CAR
-    carGenerator = CarGenerator("mainCar", *CAR_SIZE)
+    carPos = (0, 0, 0.3 + CAR_SIZE[2] * 0.25)
+    carGenerator = CarGenerator("mainCar", *CAR_SIZE, carPosition=carPos)
     carGenerator.attachToMujoco(generator.root)
 
     # TARGET - PARKING SPOT
@@ -78,4 +79,4 @@ def sampleWorldCreation() -> MujocoXMLGenerator:
 if __name__ == "__main__":
 
     generator: MujocoXMLGenerator = sampleWorldCreation()
-    # generator.runSimulation()
+    generator.runSimulation()

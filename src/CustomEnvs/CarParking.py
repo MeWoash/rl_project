@@ -34,8 +34,26 @@ N_RANGE_SENSORS = 8
 
 
 class ObsIndex(IntEnum):
-    DISTANCE = 0
-    ANGLE_DIFF = 1
+    VELOCITY_BEGIN = 0
+    VELOCITY_END = 0
+
+    DISTANCE_BEGIN = 1
+    DISTANCE_END = 1
+
+    ANGLE_DIFF_BEGIN = 2
+    ANGLE_DIFF_END = 2
+
+    CONTACT_BEGIN = 3
+    CONTACT_END = 3
+
+    RANGE_BEGIN = 4
+    RANGE_END = 11
+
+    POS_BEGIN = 12
+    POS_END = 14
+
+    EUL_BEGIN = 15
+    EUL_END = 17
 
 
 def normalize_data(x, dst_a, dst_b, min_x=-1, max_x=1):
@@ -80,6 +98,7 @@ class CarParkingEnv(gymnasium.Env):
         self.fullpath = xml_file
         self.render_mode = render_mode
         self.frame_skip = frame_skip
+        self.time_velocity_not_low = None
 
         # TODO CAMERA SETTINGS
         self.camera_name = None
@@ -117,7 +136,7 @@ class CarParkingEnv(gymnasium.Env):
             np.array([0, MAX_SENSOR_VAL]).reshape(2, 1), (1, N_RANGE_SENSORS))
         carPositionGlobalRange = np.array(
             [[-MAP_SIZE[0]/2, -MAP_SIZE[1]/2, 0],
-             [MAP_SIZE[0]/2, -MAP_SIZE[1]/2, MAP_SIZE[2]]])
+             [MAP_SIZE[0]/2, MAP_SIZE[1]/2, MAP_SIZE[2]]])
         car_eulerRange = np.tile(
             np.array([-np.pi, np.pi]).reshape(2, 1), (1, 3))
 
@@ -190,26 +209,30 @@ class CarParkingEnv(gymnasium.Env):
     def _calculate_reward(self):
 
         normdist = normalize_data(
-            self.observation[0], 0, 1, 0, MAX_X_Y_DIST)
+            self.observation[ObsIndex.DISTANCE_BEGIN], 0, 1, 0, MAX_X_Y_DIST)
         total_dist_reward = 1 - normdist
 
-        normangle = normalize_data(abs(self.observation[1]), 0, 0.05, 0, np.pi)
-        total_angle_reward = 0.1 - normangle
+        negative_velocity_punish = 0
+        if self.observation[ObsIndex.VELOCITY_BEGIN] <= -0.5:
+            negative_velocity_punish = -0.5
 
-        distance_improvement_reward = 0.1 if self.prev_obs[0] > self.observation[0] else 0
-        angle_improvement_reward = 0.01 if abs(self.prev_obs[1]) > abs(
-            self.observation[1]) else 0
+        # normangle = normalize_data(abs(self.observation[1]), 0, 0.05, 0, np.pi)
+        # total_angle_reward = 0.1 - normangle
+
+        # distance_improvement_reward = 0.1 if self.prev_obs[0] > self.observation[0] else 0
+        # angle_improvement_reward = 0.01 if abs(self.prev_obs[1]) > abs(
+        #     self.observation[1]) else 0
 
         # print(total_dist_reward, "\t\t", total_angle_reward)
 
-        reward = total_dist_reward + total_angle_reward + \
-            distance_improvement_reward + angle_improvement_reward
+        reward = total_dist_reward + negative_velocity_punish
         return reward
 
     def _check_terminate_condition(self):
         terminated = False
-        if self.observation[0] <= 0.1 and \
-                math.radians(-5) <= self.observation[1] <= math.radians(5):
+        if self.observation[ObsIndex.DISTANCE_BEGIN] <= 0.25 \
+                and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) <= 0.1 \
+                and math.radians(-5) <= self.observation[ObsIndex.ANGLE_DIFF_BEGIN] <= math.radians(10):
             terminated = True
             self.reward += 1000
         return terminated
@@ -217,11 +240,20 @@ class CarParkingEnv(gymnasium.Env):
     def _check_truncated_condition(self):
         truncated = False
 
-        if self.data.time > 10:
+        if abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.1:
+            self.time_velocity_not_low = self.data.time
+
+        if self.time_velocity_not_low is not None:
+            if self.data.time - self.time_velocity_not_low >= 5:
+                truncated = True
+
+        if self.data.time > 30:
             truncated = True
+        elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
+            truncated = True
+
+        if truncated:
             self.reward -= 100
-        elif self.data.sensor(f"{CAR_NAME}_chassis_touch_sensor").data[0] > 0:
-            truncated = True
         return truncated
 
     def _get_obs(self):
@@ -259,6 +291,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def reset(self, **kwargs):
         self._reset_simulation()
+        self.time_velocity_not_low = None
         observation = self._get_obs()
         return observation, {}
 

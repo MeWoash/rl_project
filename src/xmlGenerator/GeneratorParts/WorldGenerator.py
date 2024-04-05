@@ -31,7 +31,7 @@ class WorldGenerator(BaseGenerator):
                 <texture name="sky_texture" type="skybox" file="assets/Wispy_Sky-Night_03-512x512.png"/>
 
                 <texture name="wall_texture" type="2d" file="assets/Fuzzy_Sky-Night_01-512x512.png"/>
-                <material name="wall_material" rgba = "0 0 0 0"/>
+                <material name="wall_material" rgba = "1 1 1 0.000001"/>
 
                 <texture name="ground_texture" type="2d" file="assets/ground.png"/>
                 <material name="ground_material" texture="ground_texture" texrepeat="25 25"/>
@@ -39,7 +39,7 @@ class WorldGenerator(BaseGenerator):
             </asset>""",
 
         "ground": '<geom name="{ground_name}_bottom" type="plane" size="{board_size}" material="ground_material" friction="1.0 0.005 0.0001"/>',
-        "top": '<geom name="{ground_name}_top" type="box" size="{board_size}" pos="{top_pos}" material="wall_material"/>',
+        "top": '<geom name="{ground_name}_top" type="box" size="{board_size}" pos="{top_pos}" rgba="0 0 0 0"/>',
         "wall1": '<geom name="{ground_name}_left" type="box" size="{wall1_size}" pos="{wall1_pos}" material="wall_material"/>',
         "wall2": '<geom name="{ground_name}_right" type="box" size="{wall2_size}" pos="{wall2_pos}" material="wall_material"/>',
         "wall3": '<geom name="{ground_name}_front" type="box" size="{wall3_size}" pos="{wall3_pos}" material="wall_material"/>',
@@ -57,7 +57,7 @@ class WorldGenerator(BaseGenerator):
                  xlen: float,
                  ylen: float,
                  hlen: float,
-                 tlen: float = 0.1) -> None:
+                 tlen: float = 5) -> None:
         super().__init__()
         self.name: str = name
         self.xlen = xlen

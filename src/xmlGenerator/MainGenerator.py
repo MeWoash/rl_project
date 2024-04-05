@@ -78,4 +78,4 @@ def sampleWorldCreation() -> MujocoXMLGenerator:
 if __name__ == "__main__":
 
     generator: MujocoXMLGenerator = sampleWorldCreation()
-    generator.runSimulation()
+    # generator.runSimulation()

@@ -43,6 +43,19 @@ listener = keyboard.Listener(on_press=on_press, on_release=on_release)
 listener.start()
 
 
+def describe_obs(obs):
+    d = f"""
+speed:      {obs[0]}    
+dist:       {obs[1]}
+adiff:      {obs[2]}
+contact:    {obs[3]}
+range:      {obs[4:11]}
+pos:        {obs[12:15]}
+eul:        {obs[16:]}"""
+
+    return d
+
+
 if __name__ == "__main__":
     env = CarParking.CarParkingEnv(render_mode="human")
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
@@ -51,8 +64,9 @@ if __name__ == "__main__":
         observation, reward, terminated, truncated, info = env.step(
             current_action)
         if i % 200 == 0:
+            described = describe_obs(observation)
+            print(described)
             print(f"reward: {reward}")
-            print(f"obs: {observation}")
         env.render()
         if terminated or truncated:
             env.reset()

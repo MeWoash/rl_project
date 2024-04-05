@@ -1,8 +1,11 @@
 import math
+from platform import node
 import xml.etree.ElementTree as ET
 from GeneratorBaseClass import BaseGenerator
 from WheelGenerator import WheelGenerator
 from typing import Dict, Tuple
+
+import numpy as np
 
 
 class CarGenerator(BaseGenerator):
@@ -20,6 +23,7 @@ class CarGenerator(BaseGenerator):
             <body name="{car_name}_front_lights"  pos="{car_front_lights_pos}"></body>
             <body name="{car_name}_chassis">
                 <geom name="{car_name}_chassis_geom" material="{car_name}_chassis_material" type="box" size="{car_size}" mass="{car_mass}"/>
+                <site name="{car_name}_chassis_site" type="box" size="{car_size}" rgba="0 0 0 0"/>
                 <!-- WHEELS HERE -->
             </body>
         </body>""",
@@ -41,6 +45,8 @@ class CarGenerator(BaseGenerator):
 
         "carSensors": """\
             <sensor>
+                <touch name="{car_name}_chassis_touch_sensor" site="{car_name}_chassis_site" cutoff="{max_sensor_val}"/>
+                <velocimeter name="{car_name}_speed_sensor" site="{car_name}_center" cutoff="10"/>
                 <framepos name="{car_name}_posGlobal_sensor" objtype="site" objname="{car_name}_center"/>
                 <framepos name="{car_name}_posTarget_sensor" objtype="site" objname="{car_name}_center" reftype="site" refname="parking_spot_center"/>
             </sensor>"""
@@ -101,6 +107,7 @@ class CarGenerator(BaseGenerator):
         self.wheelMountHeight: float = wheelMountHeight
         self.lightsSpacing: float = lightsSpacing
         self.carChassisColorRGBA = (0.8, 0.102, 0.063, 1)
+        self.maxSensorVal = 5
         self._calculateProperties()
 
     def _calculateProperties(self) -> None:
@@ -130,7 +137,8 @@ class CarGenerator(BaseGenerator):
             "car_front_lights_pos": f"{chassisXSize} 0 0",
             "car_front_right_light_pos": f"0 {-chassisYsize * self.lightsSpacing} 0",
             "car_front_left_light_pos": f"0 {chassisYsize * self.lightsSpacing} 0",
-            "wheel_control_angle_range": f"{wheelControlRange[0]} {wheelControlRange[1]}"
+            "wheel_control_angle_range": f"{wheelControlRange[0]} {wheelControlRange[1]}",
+            "max_sensor_val": f"{self.maxSensorVal}"
         }
 
     def generateNodes(self) -> Dict[str, ET.Element]:
@@ -141,7 +149,48 @@ class CarGenerator(BaseGenerator):
             list: List of nodes.
         """
         nodeDict: Dict[str, ET.Element] = super().generateNodes()
+        self.addWheels(nodeDict)
+        self.addRangeSensors(nodeDict)
 
+        return nodeDict
+
+    def addRangeSensors(self, nodeDict):
+        carBody: ET.Element = nodeDict["carBody"]
+        carSensors: ET.Element = nodeDict["carSensors"]
+
+        chassisXSize = self.chassisLength / 2
+        chassisYsize = self.chassisWidth / 2
+        chassisZsize = self.chassisHeight / 2
+        sensor_size = (1e-6, 1e-6)
+        sensor_pos_scale_factor = 1e-3
+
+        zaxis = np.array([
+            [chassisXSize, chassisYsize, 0],
+            [chassisXSize, 0, 0],
+            [chassisXSize, -chassisYsize, 0],
+            [-chassisXSize, chassisYsize, 0],
+            [-chassisXSize, 0, 0],
+            [-chassisXSize, -chassisYsize, 0],
+            [0, chassisYsize, 0],
+            [0, -chassisYsize, 0],
+
+        ])
+
+        for index, _zaxis in enumerate(zaxis):
+            _zaxis = _zaxis + _zaxis*sensor_pos_scale_factor
+            sensor_site_name = f"{self.carName}_sensor_site_{index}"
+            sensor_site = ET.fromstring(
+                f"""<site name="{sensor_site_name}" type="sphere" size="{sensor_size[0]} {sensor_size[1]}"
+                pos="{_zaxis[0]} {_zaxis[1]} {_zaxis[2]}"
+                zaxis="{_zaxis[0]} {_zaxis[1]} {_zaxis[2]}"/>""")
+
+            sensor = ET.fromstring(
+                f"""<rangefinder name="{self.carName}_sensor_{index}" site="{sensor_site_name}" cutoff="{self.maxSensorVal}"/>""")
+
+            carBody.append(sensor_site)
+            carSensors.append(sensor)
+
+    def addWheels(self, nodeDict):
         carChassis: ET.Element = nodeDict["carBody"].find(
             f".//body[@name='{self.carName}_chassis']")
 
@@ -185,8 +234,6 @@ class CarGenerator(BaseGenerator):
             .generateNodes()['wheelNode']
         )
         nodeDict['wheelAsset'] = wheelGen.generateNodes()['wheelAsset']
-
-        return nodeDict
 
     def attachToMujoco(self, mujocoNode: ET.Element) -> None:
         nodesDict: Dict[str, ET.Element] = self.generateNodes()

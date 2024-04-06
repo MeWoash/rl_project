@@ -7,8 +7,23 @@ import matplotlib.pyplot as plt
 
 from ModelTools.ModelWrapper import ModelWrapper
 from ModelTools.ModelPresets import *
+from CustomEnvs.CarParking import CarParkingEnv, ObsIndex
+import numpy as np
 
 MODEL_DIR = Path(__file__).parent.joinpath("../out/models").resolve()
+
+
+def describe_obs(obs):
+    d = f"""
+speed:      {obs[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}    
+dist:       {obs[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}
+adiff:      {obs[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}
+contact:    {obs[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}
+range:      {obs[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}
+pos:        {obs[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}
+eul:        {obs[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"""
+
+    return d
 
 
 def test_env(preset):
@@ -21,13 +36,17 @@ def test_env(preset):
     terminated = False
     observation, info = modelWrapper.env.reset()
 
+    i = 0
     while True:
         action, states = modelWrapper.model.predict(
             observation)
         observation, reward, terminated, truncated, info = modelWrapper.env.step(
             action)
+        if i % 50 == 0:
+            print(describe_obs(observation))
         if truncated or terminated:
             modelWrapper.env.reset()
+        i += 1
 
 
 def test_vec_env(preset):
@@ -43,5 +62,6 @@ def test_vec_env(preset):
 
 
 if __name__ == "__main__":
+    np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
     # test_vec_env(A2C_PRESET)
-    test_env(TD3_PRESET)
+    test_env(A2C_PRESET)

@@ -6,10 +6,10 @@ import numpy as np
 import gymnasium
 import mujoco
 from gymnasium.envs.mujoco import MujocoEnv
-from gymnasium.envs.mujoco.mujoco_rendering import MujocoRenderer
 from gymnasium.spaces import Box
 
 from typing import Dict, Tuple, Union
+from CustomMujocoRenderering import CustomMujocoRenderer
 
 import sys
 import os
@@ -151,7 +151,7 @@ class CarParkingEnv(gymnasium.Env):
         # source MujocoEnv
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
-        self.mujoco_renderer = MujocoRenderer(self.model, self.data)
+        self.mujoco_renderer = CustomMujocoRenderer(self.model, self.data)
 
     def _reset_simulation(self):
         # source MujocoEnv
@@ -240,11 +240,12 @@ class CarParkingEnv(gymnasium.Env):
     def _check_truncated_condition(self):
         truncated = False
 
-        if abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.1:
+        if self.observation[ObsIndex.DISTANCE_BEGIN] < 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.05\
+                or self.observation[ObsIndex.DISTANCE_BEGIN] >= 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.3:
             self.time_velocity_not_low = self.data.time
 
         if self.time_velocity_not_low is not None:
-            if self.data.time - self.time_velocity_not_low >= 5:
+            if self.data.time - self.time_velocity_not_low >= 3:
                 truncated = True
 
         if self.data.time > 30:

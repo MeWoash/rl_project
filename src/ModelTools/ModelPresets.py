@@ -8,7 +8,7 @@ A2C_PRESET = {
             "envCreationFunciton": ModelWrapper.create_vec_env,
             "envArgs":
             {
-                "n_envs": 16,
+                "n_envs": 4,
                 "render_mode": "human"
             }
 

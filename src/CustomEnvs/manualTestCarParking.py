@@ -64,8 +64,7 @@ if __name__ == "__main__":
         observation, reward, terminated, truncated, info = env.step(
             current_action)
         if i % 50 == 0:
-            described = describe_obs(observation)
-            print(described)
+            print(describe_obs(observation))
             print(f"reward: {reward}")
         env.render()
         if terminated or truncated:

@@ -80,7 +80,6 @@ class Car:
     _carMass: float = 1500
     _wheelMass: float = 30
     _maxSensorVal: int = 5
-    _wheelAngleLimit: Tuple[float, float, float] = (-45, 45)
     _carChassisColorRGBA = (0.8, 0.102, 0.063, 1)
 
     def __init__(self, carName, carDims) -> None:
@@ -96,7 +95,7 @@ class Car:
         chassisZsize = self._carDims[2] / 2
 
         wheelControlRange = (math.radians(
-            self._wheelAngleLimit[0]), math.radians(self._wheelAngleLimit[1]))
+            Wheel._wheel_angle_limit[0]), math.radians(Wheel._wheel_angle_limit[1]))
 
         # autopep8: off
         material = mjcf_model.asset.add("material", name="chassis_material",
@@ -109,6 +108,7 @@ class Car:
         mjcf_model.worldbody.add("site", name="site_center")
         mjcf_model.worldbody.add("geom", type="box", size=[chassisXSize,chassisYsize,chassisZsize], mass=self._carMass, material=material)
 
+        # ADD WHEELS
         s1=mjcf_model.worldbody.add("site", name="wheel1_attachment_site", pos=[chassisXSize * self._wheelAxisSpacing, -chassisYsize * self._wheelSpacing, self._carDims[2] * self._wheelMountHeight])
         s2=mjcf_model.worldbody.add("site", name="wheel2_attachment_site", pos=[chassisXSize * self._wheelAxisSpacing, chassisYsize * self._wheelSpacing, self._carDims[2] * self._wheelMountHeight])
         s3=mjcf_model.worldbody.add("site", name="wheel3_attachment_site", pos=[-chassisXSize * self._wheelAxisSpacing, -chassisYsize * self._wheelSpacing, self._carDims[2] * self._wheelMountHeight])
@@ -118,11 +118,22 @@ class Car:
         w2MJCF, w2rolling, w2steering, = self.wheelGenerator.construct_tree("wheel2", True)
         w3MJCF, w3rolling, w3steering, = self.wheelGenerator.construct_tree("wheel3", False)
         w4MJCF, w4rolling, w4steering, = self.wheelGenerator.construct_tree("wheel4", False)
-        
+          
         s1.attach(w1MJCF)
         s2.attach(w2MJCF)
         s3.attach(w3MJCF)
         s4.attach(w4MJCF)
+        
+        # ADD TENDONS
+        tendonFixed = mjcf_model.tendon.add("fixed", name="back_wheels_tendon")
+        tendonFixed.add("joint", joint=w3rolling, coef=1000)
+        tendonFixed.add("joint", joint=w4rolling, coef=1000)
+        
+        #ADD ACTUATORS
+        mjcf_model.actuator.add("motor", name="engine", tendon=tendonFixed, ctrlrange=[-1, 1])
+        mjcf_model.actuator.add("position", name="wheel1_angle", joint=w1steering, kp=1000, ctrlrange=wheelControlRange)
+        mjcf_model.actuator.add("position", name="wheel2_angle", joint=w2steering, kp=1000, ctrlrange=wheelControlRange)
+        
 
         # autopep8: on
         return mjcf_model

@@ -18,9 +18,61 @@ def calculateCameraHeight(x, y, fov_y_degrees):
     return h
 
 
-class Car:
+class Wheel:
+    _wheel_mass = 30
+    _wheel_friction = (1, 1e-3, 1e-3)
+    _wheel_angle_limit = (-45, 45)
     _wheelRadius: float = 0.3
     _wheelThickness: float = 0.2
+
+    def __init__(self, wheelName) -> None:
+        self._wheelName = wheelName
+        self._is_steering = False,
+
+    @property
+    def is_steering(self):
+        return self._is_steering
+
+    @is_steering.setter
+    def is_steering(self, val):
+        self._is_steering = val
+
+    @property
+    def wheel_name(self):
+        return self._is_steering
+
+    @wheel_name.setter
+    def wheel_name(self, val):
+        self._wheelName = val
+
+    def construct_tree(self, name=None, is_steering=None):
+        if name is not None:
+            self._wheelName = name
+        if is_steering is not None:
+            self._is_steering = is_steering
+
+        mjcf_model = mjcf.RootElement(model=self._wheelName)
+        steering_joint = None
+        rolling_joint = None
+
+        wheelMaterial = mjcf_model.asset.add("material", name="material", rgba=[0, 0, 0, 1],
+                                             reflectance=0, shininess=0, emission=0, specular=0.1)
+        wheelBody = mjcf_model.worldbody.add(
+            "body", name="body", zaxis=[0, 1, 0])
+
+        wheelBody.add("geom", type="cylinder", size=[
+                      self._wheelRadius, self._wheelThickness / 2], mass=self._wheel_mass, friction=self._wheel_friction, material= wheelMaterial)
+
+        if self._is_steering:
+            steering_joint = wheelBody.add("joint", name="steering_joint", type="hinge", axis=[
+                                           0, 1, 0], limited=True, range=self._wheel_angle_limit)
+
+        rolling_joint = wheelBody.add("joint", name="rolling_joint")
+
+        return mjcf_model, rolling_joint, steering_joint
+
+
+class Car:
     _wheelFriction: Tuple[float, float, float] = (1, 1e-3, 1e-3)
     _wheelAxisSpacing: float = 0.6
     _wheelSpacing: float = 1
@@ -34,9 +86,10 @@ class Car:
     def __init__(self, carName, carDims) -> None:
         self._carName: str = carName
         self._carDims = carDims
+        self.wheelGenerator = Wheel("Wheel")
 
     def construct_tree(self):
-        self.mjcf_model = mjcf.RootElement(model=self._carName)
+        mjcf_model = mjcf.RootElement(model=self._carName)
 
         chassisXSize = self._carDims[0] / 2
         chassisYsize = self._carDims[1] / 2
@@ -46,19 +99,33 @@ class Car:
             self._wheelAngleLimit[0]), math.radians(self._wheelAngleLimit[1]))
 
         # autopep8: off
-        material = self.mjcf_model.asset.add("material", name="chassis_material",
+        material = mjcf_model.asset.add("material", name="chassis_material",
             rgba=self._carChassisColorRGBA,
             reflectance=0,
             shininess=1,
             emission=0.0,
             specular=0.0)
 
-        body = self.mjcf_model.worldbody.add("body")
-        body.add("freejoint")
-        body.add("site", name="site_center")
-        body.add("geom", type="box", size=[chassisXSize,chassisYsize,chassisZsize], mass=self._carMass, material=material)
+        mjcf_model.worldbody.add("site", name="site_center")
+        mjcf_model.worldbody.add("geom", type="box", size=[chassisXSize,chassisYsize,chassisZsize], mass=self._carMass, material=material)
+
+        s1=mjcf_model.worldbody.add("site", name="wheel1_attachment_site", pos=[chassisXSize * self._wheelAxisSpacing, -chassisYsize * self._wheelSpacing, self._carDims[2] * self._wheelMountHeight])
+        s2=mjcf_model.worldbody.add("site", name="wheel2_attachment_site", pos=[chassisXSize * self._wheelAxisSpacing, chassisYsize * self._wheelSpacing, self._carDims[2] * self._wheelMountHeight])
+        s3=mjcf_model.worldbody.add("site", name="wheel3_attachment_site", pos=[-chassisXSize * self._wheelAxisSpacing, -chassisYsize * self._wheelSpacing, self._carDims[2] * self._wheelMountHeight])
+        s4=mjcf_model.worldbody.add("site", name="wheel4_attachment_site", pos=[-chassisXSize * self._wheelAxisSpacing, chassisYsize * self._wheelSpacing, self._carDims[2] * self._wheelMountHeight])
+
+        w1MJCF, w1rolling, w1steering, = self.wheelGenerator.construct_tree("wheel1", True)
+        w2MJCF, w2rolling, w2steering, = self.wheelGenerator.construct_tree("wheel2", True)
+        w3MJCF, w3rolling, w3steering, = self.wheelGenerator.construct_tree("wheel3", False)
+        w4MJCF, w4rolling, w4steering, = self.wheelGenerator.construct_tree("wheel4", False)
+        
+        s1.attach(w1MJCF)
+        s2.attach(w2MJCF)
+        s3.attach(w3MJCF)
+        s4.attach(w4MJCF)
 
         # autopep8: on
+        return mjcf_model
 
 
 class ParkingSpot:
@@ -76,7 +143,7 @@ class ParkingSpot:
         self._carSize = carSize
 
     def construct_tree(self):
-        self.mjcf_model = mjcf.RootElement(model=self._model_name)
+        mjcf_model = mjcf.RootElement(model=self._model_name)
 
         targetXSize = self._carSize[0]/2*self._targetPaddings[0]
         targetYSize = self._carSize[1]/2*self._targetPaddings[1]
@@ -84,14 +151,15 @@ class ParkingSpot:
         lineHeightSize = self._lineHeightSize
 
         # autopep8: off
-        material = self.mjcf_model.asset.add("material", name=f"line_material",rgba=[1, 1, 1, 1])
-        self.site_center = self.mjcf_model.worldbody.add("site",name=f"{self._model_name}_site_center",  type="cylinder",size=[0.1, 0.001],  material=material)
+        material = mjcf_model.asset.add("material", name=f"line_material",rgba=[1, 1, 1, 1])
+        self.site_center = mjcf_model.worldbody.add("site",name=f"{self._model_name}_site_center",  type="cylinder",size=[0.1, 0.001],  material=material)
 
-        self.mjcf_model.worldbody.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[targetXSize - lineWidthSize, 0, 0],       friction=self._friction, material=material)
-        self.mjcf_model.worldbody.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, targetYSize - lineWidthSize, 0],       friction=self._friction, material=material)
-        self.mjcf_model.worldbody.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[ 0, -(targetYSize - lineWidthSize), 0],   friction=self._friction, material=material)
-        self.mjcf_model.worldbody.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0],    friction=self._friction, material=material)
+        mjcf_model.worldbody.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[targetXSize - lineWidthSize, 0, 0],       friction=self._friction, material=material)
+        mjcf_model.worldbody.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, targetYSize - lineWidthSize, 0],       friction=self._friction, material=material)
+        mjcf_model.worldbody.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[ 0, -(targetYSize - lineWidthSize), 0],   friction=self._friction, material=material)
+        mjcf_model.worldbody.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0],    friction=self._friction, material=material)
         # autopep8: on
+        return mjcf_model
 
 
 class Generator:
@@ -113,8 +181,8 @@ class Generator:
 
     @car_pos.setter
     def car_pos(self, val):
-        self._car_pos = [val[0], val[1], Car._wheelRadius +
-                         self._car_dims[2] * Car._wheelMountHeight]
+        self._car_pos = [val[0], val[1], Wheel._wheelRadius +
+                         self._car_dims[2] * abs(Car._wheelMountHeight)]
 
     @property
     def map_length(self):
@@ -135,6 +203,8 @@ class Generator:
     def construct_tree(self):
         self.mjcf_model = mjcf.RootElement(model=self.model_name)
 
+        # autopep8: off
+
         # MAP
         self._generate_map()
 
@@ -142,17 +212,17 @@ class Generator:
         self._generate_camera()
 
         # CAR
-        self.car_attachment_site = self.mjcf_model.worldbody.add(
-            "site", name="car_attachment_site", pos=self._car_pos)
-        self.carGenerator.construct_tree()
-        self.car_attachment_site.attach(self.carGenerator.mjcf_model)
+        self.car_attachment_site = self.mjcf_model.worldbody.add("site", name="car_attachment_site", pos=self._car_pos)
+        carMJCF = self.carGenerator.construct_tree()
+        a = self.car_attachment_site.attach(carMJCF)
+        a.add("freejoint")
 
         # Parking
-        self.parking_attachment_site = self.mjcf_model.worldbody.add(
-            "site", name="parking_attachment_site", pos=self._parking_pos)
-        self.parkingSpotGenerator.construct_tree()
-        self.parking_attachment_site.attach(
-            self.parkingSpotGenerator.mjcf_model)
+        self.parking_attachment_site = self.mjcf_model.worldbody.add("site", name="parking_attachment_site", pos=self._parking_pos)
+        parkingSpotMJCF = self.parkingSpotGenerator.construct_tree()
+        self.parking_attachment_site.attach(parkingSpotMJCF)
+
+        # autopep8: on
 
     def _generate_map(self):
 

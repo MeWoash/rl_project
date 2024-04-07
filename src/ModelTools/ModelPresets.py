@@ -8,7 +8,7 @@ A2C_PRESET = {
             "envCreationFunciton": ModelWrapper.create_vec_env,
             "envArgs":
             {
-                "n_envs": 4,
+                "n_envs": 16,
                 "render_mode": "human"
             }
 
@@ -24,7 +24,7 @@ A2C_PRESET = {
         },
     "learnModelArgs":
         {
-            "n_steps": 20_000_000
+            "n_steps": 1_000_000
         }
 }
 
@@ -50,7 +50,7 @@ SAC_PRESET = {
         },
     "learnModelArgs":
         {
-            "n_steps": 100_000
+            "n_steps": 1_000_000
         }
 }
 
@@ -76,6 +76,6 @@ TD3_PRESET = {
         },
     "learnModelArgs":
         {
-            "n_steps": 200_000
+            "n_steps": 1_000_000
         }
 }

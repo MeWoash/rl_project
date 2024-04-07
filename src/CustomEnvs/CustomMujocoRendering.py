@@ -1,5 +1,6 @@
 # This file is modified version of
 
+from CustomEnvs.CarParking import CarParkingEnv, ObsIndex
 import collections
 import os
 import time
@@ -16,7 +17,6 @@ import os
 
 SELF_DIR = Path(__file__).parent.resolve()
 sys.path.append(str(SELF_DIR.parent))
-from CustomEnvs.CarParking import CarParkingEnv, ObsIndex
 
 np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
 
@@ -579,6 +579,7 @@ class CustomWindowViewer(CustomBaseRender):
             [bottomleft, "Step",
                 f"{round(self.data.time / self.model.opt.timestep)}"],
             [bottomleft, "episode", f"{self.env.episode}"],
+            [bottomleft, "time", f"{self.data.time}"],
 
             [topleft, "Env stats", "values"],
             [topleft, "reward", f"{self.env.reward}"],
@@ -598,8 +599,8 @@ class CustomWindowViewer(CustomBaseRender):
                 f"{self.env.observation[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"],
 
             [topright, "Model Action", "values"],
-            [topright, "engine", "%.2f"%self.env.action[0]],
-            [topright, "wheel", "%.2f"%self.env.action[1]],
+            [topright, "engine", "%.2f" % self.env.action[0]],
+            [topright, "wheel", "%.2f" % self.env.action[1]],
         ]
 
         for overlay in OVERLAY_LIST:

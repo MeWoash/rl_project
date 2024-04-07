@@ -217,6 +217,7 @@ class CarParkingEnv(gymnasium.Env):
             self.observation[ObsIndex.DISTANCE_BEGIN], 0, 1, 0, MAX_X_Y_DIST)
         total_dist_reward = 1 - normdist
 
+        time_punish = normalize_data(self.data.time, 0, 0.5, 0, 30)
         # negative_velocity_punish = 0
         # if self.observation[ObsIndex.VELOCITY_BEGIN] <= -0.5:
         #     negative_velocity_punish = -0.5
@@ -230,7 +231,7 @@ class CarParkingEnv(gymnasium.Env):
 
         # print(total_dist_reward, "\t\t", total_angle_reward)
 
-        reward = total_dist_reward
+        reward = total_dist_reward * (1 - time_punish)
         return reward
 
     def _check_terminate_condition(self):
@@ -257,9 +258,8 @@ class CarParkingEnv(gymnasium.Env):
             truncated = True
         elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
             truncated = True
-
-        if truncated:
             self.reward -= 100
+            
         return truncated
 
     def _get_obs(self):

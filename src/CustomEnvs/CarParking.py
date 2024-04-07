@@ -9,7 +9,6 @@ from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
 
 from typing import Dict, Tuple, Union
-from CustomMujocoRenderering import CustomMujocoRenderer
 
 import sys
 import os
@@ -18,6 +17,8 @@ import math
 from enum import IntEnum
 
 SELF_DIR = Path(__file__).parent.resolve()
+sys.path.append(str(SELF_DIR.parent))
+
 XML_FOLDER = SELF_DIR.joinpath("../xmls")
 MODEL_PATH = os.path.join(str(XML_FOLDER), "generated.xml")
 
@@ -102,8 +103,9 @@ class CarParkingEnv(gymnasium.Env):
 
         # TODO CAMERA SETTINGS
         self.camera_name = None
-        self.camera_id = None
+        self.camera_id = 0
         self.prev_obs = None
+        self.episode = 0
 
         self._initialize_simulation()
         self._set_default_action_space()
@@ -151,7 +153,9 @@ class CarParkingEnv(gymnasium.Env):
         # source MujocoEnv
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
-        self.mujoco_renderer = CustomMujocoRenderer(self.model, self.data)
+
+        from CustomEnvs.CustomMujocoRendering import CustomMujocoRenderer
+        self.mujoco_renderer: CustomMujocoRenderer = CustomMujocoRenderer(self)
 
     def _reset_simulation(self):
         # source MujocoEnv
@@ -187,6 +191,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def step(self, action):
 
+        self.action = action
         self._apply_forces(action)
         self._do_simulation(self.frame_skip)
 
@@ -212,9 +217,10 @@ class CarParkingEnv(gymnasium.Env):
             self.observation[ObsIndex.DISTANCE_BEGIN], 0, 1, 0, MAX_X_Y_DIST)
         total_dist_reward = 1 - normdist
 
-        negative_velocity_punish = 0
-        if self.observation[ObsIndex.VELOCITY_BEGIN] <= -0.5:
-            negative_velocity_punish = -0.5
+        time_punish = normalize_data(self.data.time, 0, 0.5, 0, 30)
+        # negative_velocity_punish = 0
+        # if self.observation[ObsIndex.VELOCITY_BEGIN] <= -0.5:
+        #     negative_velocity_punish = -0.5
 
         # normangle = normalize_data(abs(self.observation[1]), 0, 0.05, 0, np.pi)
         # total_angle_reward = 0.1 - normangle
@@ -225,7 +231,7 @@ class CarParkingEnv(gymnasium.Env):
 
         # print(total_dist_reward, "\t\t", total_angle_reward)
 
-        reward = total_dist_reward + negative_velocity_punish
+        reward = total_dist_reward * (1 - time_punish)
         return reward
 
     def _check_terminate_condition(self):
@@ -252,9 +258,8 @@ class CarParkingEnv(gymnasium.Env):
             truncated = True
         elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
             truncated = True
-
-        if truncated:
             self.reward -= 100
+            
         return truncated
 
     def _get_obs(self):
@@ -271,7 +276,7 @@ class CarParkingEnv(gymnasium.Env):
             range_sensors.append(self.data.sensor(
                 f'mainCar_sensor_{i}').data[0])
 
-        distToTarget = np.linalg.norm(carPositionParking[:1])
+        distToTarget = np.linalg.norm(carPositionParking[:2])
 
         contact_data = self.data.sensor(
             f"{CAR_NAME}_chassis_touch_sensor").data[0]
@@ -293,6 +298,7 @@ class CarParkingEnv(gymnasium.Env):
     def reset(self, **kwargs):
         self._reset_simulation()
         self.time_velocity_not_low = None
+        self.episode += 1
         observation = self._get_obs()
         return observation, {}
 

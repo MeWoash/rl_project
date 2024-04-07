@@ -2,9 +2,9 @@ from ModelTools.ModelWrapper import ModelWrapper
 from ModelTools.ModelPresets import *
 
 PRESETS = [
-    A2C_PRESET,
-    # SAC_PRESET,
-    # TD3_PRESET
+    # A2C_PRESET,
+    SAC_PRESET,
+    TD3_PRESET
 ]
 
 

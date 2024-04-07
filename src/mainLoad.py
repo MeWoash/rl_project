@@ -36,17 +36,13 @@ def test_env(preset):
     terminated = False
     observation, info = modelWrapper.env.reset()
 
-    i = 0
     while True:
         action, states = modelWrapper.model.predict(
-            observation)
+            observation, deterministic=True)
         observation, reward, terminated, truncated, info = modelWrapper.env.step(
             action)
-        if i % 50 == 0:
-            print(describe_obs(observation))
         if truncated or terminated:
             modelWrapper.env.reset()
-        i += 1
 
 
 def test_vec_env(preset):
@@ -57,7 +53,8 @@ def test_vec_env(preset):
 
     observation = modelWrapper.env.reset()
     while True:
-        action, states = modelWrapper.model.predict(observation)
+        action, states = modelWrapper.model.predict(
+            observation, deterministic=True)
         observation, reward, done, info = modelWrapper.env.step(action)
 
 

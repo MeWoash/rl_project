@@ -59,15 +59,9 @@ eul:        {obs[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"""
 if __name__ == "__main__":
     env = CarParkingEnv(render_mode="human")
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
-    i = 0
     while True:
         observation, reward, terminated, truncated, info = env.step(
             current_action)
-        if i % 50 == 0:
-            described = describe_obs(observation)
-            print(described)
-            print(f"reward: {reward}")
         env.render()
         if terminated or truncated:
             env.reset()
-        i += 1

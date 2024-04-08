@@ -1,37 +1,43 @@
+# autopep8: off
 from pathlib import Path
 from tabnanny import check
 from traceback import print_tb
 import numpy as np
-
 import gymnasium
 import mujoco
 from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
-
 from typing import Dict, Tuple, Union
-
 import sys
 import os
 import math
-
 from enum import IntEnum
 
 SELF_DIR = Path(__file__).parent.resolve()
 sys.path.append(str(SELF_DIR.parent))
 
-XML_FOLDER = SELF_DIR.joinpath("../xmls")
-MODEL_PATH = os.path.join(str(XML_FOLDER), "generated.xml")
+import MJCFGenerator
 
-MAP_SIZE = (20, 20, 20, 5)
+MODEL_NAME = "out.xml"
+MJCF_OUT_DIR = MJCFGenerator.MJCF_OUT_DIR
+MODEL_PATH = os.path.join(str(MJCF_OUT_DIR), MODEL_NAME)
+
+CAR_NAME = MJCFGenerator.Generator._carName # NOT GUARANTEED TO MATCH
+PARKING_NAME = MJCFGenerator.Generator._spotName # NOT GUARANTEED TO MATCH
+
+
+# TODO PARAMETERS SHOULD BE SCRAPED FROM MJDATA
+MAP_SIZE = [20, 20, 20, 5]
 MAX_X_Y_DIST = math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2)
 MAX_X_Y_Z_DIST = math.sqrt(MAP_SIZE[2]**2 +
                            math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2))
-MAX_SENSOR_VAL = 5
+MAX_SENSOR_VAL = MJCFGenerator.Car._maxSensorVal
 
-
-WHEEL_ANGLE_RANGE = (math.radians(-45), math.radians(45))
-CAR_NAME = "mainCar"
+WHEEL_ANGLE_RANGE = [math.radians(MJCFGenerator.Wheel._wheel_angle_limit[0]), math.radians(MJCFGenerator.Wheel._wheel_angle_limit[1])]
 N_RANGE_SENSORS = 8
+
+
+# autopep8: on
 
 
 class ObsIndex(IntEnum):
@@ -177,9 +183,9 @@ class CarParkingEnv(gymnasium.Env):
         enginePowerCtrl = action[0]
         wheelsAngleCtrl = normalize_data(action[1], *WHEEL_ANGLE_RANGE)
 
-        self.data.actuator(f"{CAR_NAME}_engine_power").ctrl = enginePowerCtrl
-        self.data.actuator(f"{CAR_NAME}_wheel1_angle").ctrl = wheelsAngleCtrl
-        self.data.actuator(f"{CAR_NAME}_wheel2_angle").ctrl = wheelsAngleCtrl
+        self.data.actuator(f"{CAR_NAME}/engine").ctrl = enginePowerCtrl
+        self.data.actuator(f"{CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl
+        self.data.actuator(f"{CAR_NAME}/wheel2_angle").ctrl = wheelsAngleCtrl
 
     def _do_simulation(self, n_frames):
         """
@@ -259,33 +265,33 @@ class CarParkingEnv(gymnasium.Env):
         elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
             truncated = True
             self.reward -= 100
-            
+
         return truncated
 
     def _get_obs(self):
         carPositionGlobal = self.data.sensor(
-            f'{CAR_NAME}_posGlobal_sensor').data
+            f'{CAR_NAME}/pos_global_sensor').data
 
         carPositionParking = self.data.sensor(
-            f'{CAR_NAME}_posTarget_sensor').data
+            f"{CAR_NAME}_to_{PARKING_NAME}_pos").data
 
-        carSpeed = self.data.sensor(f'{CAR_NAME}_speed_sensor').data[0]
+        carSpeed = self.data.sensor(f'{CAR_NAME}/speed_sensor').data[0]
 
         range_sensors = []
         for i in range(N_RANGE_SENSORS):
             range_sensors.append(self.data.sensor(
-                f'mainCar_sensor_{i}').data[0])
+                f'{CAR_NAME}/range_sensor_{i}').data[0])
 
         distToTarget = np.linalg.norm(carPositionParking[:2])
 
         contact_data = self.data.sensor(
-            f"{CAR_NAME}_chassis_touch_sensor").data[0]
+            f"{CAR_NAME}/touch_sensor").data[0]
 
-        carQuat = self.data.body(CAR_NAME).xquat
+        carQuat = self.data.body(f"{CAR_NAME}/").xquat
         # roll_x, pitch_y, yaw_z
         car_euler = quat_to_euler(carQuat)
 
-        targetQuat = self.data.body('target_space').xquat
+        targetQuat = self.data.body(f"{PARKING_NAME}/").xquat
         # targetroll_x, targetpitch_y, targetyaw_z
         target_euler = quat_to_euler(targetQuat)
 

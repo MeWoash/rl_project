@@ -62,6 +62,6 @@ if __name__ == "__main__":
     while True:
         observation, reward, terminated, truncated, info = env.step(
             current_action)
-        env.render()
+        # print(describe_obs(observation))
         if terminated or truncated:
             env.reset()

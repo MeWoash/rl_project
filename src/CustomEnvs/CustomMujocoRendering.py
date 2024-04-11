@@ -576,28 +576,18 @@ class CustomWindowViewer(CustomBaseRender):
 
         OVERLAY_LIST = [
             [bottomleft, "FPS", f"{int(1 / self._time_per_render)}"],
-            [bottomleft, "Step",
-                f"{round(self.data.time / self.model.opt.timestep)}"],
+            [bottomleft, "Step",f"{round(self.data.time / self.model.opt.timestep)}"],
             [bottomleft, "episode", f"{self.env.episode}"],
             [bottomleft, "time", f"{self.data.time}"],
-
             [topleft, "Env stats", "values"],
             [topleft, "reward", f"{self.env.reward}"],
-            [topleft, "speed",
-                f"{self.env.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}"],
-            [topleft, "dist",
-                f"{self.env.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}"],
-            [topleft, "adiff",
-                f"{self.env.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}"],
-            [topleft, "contact",
-                f"{self.env.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}"],
-            [topleft, "range",
-                f"{self.env.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}"],
-            [topleft, "pos",
-                f"{self.env.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}"],
-            [topleft, "eul",
-                f"{self.env.observation[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"],
-
+            [topleft, "speed",f"{self.env.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}"],
+            [topleft, "dist",f"{self.env.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}"],
+            [topleft, "adiff",f"{self.env.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}"],
+            [topleft, "contact",f"{self.env.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}"],
+            [topleft, "range",f"{self.env.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}"],
+            [topleft, "pos",f"{self.env.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}"],
+            [topleft, "eul",f"{self.env.observation[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"],
             [topright, "Model Action", "values"],
             [topright, "engine", "%.2f" % self.env.action[0]],
             [topright, "wheel", "%.2f" % self.env.action[1]],
@@ -618,7 +608,8 @@ class CustomMujocoRenderer:
 
     def __init__(
         self,
-        env: CarParkingEnv,
+        model,
+        data
     ):
         """A wrapper for clipping continuous actions within the valid bound.
 
@@ -627,9 +618,8 @@ class CustomMujocoRenderer:
             data: MjData data structure of the MuJoCo simulation
             default_cam_config: dictionary with attribute values of the viewer's default camera, https://mujoco.readthedocs.io/en/latest/XMLreference.html?highlight=camera#visual-global
         """
-        self.env: CarParkingEnv = env
-        self.model = env.model
-        self.data = env.data
+        self.model = model
+        self.data = data
         self._viewers = {}
         self.viewer = None
         self.default_human_mode_camera = 0

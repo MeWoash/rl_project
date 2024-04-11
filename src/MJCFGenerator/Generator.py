@@ -202,6 +202,9 @@ class Generator:
     model_name = "MainModel"
     _carName = "mainCar"
     _spotName = "parkingSpot"
+    _offheight = 720
+    _offwidth = 1280
+    
 
     def __init__(self):
         # MAP PROPS
@@ -243,6 +246,11 @@ class Generator:
 
         # autopep8: off
 
+        # RENDERING
+        global_settings = getattr(self.mjcf_model.visual, 'global')
+        global_settings.offwidth = self._offwidth
+        global_settings.offheight = self._offheight
+        
         # MAP
         self._generate_map()
 

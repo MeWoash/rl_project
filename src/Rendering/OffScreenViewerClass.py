@@ -11,11 +11,11 @@ from Rendering.Utils import _ALL_RENDERERS
 class OffScreenViewer(BaseRender):
     """Offscreen rendering class with opengl context."""
 
-    def __init__(self, model, data, width, height):
+    def __init__(self, model, data, simulation_frame_skip, width, height):
 
         # We must make GLContext before MjrContext
         self._get_opengl_backend(width, height)
-        super().__init__(model, data, width, height)
+        super().__init__(model, data, simulation_frame_skip, width, height)
         self._init_camera()
 
     def _init_camera(self):
@@ -89,20 +89,15 @@ class OffScreenViewer(BaseRender):
         if overlay is not None:
             overlay.add_to_viewport(self.con, self.viewport)
 
-        rgb_arr = np.zeros(
-            3 * self.viewport.width * self.viewport.height, dtype=np.uint8
-        )
-        depth_arr = np.zeros(
-            self.viewport.width * self.viewport.height, dtype=np.float32
-        )
+        
 
-        mujoco.mjr_readPixels(rgb_arr, depth_arr, self.viewport, self.con)
+        mujoco.mjr_readPixels(self.rgb_arr, self.depth_arr, self.viewport, self.con)
 
-        rgb_img = rgb_arr.reshape(self.viewport.height,
-                                  self.viewport.width, 3)
+        rgb_img = self.rgb_arr.reshape(self.viewport.height,
+                                  self.viewport.width, 3)[::-1, :, :]
 
         # original image is upside-down, so flip it
-        return rgb_img[::-1, :, :]
+        return rgb_img
 
     def close(self):
         self.free()

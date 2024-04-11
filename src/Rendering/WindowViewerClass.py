@@ -11,7 +11,7 @@ from Rendering.BaseRendererClass import BaseRender
 class WindowViewer(BaseRender):
     """Class for window rendering in all MuJoCo environments."""
 
-    def __init__(self, model, data, width, height):
+    def __init__(self, model, data, simulation_frame_skip, width, height):
         glfw.init()
 
         self._button_left_pressed = False
@@ -46,7 +46,7 @@ class WindowViewer(BaseRender):
         glfw.set_scroll_callback(self.window, self._scroll_callback)
         glfw.set_key_callback(self.window, self._key_callback)
 
-        super().__init__(model, data, width, height)
+        super().__init__(model, data, simulation_frame_skip, width, height)
         glfw.swap_interval(1)
 
         self.cam.fixedcamid = 0
@@ -117,26 +117,25 @@ class WindowViewer(BaseRender):
                 overlay.add("FPS", f"{int(1 / self._time_per_render)}", "bottom left")
                 overlay.add_to_viewport(self.con, self.viewport)
 
+            if self._nth_render_call % self._frame_capture == 0:
+                mujoco.mjr_readPixels(self.rgb_arr, self.depth_arr, self.viewport, self.con)
+                rgb_img = np.copy(self.rgb_arr.reshape(self.viewport.height,
+                                    self.viewport.width, 3)[::-1, :, :])
+                self._frames.append(rgb_img)
+            self._nth_render_call += 1
+
             glfw.swap_buffers(self.window)
             glfw.poll_events()
             self._time_per_render = 0.9 * self._time_per_render + 0.1 * (
                 time.time() - render_start
             )
 
-        self._loop_count += self._model.opt.timestep / (
-            self._time_per_render * self._run_speed
-        )
-        if self._render_every_frame:
-            self._loop_count = 1
 
-        while self._loop_count > 0:
-            update()
-            self._loop_count -= 1
+        update()
+
 
         # clear overlay
         self._overlays.clear()
-        # clear markers
-        self._markers.clear()
 
     def close(self):
         self.free()
@@ -152,57 +151,10 @@ class WindowViewer(BaseRender):
             if self.cam.fixedcamid >= self._model.ncam:
                 self.cam.fixedcamid = -1
                 self.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-        # Pause simulation
-        # elif key == glfw.KEY_SPACE and self._paused is not None:
-        #     self._paused = not self._paused
-        # Advances simulation by one step.
-        # elif key == glfw.KEY_RIGHT and self._paused is not None:
-        #     self._advance_by_one_step = True
-        #     self._paused = True
-        # Slows down simulation
-        # elif key == glfw.KEY_S:
-        #     self._run_speed /= 2.0
-        # Speeds up simulation
-        # elif key == glfw.KEY_F:
-        #     self._run_speed *= 2.0
-        # Turn off / turn on rendering every frame.
-        # elif key == glfw.KEY_D:
-        #     self._render_every_frame = not self._render_every_frame
-        # Capture screenshot
-        # elif key == glfw.KEY_T:
-        #     img = np.zeros(
-        #         (
-        #             glfw.get_framebuffer_size(self.window)[1],
-        #             glfw.get_framebuffer_size(self.window)[0],
-        #             3,
-        #         ),
-        #         dtype=np.uint8,
-        #     )
-        #     mujoco.mjr_readPixels(img, None, self.viewport, self.con)
-        #     imageio.imwrite(self._image_path % self._image_idx, np.flipud(img))
-        #     self._image_idx += 1
-        # Display contact forces
-        # elif key == glfw.KEY_C:
-        #     self._contacts = not self._contacts
-        #     self.vopt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = self._contacts
-        #     self.vopt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = self._contacts
-        # Display coordinate frames
-        # elif key == glfw.KEY_E:
-        #     self.vopt.frame = 1 - self.vopt.frame
-        # Hide overlay menu
         elif key == glfw.KEY_H:
             self._hide_menu = not self._hide_menu
-        # Make transparent
-        # elif key == glfw.KEY_R:
-        #     self._transparent = not self._transparent
-        #     if self._transparent:
-        #         self._model.geom_rgba[:, 3] /= 5.0
-        #     else:
-        #         self._model.geom_rgba[:, 3] *= 5.0
-        # Geom group visibility
-        # elif key in (glfw.KEY_0, glfw.KEY_1, glfw.KEY_2, glfw.KEY_3, glfw.KEY_4):
-        #     self.vopt.geomgroup[key - glfw.KEY_0] ^= 1
-        # Quit
+        elif key == glfw.KEY_S:
+            self.render_movie()
         if key == glfw.KEY_ESCAPE:
             print("Pressed ESC")
             print("Quitting.")

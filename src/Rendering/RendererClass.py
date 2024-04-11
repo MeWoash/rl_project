@@ -7,11 +7,13 @@ class Renderer:
     def __init__(self,
                  model,
                  data,
+                 simulation_frame_skip,
                  height: int = 720,
                  width: int = 1280) -> None:
 
         self._model = model
         self._data = data
+        self._simulation_frame_skip = simulation_frame_skip
         
         self._viewers = {}
         self.viewer = None
@@ -27,10 +29,10 @@ class Renderer:
         self.viewer = self._viewers.get(render_mode)
         if self.viewer is None:
             if render_mode == "human":
-                self.viewer = WindowViewer(self._model, self._data, self._width, self._height)
+                self.viewer = WindowViewer(self._model, self._data, self._simulation_frame_skip, self._width, self._height)
                 pass
             elif render_mode in {"rgb_array", "depth_array"}:
-                self.viewer = OffScreenViewer(self._model, self._data, self._height, self._height)
+                self.viewer = OffScreenViewer(self._model, self._data, self._simulation_frame_skip, self._height, self._height)
             else:
                 raise AttributeError(
                     f"Unexpected mode: {render_mode}, expected modes: human, rgb_array, or depth_array"

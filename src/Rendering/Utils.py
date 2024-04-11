@@ -1,12 +1,14 @@
 from abc import ABC
 import collections
 import os
+from pathlib import Path
 from typing import Optional
 import mujoco
 import numpy as np
 import glfw
 import matplotlib.pyplot as plt
 
+MEDIA_DIR = Path(__file__).parent.joinpath("../../out/media").resolve()
 
 def _import_egl(width, height):
     from mujoco.egl import GLContext

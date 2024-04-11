@@ -106,7 +106,7 @@ class CarParkingEnv(gymnasium.Env):
 
         self.fullpath = xml_file
         self.render_mode = render_mode
-        self.frame_skip = frame_skip
+        self.simulation_frame_skip = frame_skip
         self.time_velocity_not_low = None
 
         # TODO CAMERA SETTINGS
@@ -162,7 +162,7 @@ class CarParkingEnv(gymnasium.Env):
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
 
-        self.mujoco_renderer: Renderer = Renderer(self.model, self.data)
+        self.mujoco_renderer: Renderer = Renderer(self.model, self.data, self.simulation_frame_skip)
 
     def _reset_simulation(self):
         # source MujocoEnv
@@ -174,8 +174,9 @@ class CarParkingEnv(gymnasium.Env):
         if self.render_mode == "human":
             o.add("Step",f"{round(self.data.time / self.model.opt.timestep)}", "bottom left")
             o.add("episode", f"{self.episode}", "bottom left")
-            o.add("time", f"{self.data.time}", "bottom left")
-            
+            o.add("time", "%.2f"%self.data.time, "bottom left")
+            o.add("steps/1s", f"{1 / (self.model.opt.timestep*self.simulation_frame_skip)}", "bottom left")
+    
             o.add("Env stats", "values", "top left")
             o.add("reward", f"{self.reward}", "top left")
             o.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
@@ -218,7 +219,7 @@ class CarParkingEnv(gymnasium.Env):
     def step(self, action):
         self.action = action
         self._apply_forces(action)
-        self._do_simulation(self.frame_skip)
+        self._do_simulation(self.simulation_frame_skip)
 
         self.observation = self._get_obs()
         if self.prev_obs is None:

@@ -160,8 +160,8 @@ class CarParkingEnv(gymnasium.Env):
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
 
-        from CustomEnvs.CustomMujocoRendering import CustomMujocoRenderer
-        self.mujoco_renderer: CustomMujocoRenderer = CustomMujocoRenderer(self)
+        from Rendering.RendererClass import Renderer
+        self.mujoco_renderer: Renderer = Renderer(self.model, self.data)
 
     def _reset_simulation(self):
         # source MujocoEnv
@@ -169,9 +169,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def render(self):
         # source MujocoEnv
-        return self.mujoco_renderer.render(
-            self.render_mode, self.camera_id, self.camera_name
-        )
+        return self.mujoco_renderer.render(self.render_mode, self.camera_id)
 
     def close(self):
         """Close all processes like rendering contexts"""
@@ -196,7 +194,6 @@ class CarParkingEnv(gymnasium.Env):
         mujoco.mj_rnePostConstraint(self.model, self.data)
 
     def step(self, action):
-
         self.action = action
         self._apply_forces(action)
         self._do_simulation(self.frame_skip)

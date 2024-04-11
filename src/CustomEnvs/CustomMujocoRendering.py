@@ -618,7 +618,8 @@ class CustomMujocoRenderer:
 
     def __init__(
         self,
-        env: CarParkingEnv,
+        model,
+        data
     ):
         """A wrapper for clipping continuous actions within the valid bound.
 
@@ -627,9 +628,8 @@ class CustomMujocoRenderer:
             data: MjData data structure of the MuJoCo simulation
             default_cam_config: dictionary with attribute values of the viewer's default camera, https://mujoco.readthedocs.io/en/latest/XMLreference.html?highlight=camera#visual-global
         """
-        self.env: CarParkingEnv = env
-        self.model = env.model
-        self.data = env.data
+        self.model = model
+        self.data = data
         self._viewers = {}
         self.viewer = None
         self.default_human_mode_camera = 0

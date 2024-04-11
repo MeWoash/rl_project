@@ -34,6 +34,49 @@ _ALL_RENDERERS = collections.OrderedDict(
     ]
 )
 
+_FONT_STYLES = {
+    'normal': mujoco.mjtFont.mjFONT_NORMAL,
+    'shadow': mujoco.mjtFont.mjFONT_SHADOW,
+    'big': mujoco.mjtFont.mjFONT_BIG,
+}
+_GRID_POSITIONS = {
+    'top left': mujoco.mjtGridPos.mjGRID_TOPLEFT,
+    'top right': mujoco.mjtGridPos.mjGRID_TOPRIGHT,
+    'bottom left': mujoco.mjtGridPos.mjGRID_BOTTOMLEFT,
+    'bottom right': mujoco.mjtGridPos.mjGRID_BOTTOMRIGHT,
+}
+
+class TextOverlay:
+    """A text overlay that can be drawn on top of a camera view."""
+
+    def __init__(self, style="normal"):
+        """Initializes a new TextOverlay instance."""
+        self._overlays = {}
+        self._style = _FONT_STYLES[style]
+    
+    def add(self, title, body, gridpos):
+        
+        position = _GRID_POSITIONS[gridpos]
+        
+        if position not in self._overlays:
+            self._overlays[position] = ["", ""]
+        self._overlays[position][0] += title + "\n"
+        self._overlays[position][1] += body + "\n"
+
+    def add_to_viewport(self, context, rect):
+        """Draws the overlay.
+
+        Args:
+        context: A `mujoco.MjrContext` pointer.
+        rect: A `mujoco.MjrRect`.
+        """
+        for gridpos, (title, body) in self._overlays.items():
+            mujoco.mjr_overlay(self._style,
+                                gridpos,
+                                rect,
+                                title.encode(),
+                                body.encode(),
+                                context)
 
 class BaseRender(ABC):
     def __init__(
@@ -151,6 +194,7 @@ class OffScreenViewer(BaseRender):
     def render(
         self,
         camera_id: Optional[int] = -1,
+        overlay = None
     ):
         if camera_id is not None:
             if camera_id == -1:
@@ -172,6 +216,8 @@ class OffScreenViewer(BaseRender):
         mujoco.mjr_render(self.viewport, self.scn, self.con)
 
         # OVERLAY HERE
+        if overlay is not None:
+            overlay.add_to_viewport(self.con, self.viewport)
 
         rgb_arr = np.zeros(
             3 * self.viewport.width * self.viewport.height, dtype=np.uint8
@@ -197,7 +243,7 @@ class Renderer:
                  model,
                  data,
                  height: int = 720,
-                 width: int = 720) -> None:
+                 width: int = 1280) -> None:
 
         self._model = model
         self._data = data
@@ -219,7 +265,7 @@ class Renderer:
                 # self.viewer = WindowViewer(self.model, self.default_human_mode_camera)
                 pass
             elif render_mode in {"rgb_array", "depth_array"}:
-                self.viewer = OffScreenViewer(self._model, self._data, self._width, self._height)
+                self.viewer = OffScreenViewer(self._model, self._data, self._height, self._height)
             else:
                 raise AttributeError(
                     f"Unexpected mode: {render_mode}, expected modes: human, rgb_array, or depth_array"
@@ -235,6 +281,7 @@ class Renderer:
 
     def render(self, render_mode = "rgb_array", camera_id = -1, overlays=()):
         self.viewer = self._get_viewer(render_mode)
-        im = self.viewer.render(camera_id)
+        
+        im = self.viewer.render(camera_id, overlays)
         plt.imshow(im)
         plt.show()

@@ -17,6 +17,7 @@ SELF_DIR = Path(__file__).parent.resolve()
 sys.path.append(str(SELF_DIR.parent))
 
 import MJCFGenerator
+from Rendering.RendererClass import Renderer, TextOverlay
 
 MODEL_NAME = "out.xml"
 MJCF_OUT_DIR = MJCFGenerator.MJCF_OUT_DIR
@@ -160,7 +161,6 @@ class CarParkingEnv(gymnasium.Env):
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
 
-        from Rendering.RendererClass import Renderer
         self.mujoco_renderer: Renderer = Renderer(self.model, self.data)
 
     def _reset_simulation(self):
@@ -169,7 +169,28 @@ class CarParkingEnv(gymnasium.Env):
 
     def render(self):
         # source MujocoEnv
-        return self.mujoco_renderer.render(self.render_mode, self.camera_id)
+        o = TextOverlay()
+        if self.render_mode == "human":
+            o.add("Step",f"{round(self.data.time / self.model.opt.timestep)}", "bottom left")
+            o.add("episode", f"{self.episode}", "bottom left")
+            o.add("time", f"{self.data.time}", "bottom left")
+            
+            o.add("Env stats", "values", "top left")
+            o.add("reward", f"{self.reward}", "top left")
+            o.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
+            o.add("dist",f"{self.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}", "top left")
+            o.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")
+            o.add("contact",f"{self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}", "top left")
+            o.add("range",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}", "top left")
+            o.add("pos",f"{self.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}", "top left")
+            o.add("eul",f"{self.observation[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}", "top left")
+            
+            o.add("Model Action", "values", "top right")
+            o.add("engine", "%.2f" % self.action[0], "top right")
+            o.add("wheel", "%.2f" % self.action[1], "top right")
+
+        
+        return self.mujoco_renderer.render(self.render_mode, self.camera_id, o)
 
     def close(self):
         """Close all processes like rendering contexts"""

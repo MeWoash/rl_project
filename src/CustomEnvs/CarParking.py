@@ -17,7 +17,8 @@ SELF_DIR = Path(__file__).parent.resolve()
 sys.path.append(str(SELF_DIR.parent))
 
 import MJCFGenerator
-from Rendering.RendererClass import Renderer, TextOverlay
+from Rendering.RendererClass import Renderer
+from Rendering.Utils import TextOverlay
 
 MODEL_NAME = "out.xml"
 MJCF_OUT_DIR = MJCFGenerator.MJCF_OUT_DIR

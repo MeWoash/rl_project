@@ -57,7 +57,7 @@ eul:        {obs[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"""
 
 
 if __name__ == "__main__":
-    env = CarParkingEnv(render_mode="rgb_array")
+    env = CarParkingEnv(render_mode="human")
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
     while True:
         observation, reward, terminated, truncated, info = env.step(

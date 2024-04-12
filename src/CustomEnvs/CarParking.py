@@ -94,19 +94,28 @@ class CarParkingEnv(gymnasium.Env):
             "human",
             "rgb_array",
             "depth_array",
+            "none"
         ],
-        "render_fps": 125
     }
 
     def __init__(self,
                  xml_file: str = MODEL_PATH,
                  render_mode: str = "human",
-                 frame_skip: int = 4,
+                 simulation_frame_skip: int = 4,
+                 capture_frames = False,
+                 capture_fps = 24,
+                 frame_size = (480, 480), # Width, Height
                  **kwargs):
 
         self.fullpath = xml_file
         self.render_mode = render_mode
-        self.simulation_frame_skip = frame_skip
+        self.simulation_frame_skip = simulation_frame_skip
+        
+        self.capture_frames = capture_frames
+        self.capture_fps = capture_fps
+        self.frame_size = frame_size
+        
+        
         self.time_velocity_not_low = None
 
         # TODO CAMERA SETTINGS
@@ -162,7 +171,12 @@ class CarParkingEnv(gymnasium.Env):
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
 
-        self.mujoco_renderer: Renderer = Renderer(self.model, self.data, self.simulation_frame_skip)
+        self.mujoco_renderer: Renderer = Renderer(self.model,
+                                                self.data,
+                                                self.simulation_frame_skip,
+                                                self.capture_frames,
+                                                self.capture_fps,
+                                                self.frame_size)
 
     def _reset_simulation(self):
         # source MujocoEnv
@@ -178,7 +192,7 @@ class CarParkingEnv(gymnasium.Env):
             o.add("steps/1s", f"{1 / (self.model.opt.timestep*self.simulation_frame_skip)}", "bottom left")
     
             o.add("Env stats", "values", "top left")
-            o.add("reward", f"{self.reward}", "top left")
+            o.add("reward","%.2f"%self.reward, "top left")
             o.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
             o.add("dist",f"{self.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}", "top left")
             o.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")
@@ -191,8 +205,8 @@ class CarParkingEnv(gymnasium.Env):
             o.add("engine", "%.2f" % self.action[0], "top right")
             o.add("wheel", "%.2f" % self.action[1], "top right")
 
-        
-        return self.mujoco_renderer.render(self.render_mode, self.camera_id, o)
+        if self.render_mode != "none":
+            return self.mujoco_renderer.render(self.render_mode, self.camera_id, o)
 
     def close(self):
         """Close all processes like rendering contexts"""

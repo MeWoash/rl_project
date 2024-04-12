@@ -1,21 +1,29 @@
 from abc import ABC
+from ast import Raise
 import cv2
 import mujoco
-import imageio
 import numpy as np
-import os
-import threading
 
 from Rendering.Utils import MEDIA_DIR
 
 class BaseRender(ABC):
     def __init__(
-        self, model, data, simulation_frame_skip , width: int, height: int
+        self,
+        model,
+        data,
+        simulation_frame_skip,
+        capture_frames,
+        capture_fps,
+        frame_size,
     ):
         """Render context superclass for offscreen and window rendering."""
         self._model = model
         self._data = data
         self._simulation_frame_skip = simulation_frame_skip
+        self._capture_frames = capture_frames
+        self._capture_fps = capture_fps
+        
+        width, height = frame_size
 
         self._frames = []
         self._overlays = {}
@@ -65,19 +73,21 @@ class BaseRender(ABC):
         
         # MY VARIABLES
         render_steps_per_sec = 1 / (self._model.opt.timestep * self._simulation_frame_skip)
-        self._fps_movie = 30
-        frame_skip_ratio = render_steps_per_sec / self._fps_movie
-        self._frame_capture = round(frame_skip_ratio)
+        frame_skip_ratio = render_steps_per_sec / self._capture_fps
+        self._nth_frame_capture = round(frame_skip_ratio)
         self._nth_render_call = 0
 
     def render_movie(self, filename = "tmp.mp4"):
+        if self._capture_frames == False:
+            raise Exception(f"Cannot render movie because capturing frames was disabled. Captured Frames: {len(self._frames)}")
+            
         # filename = f"out-thread-{threading.get_ident()}.mp4"
         output_file = str(MEDIA_DIR/filename)
         
         frame_size = (self.viewport.width, self.viewport.height)
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_file, fourcc, self._fps_movie, frame_size)
+        out = cv2.VideoWriter(output_file, fourcc, self._capture_fps, frame_size)
         
         for frame in self._frames:
             bgr_buffer = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
@@ -86,6 +96,21 @@ class BaseRender(ABC):
         self._frames.clear()
         out.release()
         self._nth_render_call = 0
+        
+    def render_image(self, filename = "tmp.jpg"):
+        output_file = str(MEDIA_DIR/filename)
+        
+        self.rgb_arr = np.zeros(
+                        3 * self.viewport.width * self.viewport.height, dtype=np.uint8
+                    )
+        self.depth_arr = np.zeros(
+            self.viewport.width * self.viewport.height, dtype=np.float32
+        )
+        mujoco.mjr_readPixels(self.rgb_arr, self.depth_arr, self.viewport, self.con)
+        rgb_img = np.copy(self.rgb_arr.reshape(self.viewport.height,
+                            self.viewport.width, 3)[::-1, :, :])
+        bgr_buffer = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(output_file, bgr_buffer)
 
     def _set_mujoco_buffer(self):
         raise NotImplementedError

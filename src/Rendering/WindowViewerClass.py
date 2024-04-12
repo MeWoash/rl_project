@@ -11,7 +11,13 @@ from Rendering.BaseRendererClass import BaseRender
 class WindowViewer(BaseRender):
     """Class for window rendering in all MuJoCo environments."""
 
-    def __init__(self, model, data, simulation_frame_skip, width, height):
+    def __init__(self,
+                 model,
+                 data,
+                 simulation_frame_skip,
+                 capture_frames,
+                 capture_fps,
+                 frame_size):
         glfw.init()
 
         self._button_left_pressed = False
@@ -32,8 +38,10 @@ class WindowViewer(BaseRender):
 
         # width, height = glfw.get_video_mode(glfw.get_primary_monitor()).size
         glfw.window_hint(glfw.VISIBLE, 1)
-        self.window = glfw.create_window(
-            width, height, "mujoco", None, None)
+        self.window = glfw.create_window(*frame_size,
+                                         "mujoco",
+                                         None,
+                                         None)
 
         self.width, self.height = glfw.get_framebuffer_size(self.window)
         window_width, _ = glfw.get_window_size(self.window)
@@ -46,7 +54,12 @@ class WindowViewer(BaseRender):
         glfw.set_scroll_callback(self.window, self._scroll_callback)
         glfw.set_key_callback(self.window, self._key_callback)
 
-        super().__init__(model, data, simulation_frame_skip, width, height)
+        super().__init__(model,
+                         data,
+                         simulation_frame_skip,
+                         capture_frames,
+                         capture_fps,
+                         frame_size)
         glfw.swap_interval(1)
 
         self.cam.fixedcamid = 0
@@ -117,12 +130,19 @@ class WindowViewer(BaseRender):
                 overlay.add("FPS", f"{int(1 / self._time_per_render)}", "bottom left")
                 overlay.add_to_viewport(self.con, self.viewport)
 
-            if self._nth_render_call % self._frame_capture == 0:
-                mujoco.mjr_readPixels(self.rgb_arr, self.depth_arr, self.viewport, self.con)
-                rgb_img = np.copy(self.rgb_arr.reshape(self.viewport.height,
-                                    self.viewport.width, 3)[::-1, :, :])
-                self._frames.append(rgb_img)
-            self._nth_render_call += 1
+            if self._capture_frames:
+                if self._nth_render_call % self._nth_frame_capture == 0:
+                    self.rgb_arr = np.zeros(
+                        3 * self.viewport.width * self.viewport.height, dtype=np.uint8
+                    )
+                    self.depth_arr = np.zeros(
+                        self.viewport.width * self.viewport.height, dtype=np.float32
+                    )
+                    mujoco.mjr_readPixels(self.rgb_arr, self.depth_arr, self.viewport, self.con)
+                    rgb_img = np.copy(self.rgb_arr.reshape(self.viewport.height,
+                                        self.viewport.width, 3)[::-1, :, :])
+                    self._frames.append(rgb_img)
+                self._nth_render_call += 1
 
             glfw.swap_buffers(self.window)
             glfw.poll_events()
@@ -155,6 +175,8 @@ class WindowViewer(BaseRender):
             self._hide_menu = not self._hide_menu
         elif key == glfw.KEY_S:
             self.render_movie()
+        elif key == glfw.KEY_F:
+            self.render_image()
         if key == glfw.KEY_ESCAPE:
             print("Pressed ESC")
             print("Quitting.")
@@ -191,7 +213,7 @@ class WindowViewer(BaseRender):
         width, height = glfw.get_framebuffer_size(window)
 
         mujoco.mjv_moveCamera(
-            self._model, action, dx / height, dy / height, self.scn, self.cam
+            self._model, action, dx / width, dy / height, self.scn, self.cam
         )
 
         self._last_mouse_x = int(self._scale * xpos)

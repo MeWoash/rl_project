@@ -11,11 +11,22 @@ from Rendering.Utils import _ALL_RENDERERS
 class OffScreenViewer(BaseRender):
     """Offscreen rendering class with opengl context."""
 
-    def __init__(self, model, data, simulation_frame_skip, width, height):
+    def __init__(self,
+                 model,
+                 data,
+                 simulation_frame_skip,
+                 capture_frames,
+                 capture_fps,
+                 frame_size):
 
         # We must make GLContext before MjrContext
-        self._get_opengl_backend(width, height)
-        super().__init__(model, data, simulation_frame_skip, width, height)
+        self._get_opengl_backend(*frame_size)
+        super().__init__(model,
+                         data,
+                         simulation_frame_skip,
+                         capture_frames,
+                         capture_fps,
+                         frame_size)
         self._init_camera()
 
     def _init_camera(self):

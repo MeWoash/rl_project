@@ -95,18 +95,26 @@ class CarParkingEnv(gymnasium.Env):
             "rgb_array",
             "depth_array",
         ],
-        "render_fps": 125
     }
 
     def __init__(self,
                  xml_file: str = MODEL_PATH,
                  render_mode: str = "human",
-                 frame_skip: int = 4,
+                 simulation_frame_skip: int = 4,
+                 capture_frames = True,
+                 capture_fps = 24,
+                 frame_size = (480, 480), # Width, Height
                  **kwargs):
 
         self.fullpath = xml_file
         self.render_mode = render_mode
-        self.simulation_frame_skip = frame_skip
+        self.simulation_frame_skip = simulation_frame_skip
+        
+        self.capture_frames = capture_frames
+        self.capture_fps = capture_fps
+        self.frame_size = frame_size
+        
+        
         self.time_velocity_not_low = None
 
         # TODO CAMERA SETTINGS
@@ -162,7 +170,12 @@ class CarParkingEnv(gymnasium.Env):
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
 
-        self.mujoco_renderer: Renderer = Renderer(self.model, self.data, self.simulation_frame_skip)
+        self.mujoco_renderer: Renderer = Renderer(self.model,
+                                                self.data,
+                                                self.simulation_frame_skip,
+                                                self.capture_frames,
+                                                self.capture_fps,
+                                                self.frame_size)
 
     def _reset_simulation(self):
         # source MujocoEnv

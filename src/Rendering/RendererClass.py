@@ -8,18 +8,21 @@ class Renderer:
                  model,
                  data,
                  simulation_frame_skip,
-                 height: int = 720,
-                 width: int = 1280) -> None:
+                 capture_frames = True,
+                 capture_fps = 24,
+                 frame_size = (480, 480), #  Width, Height
+                 ) -> None:
 
         self._model = model
         self._data = data
         self._simulation_frame_skip = simulation_frame_skip
+        self._capture_frames= capture_frames
+        self._capture_fps= capture_fps
+        self._frame_size= frame_size
         
         self._viewers = {}
         self.viewer = None
 
-        self._height = height
-        self._width = width
         
     def _get_viewer(self, render_mode: str):
         """Initializes and returns a viewer class depending on the render_mode
@@ -29,10 +32,20 @@ class Renderer:
         self.viewer = self._viewers.get(render_mode)
         if self.viewer is None:
             if render_mode == "human":
-                self.viewer = WindowViewer(self._model, self._data, self._simulation_frame_skip, self._width, self._height)
+                self.viewer = WindowViewer(self._model,
+                                           self._data,
+                                           self._simulation_frame_skip,
+                                           self._capture_frames,
+                                           self._capture_fps,
+                                           (1080, 720))
                 pass
             elif render_mode in {"rgb_array", "depth_array"}:
-                self.viewer = OffScreenViewer(self._model, self._data, self._simulation_frame_skip, self._height, self._height)
+                self.viewer = OffScreenViewer(self._model,
+                                              self._data,
+                                              self._simulation_frame_skip,
+                                              self._capture_frames,
+                                              self._capture_fps,
+                                              self._frame_size)
             else:
                 raise AttributeError(
                     f"Unexpected mode: {render_mode}, expected modes: human, rgb_array, or depth_array"

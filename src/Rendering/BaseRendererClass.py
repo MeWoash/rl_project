@@ -2,10 +2,7 @@ from abc import ABC
 from ast import Raise
 import cv2
 import mujoco
-import imageio
 import numpy as np
-import os
-import threading
 
 from Rendering.Utils import MEDIA_DIR
 

@@ -94,6 +94,7 @@ class CarParkingEnv(gymnasium.Env):
             "human",
             "rgb_array",
             "depth_array",
+            "none"
         ],
     }
 
@@ -101,7 +102,7 @@ class CarParkingEnv(gymnasium.Env):
                  xml_file: str = MODEL_PATH,
                  render_mode: str = "human",
                  simulation_frame_skip: int = 4,
-                 capture_frames = True,
+                 capture_frames = False,
                  capture_fps = 24,
                  frame_size = (480, 480), # Width, Height
                  **kwargs):
@@ -204,8 +205,8 @@ class CarParkingEnv(gymnasium.Env):
             o.add("engine", "%.2f" % self.action[0], "top right")
             o.add("wheel", "%.2f" % self.action[1], "top right")
 
-        
-        return self.mujoco_renderer.render(self.render_mode, self.camera_id, o)
+        if self.render_mode != "none":
+            return self.mujoco_renderer.render(self.render_mode, self.camera_id, o)
 
     def close(self):
         """Close all processes like rendering contexts"""

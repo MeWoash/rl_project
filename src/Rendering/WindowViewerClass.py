@@ -175,6 +175,8 @@ class WindowViewer(BaseRender):
             self._hide_menu = not self._hide_menu
         elif key == glfw.KEY_S:
             self.render_movie()
+        elif key == glfw.KEY_F:
+            self.render_image()
         if key == glfw.KEY_ESCAPE:
             print("Pressed ESC")
             print("Quitting.")
@@ -211,7 +213,7 @@ class WindowViewer(BaseRender):
         width, height = glfw.get_framebuffer_size(window)
 
         mujoco.mjv_moveCamera(
-            self._model, action, dx / height, dy / height, self.scn, self.cam
+            self._model, action, dx / width, dy / height, self.scn, self.cam
         )
 
         self._last_mouse_x = int(self._scale * xpos)

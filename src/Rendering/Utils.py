@@ -46,6 +46,10 @@ _GRID_POSITIONS = {
     'top right': mujoco.mjtGridPos.mjGRID_TOPRIGHT,
     'bottom left': mujoco.mjtGridPos.mjGRID_BOTTOMLEFT,
     'bottom right': mujoco.mjtGridPos.mjGRID_BOTTOMRIGHT,
+    "top":mujoco.mjtGridPos.mjGRID_TOP,
+    "bottom":mujoco.mjtGridPos.mjGRID_BOTTOM,
+    "left":mujoco.mjtGridPos.mjGRID_LEFT,
+    "right":mujoco.mjtGridPos.mjGRID_RIGHT
 }
 
 class TextOverlay:

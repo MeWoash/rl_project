@@ -99,6 +99,21 @@ class BaseRender(ABC):
         self._frames.clear()
         out.release()
         self._nth_render_call = 0
+        
+    def render_image(self, filename = "tmp.jpg"):
+        output_file = str(MEDIA_DIR/filename)
+        
+        self.rgb_arr = np.zeros(
+                        3 * self.viewport.width * self.viewport.height, dtype=np.uint8
+                    )
+        self.depth_arr = np.zeros(
+            self.viewport.width * self.viewport.height, dtype=np.float32
+        )
+        mujoco.mjr_readPixels(self.rgb_arr, self.depth_arr, self.viewport, self.con)
+        rgb_img = np.copy(self.rgb_arr.reshape(self.viewport.height,
+                            self.viewport.width, 3)[::-1, :, :])
+        bgr_buffer = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(output_file, bgr_buffer)
 
     def _set_mujoco_buffer(self):
         raise NotImplementedError

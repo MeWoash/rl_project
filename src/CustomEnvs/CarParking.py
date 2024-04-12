@@ -191,7 +191,7 @@ class CarParkingEnv(gymnasium.Env):
             o.add("steps/1s", f"{1 / (self.model.opt.timestep*self.simulation_frame_skip)}", "bottom left")
     
             o.add("Env stats", "values", "top left")
-            o.add("reward", f"{self.reward}", "top left")
+            o.add("reward","%.2f"%self.reward, "top left")
             o.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
             o.add("dist",f"{self.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}", "top left")
             o.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")

@@ -12,8 +12,8 @@ RL_LOGS_DIR = Path(__file__).parent.joinpath("../out/logs").resolve()
 if __name__ == "__main__":
 
     env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
-                            n_envs=1,
-                            vec_env_cls=DummyVecEnv,
+                            n_envs=16,
+                            vec_env_cls=SubprocVecEnv,
                             env_kwargs={"render_mode": "none"})
     
     logdir = f"{RL_LOGS_DIR.joinpath('A2C')}"
@@ -22,9 +22,9 @@ if __name__ == "__main__":
                 policy="MlpPolicy",
                 tensorboard_log=logdir)
     
-    CALLBACKS = [CustomMetricsCallback()]
+    CALLBACKS = [CustomMetricsCallback(log_interval = 100)]
     
-    model.learn(total_timesteps=10_000,
+    model.learn(total_timesteps=1_000_000,
                 progress_bar=True,
                 callback=CALLBACKS)
     

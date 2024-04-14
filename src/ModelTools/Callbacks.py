@@ -87,7 +87,7 @@ class  CustomMetricsCallback(BaseCallback):
             
             
 class  CSVCallback(BaseCallback):
-    def __init__(self, verbose=0, log_interval=100, **kwargs):
+    def __init__(self, verbose=0, log_interval=50, **kwargs):
         super().__init__(verbose)
         self.log_interval = log_interval
         self.iteration = 0
@@ -139,6 +139,8 @@ class  CSVCallback(BaseCallback):
                     "reward_sum":self.dfs[i]['reward'].sum(),
                     "reward_mean":self.dfs[i]['reward'].mean(),
                     "step_max":self.dfs[i]['step'].max(),
+                    "dist_min":self.dfs[i]['dist'].min(),
+                    "dist_mean":self.dfs[i]['dist'].mean(),
                     "pos_X_mean":self.dfs[i]['pos_X'].mean(),
                     "pos_Y_mean":self.dfs[i]['pos_Y'].mean(),
                     "file":file}

@@ -20,7 +20,7 @@ class  CustomMetricsCallback(BaseCallback):
         for i in range(self.training_env.num_envs):
             # ep = infos[i]['episode_number']
             path = self._create_log_name(self.logdir, i, 0)
-            print("Sublog:",path)
+            # print("Sublog:",path)
             self.loggers.append(SummaryWriter(path))
     
     def _create_log_name(self, logdir, nth_vec, episode):
@@ -32,10 +32,15 @@ class  CustomMetricsCallback(BaseCallback):
     
     def _episode_stats(self):
         for i in range(self.training_env.num_envs):
-            self.loggers[i].add_scalar("episode/dist_to_target", self.distance[i, 0], self.infos[i]['episode_time'])
-            self.loggers[i].add_scalar("episode/reward", self.rewards[i], self.infos[i]['episode_time'])
-            self.loggers[i].add_scalar("episode/pos_X", self.pos[i, 0], self.infos[i]['episode_time'])
-            self.loggers[i].add_scalar("episode/pos_Y", self.pos[i, 1], self.infos[i]['episode_time'])   
+            
+            ep_time = round(self.infos[i]['episode_time'], 3)*1000
+            
+            self.loggers[i].add_scalar("episode/dist_to_target", self.distance[i, 0], ep_time)
+            self.loggers[i].add_scalar("episode/reward", self.rewards[i], ep_time)
+            self.loggers[i].add_scalar("episode/pos_X", self.pos[i, 0], ep_time)
+            self.loggers[i].add_scalar("episode/pos_Y", self.pos[i, 1], ep_time)
+            self.loggers[i].add_scalar("episode/velocity", self.velocity[i, 0], ep_time)
+            self.loggers[i].add_scalar("episode/angle_diff", self.angle_diff[i, 0], ep_time)
             # self.loggers[i].flush()
             
     def _check_episodes(self):
@@ -45,21 +50,23 @@ class  CustomMetricsCallback(BaseCallback):
                 path = self._create_log_name(self.logdir, i, ep)
                 # self.loggers[i].flush()
                 self.loggers[i].close()
+                # del self.loggers[i]
                 self.loggers[i] = SummaryWriter(path)
     
     def _on_step(self) -> bool:
-        
+        self.infos = self.locals['infos']
+        self.dones = self.locals['dones']
+            
         if self.iteration % self.log_interval == 0:
             self.observations = self.locals['new_obs']
             self.rewards = self.locals['rewards']
-            self.infos = self.locals['infos']
-            self.dones = self.locals['dones']
+            
             
             # autopep8: off
             
-            # self.velocity = self.observations[:,ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]
+            self.velocity = self.observations[:,ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]
             self.distance = self.observations[:,ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]
-            # self.angle_diff = self.observations[:,ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]
+            self.angle_diff = self.observations[:,ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]
             # self.contact = self.observations[:,ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]
             # self.range = self.observations[:,ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]
             self.pos = self.observations[:,ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]
@@ -68,7 +75,11 @@ class  CustomMetricsCallback(BaseCallback):
             # autopep8: on
             self._overall_stats()
             self._episode_stats()
-            self._check_episodes()
         self.iteration+=1
+        self._check_episodes()
         
         return True
+    
+    def _on_training_end(self):
+        for i in range(self.training_env.num_envs):
+            self.loggers[i].close()

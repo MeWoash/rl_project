@@ -245,6 +245,7 @@ class CarParkingEnv(gymnasium.Env):
 
         self.info = {
             "episode_time":self.data.time,
+            "episode_step":self.data.time / self.model.opt.timestep,
             "episode_number":self.episode,
                      }
         renderRetVal = self.render()

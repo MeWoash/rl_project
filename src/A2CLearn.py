@@ -1,6 +1,6 @@
 from pathlib import Path
 from CustomEnvs import CarParkingEnv
-from CustomEnvs.Callbacks import *
+from ModelTools.Callbacks import *
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3 import A2C
@@ -12,7 +12,7 @@ RL_LOGS_DIR = Path(__file__).parent.joinpath("../out/logs").resolve()
 if __name__ == "__main__":
 
     env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
-                            n_envs=16,
+                            n_envs=6,
                             vec_env_cls=SubprocVecEnv,
                             env_kwargs={"render_mode": "none"})
     

@@ -111,6 +111,7 @@ class BaseRender(ABC):
                             self.viewport.width, 3)[::-1, :, :])
         bgr_buffer = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(output_file, bgr_buffer)
+        return rgb_img
 
     def _set_mujoco_buffer(self):
         raise NotImplementedError

@@ -7,7 +7,7 @@ import gymnasium
 import mujoco
 from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
-from typing import Dict, Tuple, Union
+from typing import Dict, Text, Tuple, Union
 import sys
 import os
 import math
@@ -100,7 +100,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def __init__(self,
                  xml_file: str = MODEL_PATH,
-                 render_mode: str = "human",
+                 render_mode: str = "rgb_array",
                  simulation_frame_skip: int = 4,
                  capture_frames = False,
                  capture_fps = 24,
@@ -179,40 +179,41 @@ class CarParkingEnv(gymnasium.Env):
                                                 self.frame_size)
 
     def _reset_simulation(self):
-        # source MujocoEnv
         mujoco.mj_resetData(self.model, self.data)
 
     def render(self):
-        # source MujocoEnv
         o = TextOverlay()
         if self.render_mode == "human":
-            o.add("Step",f"{round(self.data.time / self.model.opt.timestep)}", "bottom left")
-            o.add("episode", f"{self.episode}", "bottom left")
-            o.add("time", "%.2f"%self.data.time, "bottom left")
-            o.add("steps/1s", f"{1 / (self.model.opt.timestep*self.simulation_frame_skip)}", "bottom left")
-    
-            o.add("Env stats", "values", "top left")
-            o.add("reward","%.2f"%self.reward, "top left")
-            o.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
-            o.add("dist",f"{self.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}", "top left")
-            o.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")
-            o.add("contact",f"{self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}", "top left")
-            o.add("range",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}", "top left")
-            o.add("pos",f"{self.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}", "top left")
-            o.add("eul",f"{self.observation[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}", "top left")
-            
-            o.add("Model Action", "values", "top right")
-            o.add("engine", "%.2f" % self.action[0], "top right")
-            o.add("wheel", "%.2f" % self.action[1], "top right")
+            self._prep_overlay(o)
 
         if self.render_mode != "none":
             return self.mujoco_renderer.render(self.render_mode, self.camera_id, o)
 
+
+    def _prep_overlay(self, overlay: TextOverlay):
+        overlay.add("Step",f"{round(self.data.time / self.model.opt.timestep)}", "bottom left")
+        overlay.add("episode", f"{self.episode}", "bottom left")
+        overlay.add("time", "%.2f"%self.data.time, "bottom left")
+        overlay.add("steps/1s", f"{1 / (self.model.opt.timestep*self.simulation_frame_skip)}", "bottom left")
+        overlay.add("Env stats", "values", "top left")
+        overlay.add("reward","%.2f"%self.reward, "top left")
+        overlay.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
+        overlay.add("dist",f"{self.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}", "top left")
+        overlay.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")
+        overlay.add("contact",f"{self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}", "top left")
+        overlay.add("range",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}", "top left")
+        overlay.add("pos",f"{self.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}", "top left")
+        overlay.add("eul",f"{self.observation[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}", "top left")
+        overlay.add("Model Action", "values", "top right")
+        overlay.add("engine", "%.2f" % self.action[0], "top right")
+        overlay.add("wheel", "%.2f" % self.action[1], "top right")
+
+
     def close(self):
         """Close all processes like rendering contexts"""
-        # source MujocoEnv
         if self.mujoco_renderer is not None:
             self.mujoco_renderer.close()
+
 
     def _apply_forces(self, action=None):
         enginePowerCtrl = action[0]
@@ -221,6 +222,7 @@ class CarParkingEnv(gymnasium.Env):
         self.data.actuator(f"{CAR_NAME}/engine").ctrl = enginePowerCtrl
         self.data.actuator(f"{CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl
         self.data.actuator(f"{CAR_NAME}/wheel2_angle").ctrl = wheelsAngleCtrl
+
 
     def _do_simulation(self, n_frames):
         """
@@ -244,7 +246,7 @@ class CarParkingEnv(gymnasium.Env):
         self.terminated = self._check_terminate_condition()
         self.truncated = self._check_truncated_condition()
 
-        self.info = {}
+        self.info = {"episode_time":self.model.time, "episode":self.episode}
         renderRetVal = self.render()
 
         self.prev_obs = self.observation
@@ -258,18 +260,6 @@ class CarParkingEnv(gymnasium.Env):
         total_dist_reward = 1 - normdist
 
         time_punish = normalize_data(self.data.time, 0, 0.5, 0, 30)
-        # negative_velocity_punish = 0
-        # if self.observation[ObsIndex.VELOCITY_BEGIN] <= -0.5:
-        #     negative_velocity_punish = -0.5
-
-        # normangle = normalize_data(abs(self.observation[1]), 0, 0.05, 0, np.pi)
-        # total_angle_reward = 0.1 - normangle
-
-        # distance_improvement_reward = 0.1 if self.prev_obs[0] > self.observation[0] else 0
-        # angle_improvement_reward = 0.01 if abs(self.prev_obs[1]) > abs(
-        #     self.observation[1]) else 0
-
-        # print(total_dist_reward, "\t\t", total_angle_reward)
 
         reward = total_dist_reward * (1 - time_punish)
         return reward
@@ -280,7 +270,6 @@ class CarParkingEnv(gymnasium.Env):
                 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) <= 0.1 \
                 and math.radians(-5) <= self.observation[ObsIndex.ANGLE_DIFF_BEGIN] <= math.radians(10):
             terminated = True
-            self.reward += 1000
         return terminated
 
     def _check_truncated_condition(self):
@@ -298,7 +287,6 @@ class CarParkingEnv(gymnasium.Env):
             truncated = True
         elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
             truncated = True
-            self.reward -= 100
 
         return truncated
 

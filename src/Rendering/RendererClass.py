@@ -39,7 +39,7 @@ class Renderer:
                                            self._capture_fps,
                                            (1080, 720))
                 pass
-            elif render_mode in {"rgb_array", "depth_array"}:
+            elif render_mode in {"rgb_array", "depth_array", "none"}:
                 self.viewer = OffScreenViewer(self._model,
                                               self._data,
                                               self._simulation_frame_skip,
@@ -63,3 +63,6 @@ class Renderer:
         self.viewer = self._get_viewer(render_mode)
         
         return self.viewer.render(camera_id, overlays)
+    
+    def close(self):
+        self.viewer.close()

@@ -24,7 +24,7 @@ if __name__ == "__main__":
     episode_files.sort(reverse=True, key=lambda x: (x[0], x[1], x[2]))
     
     arr = []
-    for episode, env, file_path in episode_files:
+    for episode, env, file_path in episode_files[::20]:
         ea = event_accumulator.EventAccumulator(file_path)
         ea.Reload()
         scalarsX = ea.Scalars('episode/pos_X')

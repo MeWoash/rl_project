@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 policy="MlpPolicy",
                 tensorboard_log=logdir)
     
-    CALLBACKS = [CSVCallback(log_interval = 100)]
+    CALLBACKS = [CSVCallback(log_interval = 20)]
     
     model.learn(total_timesteps=5_000,
                 progress_bar=True,

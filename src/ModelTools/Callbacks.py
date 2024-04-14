@@ -94,10 +94,13 @@ class  CSVCallback(BaseCallback):
         
     def _init_callback(self):
         self.logdir=self.logger.get_dir()
-        self.df_episodes_summary:pd.DataFrame = pd.DataFrame(columns=["episode", 'env', 'file'])
+        self.ep_logdir = Path(self.logdir).joinpath("./episodes")
+        self.ep_logdir.mkdir(parents=True, exist_ok=True)
+        
+        self.df_episodes_summary:pd.DataFrame = pd.DataFrame()
         self.dfs:list[pd.DataFrame] = []
         for i in range(self.training_env.num_envs):
-            self.dfs.append(pd.DataFrame(columns=['step','dist','angle_diff','pos_X','pos_Y','reward','velocity']))
+            self.dfs.append(pd.DataFrame())
     
     def _create_log_name(self, logdir, nth_vec, episode):
         return Path(logdir).joinpath(f"./ep-{episode}_env-{nth_vec}.csv")
@@ -126,11 +129,23 @@ class  CSVCallback(BaseCallback):
         for i in range(self.training_env.num_envs):
             if self.dones[i] == True:
                 ep = self.infos[i]['episode_number']
-                file = self._create_log_name(self.logdir,i,ep)
+                file = self._create_log_name(self.ep_logdir,i,ep)
                 self.dfs[i].to_csv(file)
-                self.dfs[i].drop(self.dfs[i].index, inplace=True)
                 
-                new_row = pd.DataFrame.from_dict([{"episode":ep,"env":i,"file":file}])
+                
+                row = {
+                    "episode":ep,
+                    "env":i,
+                    "reward_sum":self.dfs[i]['reward'].sum(),
+                    "reward_mean":self.dfs[i]['reward'].mean(),
+                    "step_max":self.dfs[i]['step'].max(),
+                    "pos_X_mean":self.dfs[i]['pos_X'].mean(),
+                    "pos_Y_mean":self.dfs[i]['pos_Y'].mean(),
+                    "file":file}
+                
+                self.dfs[i].drop(self.dfs[i].index, inplace=True)
+                new_row = pd.DataFrame.from_dict([row])
+                
                 self.df_episodes_summary = pd.concat([self.df_episodes_summary,new_row])
                 
     def _on_step(self) -> bool:

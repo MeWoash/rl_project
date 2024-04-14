@@ -121,7 +121,6 @@ class CarParkingEnv(gymnasium.Env):
         # TODO CAMERA SETTINGS
         self.camera_name = None
         self.camera_id = 0
-        self.prev_obs = None
         self.episode = 0
 
         self._initialize_simulation()
@@ -238,18 +237,18 @@ class CarParkingEnv(gymnasium.Env):
         self._do_simulation(self.simulation_frame_skip)
 
         self.observation = self._get_obs()
-        if self.prev_obs is None:
-            self.prev_obs = self.observation
 
         self.reward = self._calculate_reward()
 
         self.terminated = self._check_terminate_condition()
         self.truncated = self._check_truncated_condition()
 
-        self.info = {"episode_time":self.model.time, "episode":self.episode}
+        self.info = {
+            "episode_time":self.data.time,
+            "episode_number":self.episode,
+                     }
         renderRetVal = self.render()
 
-        self.prev_obs = self.observation
         # print(self.reward)
         return self.observation, self.reward, self.terminated, self.truncated, self.info
 

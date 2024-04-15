@@ -142,17 +142,29 @@ def get_n_best_rewards(df, n_episodes=10):
     return best
 
 
+def get_best_rewards_plot(df_episodes, n_best = 20):
+    n_best = 20
+    fig, axs = plt.subplots(1, 2, figsize=(10,5))
+    best = get_n_best_rewards(df_episodes, n_best)
+    plot_trajectory(best, axs = axs[0])
+    create_heatmap(best, axs = axs[1], sigma=1, bins=101)
+
+    axs[0].scatter(5,5, c='r', s=50)
+    axs[1].scatter(5,5, c='r', s=50)
+    if n_best > 20:
+        axs[0].legend().remove()
+    fig.tight_layout()
+    fig.suptitle(f"{n_best} best rewarded episodes")
+    
+    return fig, axs
+
 def do_basic_analysis(log_dir):
     
     df_summary, df_episodes = load_dfs(log_dir)
-    
     generate_heatmap_video(df_episodes, log_dir)
     
-    best_rewards = get_n_best_rewards(df_episodes, 50)
-    
-    fig, axs = create_heatmap(best_rewards)
-    
-    fig.savefig(str(Path(log_dir,'best_rewards')))
+    fig_rew, axs_rew = get_best_rewards_plot(df_episodes, 20)
+    fig_rew.savefig(str(Path(log_dir,'best_rewards.png')))
 
 if __name__ == "__main__":
     log_dir = rf"D:\kody\rl_project\out\logs\A2C\A2C_1"

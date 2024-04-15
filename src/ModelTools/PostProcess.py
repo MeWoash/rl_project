@@ -1,4 +1,4 @@
-from cv2 import log
+from math import ceil
 import cv2
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -72,7 +72,7 @@ def create_heatmap(df, sigma=1, bins=101, axs:Axes = None):
     
     return fig, axs
 
-def generate_heatmap_video(df, dir, filename="heatmap.mp4", n_intervals=100, sigma=1, bins=101):
+def generate_heatmap_video(df, dir, filename="heatmap.mp4", episode_divide_factor = 100, sigma=1, bins=101):
     dpi = 100
     frame_size = (480, 480)
     fig_size = (frame_size[0] / dpi, frame_size[1] / dpi)
@@ -90,16 +90,14 @@ def generate_heatmap_video(df, dir, filename="heatmap.mp4", n_intervals=100, sig
     arr = []
     data_sorted = df.sort_index()
     
-    if n_intervals >  max_ep:
-        n_intervals = max_ep
-    intervals = np.linspace(1, max_ep, n_intervals).astype(int)
-    print(intervals)
+    n_episodes = ceil(max_ep/episode_divide_factor)
+    idxs = list(range(1, max_ep+n_episodes+1, n_episodes))
+    if idxs[-1]>max_ep+1:
+        idxs[-1]=max_ep+1
 
-    # Filtrowanie DataFrame dla każdego przedziału
-    results = []
-    for i in range(len(intervals) - 1):
-        lower_bound = intervals[i]
-        upper_bound = intervals[i + 1]
+    for i in range(len(idxs)-1):
+        lower_bound = idxs[i]
+        upper_bound = idxs[i + 1]
 
         filtered = data_sorted.loc[(slice(lower_bound, upper_bound), slice(None)), :]
         heatmap, xedges, yedges = np.histogram2d(filtered['pos_X'],filtered['pos_Y'], bins=bins, range=MAP_BOUNDARY)
@@ -114,7 +112,7 @@ def generate_heatmap_video(df, dir, filename="heatmap.mp4", n_intervals=100, sig
         axs.set_xlabel('x')
         axs.set_ylabel('y')
         axs.set_aspect('equal')
-        axs.set_title(f"episode: {lower_bound}-{upper_bound}")
+        axs.set_title(f"episode: <{lower_bound}, {upper_bound})")
         
         fig.canvas.draw()  # Render the figure
 
@@ -148,8 +146,13 @@ def do_basic_analysis(log_dir):
     
     df_summary, df_episodes = load_dfs(log_dir)
     
-    generate_heatmap_video(df_episodes,log_dir)
-    # create_heatmap(df_episodes)
+    generate_heatmap_video(df_episodes, log_dir)
+    
+    best_rewards = get_n_best_rewards(df_episodes, 50)
+    
+    fig, axs = create_heatmap(best_rewards)
+    
+    fig.savefig(str(Path(log_dir,'best_rewards')))
 
 if __name__ == "__main__":
     log_dir = rf"D:\kody\rl_project\out\logs\A2C\A2C_1"

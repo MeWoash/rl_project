@@ -6,6 +6,7 @@ from pathlib import Path
 from CustomEnvs.CarParking import ObsIndex
 import numpy as np
 import pandas as pd
+from ModelTools.PostProcess import *
 
 class  CustomMetricsCallback(BaseCallback):
     def __init__(self, verbose=0, log_interval=100, **kwargs):
@@ -184,3 +185,5 @@ class  CSVCallback(BaseCallback):
     def _on_training_end(self):
         self.df_episodes_summary.to_csv(self.df_episodes_summary_path, index=False)
         self.df_episodes_all.to_csv(self.df_episodes_all_path, index=False)
+        
+        do_basic_analysis(self.logdir)

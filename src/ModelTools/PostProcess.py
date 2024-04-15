@@ -1,3 +1,4 @@
+from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -5,10 +6,21 @@ from scipy.ndimage import gaussian_filter
 import matplotlib.cm as cm
 from pathlib import Path
 
+def plot_trajectory(x, y):
+    fig, axs = plt.subplots(1,1)
+    axs.scatter(y, x, alpha=0.1)
+    axs.scatter(5, 5, s=200, c='r')
+    
+    axs.grid()
+    axs.set_xlim([-10,10])
+    axs.set_ylim([-10,10])
+    axs.invert_xaxis()
+
+    return fig, axs
 
 if __name__ == "__main__":
-    episode_summary_path = rf"D:\kody\rl_project\out\logs\A2C\A2C_2\episodes_summary.csv"
-    episode_all_path = rf"D:\kody\rl_project\out\logs\A2C\A2C_2\episodes_all.csv"
+    episode_summary_path = rf"D:\kody\rl_project\out\logs\A2C\A2C_1\episodes_summary.csv"
+    episode_all_path = rf"D:\kody\rl_project\out\logs\A2C\A2C_1\episodes_all.csv"
     
     df_summary = pd.read_csv(episode_summary_path, index_col=False)
     df_all = pd.read_csv(episode_all_path, index_col=False)

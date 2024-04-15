@@ -18,15 +18,17 @@ from ModelTools.Utils import *
 # import MJCFGenerator
 
 
-def generate_trajectory_plot(df, axs:Axes = None):
+def generate_trajectory_plot(df, axs:Axes = None, legend = False, **kwargs):
     
     if axs is None:
         fig, axs = plt.subplots(1,1)
     else:
         fig = axs.get_figure()
     
-    for indexes, grouped in df.groupby(level=df.index.names):
-        axs.plot(grouped['pos_X'].to_numpy(), grouped['pos_Y'].to_numpy(), label=f"ep-{indexes[0]}_en-{indexes[1]}")
+    for indexes, grouped in group_by_episodes(df):
+        x = grouped['pos_X'].to_numpy()
+        y = grouped['pos_Y'].to_numpy()
+        axs.plot(x, y, label=f"ep-{indexes[0]}_en-{indexes[1]}")
 
     axs.grid(True)
     axs.set_xlim(MAP_BOUNDARY[0])
@@ -36,11 +38,12 @@ def generate_trajectory_plot(df, axs:Axes = None):
     axs.set_ylabel('x')
     axs.set_aspect('equal')
     
-    axs.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    if legend:
+        axs.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     
     return fig, axs
 
-def generate_heatmap_plot(df, sigma=1, bins=101, axs:Axes = None):
+def generate_heatmap_plot(df, sigma=1, bins=101, axs:Axes = None, **kwargs):
     
     if axs is None:
         fig, axs = plt.subplots(1,1)
@@ -63,18 +66,3 @@ def generate_heatmap_plot(df, sigma=1, bins=101, axs:Axes = None):
     return fig, axs
 
 
-def generate_best_rewards_plot(df_episodes, n_best = 20):
-    n_best = 20
-    fig, axs = plt.subplots(1, 2, figsize=(10,5))
-    best = get_n_best_rewards(df_episodes, n_best)
-    generate_trajectory_plot(best, axs = axs[0])
-    generate_heatmap_plot(best, axs = axs[1], sigma=1, bins=101)
-
-    axs[0].scatter(5,5, c='r', s=50)
-    axs[1].scatter(5,5, c='r', s=50)
-    if n_best > 20:
-        axs[0].legend().remove()
-    fig.tight_layout()
-    fig.suptitle(f"{n_best} best rewarded episodes")
-    
-    return fig, axs

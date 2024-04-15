@@ -2,6 +2,10 @@ from math import ceil
 from pathlib import Path
 import time
 
+import cv2
+from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
+import numpy as np
 import pandas as pd
 
 EPISODES_FILE_NAME = 'episodes_all.csv'
@@ -44,7 +48,11 @@ def batch_by_episodes(df, episode_divide_factor=100):
         lower_bound = idxs[i]
         upper_bound = idxs[i + 1]
         
-        yield data_sorted.loc[(slice(lower_bound, upper_bound), slice(None)), :], lower_bound, upper_bound
+        yield (lower_bound, upper_bound), data_sorted.loc[(slice(lower_bound, upper_bound), slice(None)), :]
+        
+def group_by_episodes(df):
+    for indexes, grouped in df.groupby(level=df.index.names):
+        yield indexes, grouped
         
 def get_n_best_rewards(df, n_episodes=10):
     grouped = df.groupby(by=df.index.names)
@@ -52,3 +60,43 @@ def get_n_best_rewards(df, n_episodes=10):
     indexes = acc[:n_episodes].index.to_list()
     best = df.loc[indexes]
     return best
+
+@timeit
+def generate_video_from_plot_function(df, plot_function, dir, filename="out.mp4", plot_function_kwargs={}):
+    dpi = 100
+    frame_size = (480, 480)
+    fig_size = (frame_size[0] / dpi, frame_size[1] / dpi)
+    
+    fig, axs = plt.subplots(1,1, figsize=fig_size, dpi=dpi)
+    output_file = str(Path(dir).joinpath(filename))
+    fps = 10
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_file, fourcc, fps, frame_size)
+    arr = []
+  
+    for (lower_bound, upper_bound), filtered in batch_by_episodes(df, 100):
+  
+        plot_function(filtered, axs=axs, **plot_function_kwargs)
+        axs.set_title(f"episode: <{lower_bound}, {upper_bound})")
+        fig.canvas.draw()
+
+        rgba_image = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
+
+        w, h = fig.canvas.get_width_height()
+        rgba_image = rgba_image.reshape((h, w, 4))
+
+        rgb_image = rgba_image[:, :, :3]
+        bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+        bgr_image = cv2.resize(bgr_image, frame_size)
+        
+        out.write(bgr_image)
+        axs.cla()
+
+    out.release()
+    plt.close(fig)
+    return arr
+
+def generate_fig_file(fig:Figure, dir:str, filename:str="out.png") -> None:
+    p = str(Path(dir,filename))
+    fig.savefig(p)

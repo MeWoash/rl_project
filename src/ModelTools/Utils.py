@@ -62,54 +62,6 @@ def get_n_best_rewards(df, n_episodes=10):
     best = df.loc[indexes]
     return best
 
-def generate_n_combined_plots(df, function_spec:list[Callable, dict], axs=None, **kwargs):
-    if axs is None:
-        fig, axs = plt.subplots(1, len(function_spec))
-    else:
-        assert len(axs) == len(function_spec)
-        fig = axs.get_figure()
-    
-    for i, ax in enumerate(axs):
-        function_spec[i][0](df, axs=ax,**function_spec[i][1])
-        
-    return fig, axs
-        
-
-def generate_video_from_plot_function(df, plot_function, dir, filename="out.mp4", plot_function_kwargs={}):
-    dpi = 100
-    frame_size = (480, 480)
-    fig_size = (frame_size[0] / dpi, frame_size[1] / dpi)
-    
-    fig, axs = plt.subplots(1,1, figsize=fig_size, dpi=dpi)
-    output_file = str(Path(dir).joinpath(filename))
-    fps = 10
-
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_file, fourcc, fps, frame_size)
-    arr = []
-  
-    for (lower_bound, upper_bound), filtered in batch_by_episodes(df, 100):
-  
-        plot_function(filtered, axs=axs, **plot_function_kwargs)
-        axs.set_title(f"episode: <{lower_bound}, {upper_bound})")
-        fig.canvas.draw()
-
-        rgba_image = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
-
-        w, h = fig.canvas.get_width_height()
-        rgba_image = rgba_image.reshape((h, w, 4))
-
-        rgb_image = rgba_image[:, :, :3]
-        bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
-        bgr_image = cv2.resize(bgr_image, frame_size)
-        
-        out.write(bgr_image)
-        axs.cla()
-
-    out.release()
-    plt.close(fig)
-    return arr
-
 def generate_fig_file(fig:Figure, dir:str, filename:str="out.png") -> None:
     p = str(Path(dir,filename))
     fig.savefig(p)

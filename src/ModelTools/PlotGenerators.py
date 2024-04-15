@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import enum
 from math import ceil
 import sys
-from typing import Type, TypeVar, Union
+from typing import Tuple, Type, TypeVar, Union
 import matplotlib
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -101,25 +101,46 @@ class PlotHeatMap(PlotBaseAbstract):
 
 
 class PlotWrapper():
-    def __init__(self, subplot_layout = None, generators: Union[list[Type[PlotBaseAbstract]],None] = None) -> None:
+    def __init__(self,
+                 generators: list[Type[PlotBaseAbstract]] | None = None,
+                 subplot_layout = None,
+                 axes: Axes | None = None) -> None:
         self._fig: Figure = None
         self._axes: list[Axes] = []
         self._generators:list[Type[PlotBaseAbstract]] = []
+        self.subplot_layout = None
         
-        if generators is not None and subplot_layout is not None:
-            self.create_wrapper(subplot_layout, generators)
+        if generators is not None:
+            self.create_wrapper(generators, axes, subplot_layout)
     
-    def create_wrapper(self, subplot_layout, generators: list[Type[PlotBaseAbstract]]):
-        self._generators = generators
-        assert len(self._generators) <= subplot_layout[0]*subplot_layout[1]
+    def create_wrapper(self,
+                       generators: list[Type[PlotBaseAbstract]],
+                       subplot_layout: Tuple[int, int]|None = None,
+                       axes: list[Axes]|None = None):
         
-        self._fig, self._axes = plt.subplots(*subplot_layout, squeeze=True)
+        self._generators = generators
+        self.assign_axes(subplot_layout, axes)
+
+    def assign_axes(self, subplot_layout=None, axes=None):
+        
+        if axes is not None:
+            assert len(axes)>=len(self._generators)
+            self._axes = axes[:len(self._generators)]
+            self._fig = self._axes[0].get_figure()
+        else:
+            if subplot_layout is None:
+                subplot_layout = [1, len(self._generators)]
+            self.subplot_layout = subplot_layout
+            
+            assert len(self._generators) <= self.subplot_layout[0]*self.subplot_layout[1]
+            self._fig, self._axes = plt.subplots(*self.subplot_layout, squeeze=True)
+        
+        
         
         if len(self._axes) == 1:
             self._axes = [self._axes]
         
         for i, gen in enumerate(self._generators):
-            print(self._axes[i])
             gen.ax = self._axes[i]
     
     def plot(self, df):

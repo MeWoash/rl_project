@@ -1,26 +1,72 @@
 from math import ceil
-import sys
+from pathlib import Path
+import time
+from typing import Callable
+
 import cv2
-import matplotlib
+from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from scipy.ndimage import gaussian_filter
-import matplotlib.cm as cm
-from pathlib import Path
+import sys
 
 # autopep8: off
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from ModelTools.PlotGenerators import *
 from ModelTools.Utils import *
+from ModelTools.PlotGenerators import *
 # autopep8: on
 
-# import MJCFGenerator
 
-# def generate_heatmap_video(df, dir, filename="heatmap.mp4", sigma=1, bins=101):
-#     generate_video_from_plot_function(df, generate_heatmap_plot, dir, filename, plot_function_kwargs={"sigma":sigma, "bins":bins})
+class VideoGenerator():
+    def __init__(self,
+                plot_wrapper: PlotWrapper,
+                dir:str,
+                filename:str="out.mp4",
+                frame_size = (480, 480),
+                fps = 10,
+                dpi = 100) -> None:
+        
+        self.plot_wrapper:PlotWrapper = plot_wrapper
+        self.frame_size= frame_size
+        self.fps = fps
+        self.dpi = dpi
+        self.fig_size = (frame_size[0] / dpi, frame_size[1] / dpi)
+
+        self.fig: Figure
+        self.axes: list[Axes]
+        self.fig, self.axes = plt.subplots(*self.plot_wrapper.subplot_layout, figsize=self.fig_size, dpi=dpi)
+        
+        plot_wrapper.assign_axes(axes = self.axes)
+        
+        self.output_file = str(Path(dir, filename).resolve())
+
+    def generate_video(self,df):
+        
+        
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(self.output_file, fourcc, self.fps, self.frame_size)
+        arr = []
     
-# def generate_trajectory_video(df, dir, filename="heatmap.mp4", sigma=1, bins=101):
-#     generate_video_from_plot_function(df, generate_trajectory_plot, dir, filename, plot_function_kwargs={"legend":False})
+        for (lower_bound, upper_bound), filtered in batch_by_episodes(df, 100):
+    
+            self.plot_wrapper.plot(filtered)
+            self.fig.suptitle(f"episode: <{lower_bound}, {upper_bound})")
+            self.fig.canvas.draw()
+
+            rgba_image = np.frombuffer(self.fig.canvas.buffer_rgba(), dtype=np.uint8)
+
+            w, h = self.fig.canvas.get_width_height()
+            rgba_image = rgba_image.reshape((h, w, 4))
+
+            rgb_image = rgba_image[:, :, :3]
+            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+            bgr_image = cv2.resize(bgr_image, self.frame_size)
+            
+            out.write(bgr_image)
+            for ax in self.axes:
+                ax.cla()
+
+        out.release()
+        plt.close(self.fig)
+        return arr

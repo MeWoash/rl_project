@@ -1,6 +1,7 @@
 from math import ceil
 from pathlib import Path
 import time
+from typing import Callable
 
 import cv2
 from matplotlib import pyplot as plt
@@ -61,7 +62,19 @@ def get_n_best_rewards(df, n_episodes=10):
     best = df.loc[indexes]
     return best
 
-@timeit
+def generate_n_combined_plots(df, function_spec:list[Callable, dict], axs=None, **kwargs):
+    if axs is None:
+        fig, axs = plt.subplots(1, len(function_spec))
+    else:
+        assert len(axs) == len(function_spec)
+        fig = axs.get_figure()
+    
+    for i, ax in enumerate(axs):
+        function_spec[i][0](df, axs=ax,**function_spec[i][1])
+        
+    return fig, axs
+        
+
 def generate_video_from_plot_function(df, plot_function, dir, filename="out.mp4", plot_function_kwargs={}):
     dpi = 100
     frame_size = (480, 480)

@@ -24,7 +24,7 @@ if __name__ == "__main__":
     
     CALLBACKS = [CSVCallback(log_interval = 20)]
     
-    model.learn(total_timesteps=100_000,
+    model.learn(total_timesteps=50_000,
                 progress_bar=True,
                 callback=CALLBACKS)
     

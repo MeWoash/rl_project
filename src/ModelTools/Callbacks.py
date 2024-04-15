@@ -111,9 +111,12 @@ class  CSVCallback(BaseCallback):
     
     def _episode_stats(self):
         for i in range(self.training_env.num_envs):
-            
+            ep = self.infos[i]['episode_number']
             ep_time = round(self.infos[i]['episode_time'], 3)*1000
+            
             row: dict[str] = {
+                "episode":ep,
+                "env":i,
                 'step':ep_time,
                 'dist':self.distance[i, 0],
                 'angle_diff':self.angle_diff[i, 0],
@@ -130,7 +133,7 @@ class  CSVCallback(BaseCallback):
             if self.dones[i] == True:
                 ep = self.infos[i]['episode_number']
                 file = self._create_log_name(self.ep_logdir,i,ep)
-                self.dfs[i].to_csv(file)
+                self.dfs[i].to_csv(file, index=False)
                 
                 
                 row = {
@@ -176,4 +179,4 @@ class  CSVCallback(BaseCallback):
         return True
     
     def _on_training_end(self):
-        self.df_episodes_summary.to_csv(self.logdir+"/episodes_summary.csv")
+        self.df_episodes_summary.to_csv(self.logdir+"/episodes_summary.csv", index=False)

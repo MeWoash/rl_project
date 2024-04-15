@@ -297,7 +297,7 @@ class Generator:
         camHeight = calculateCameraHeight(
             self.map_length[0], self.map_length[1], 90)
         self.mjcf_model.worldbody.add("camera", name="topDownCam", pos=[
-                                      0, 0, camHeight], euler=[0, 0, -90], fovy=90)
+                                      0, 0, camHeight], euler=[0, 0, 0], fovy=90)
 
     def parse_xml_model_from_string(self, xml_string):
         self.mjcf_model: mjcf.RootElement = mjcf.from_xml_string(xml_string)

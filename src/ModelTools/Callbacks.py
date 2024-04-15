@@ -94,13 +94,16 @@ class  CSVCallback(BaseCallback):
         
     def _init_callback(self):
         self.logdir=self.logger.get_dir()
-        self.ep_logdir = Path(self.logdir).joinpath("./episodes")
-        self.ep_logdir.mkdir(parents=True, exist_ok=True)
+        
+        self.df_episodes_summary_path = self.ep_logdir = Path(self.logdir).joinpath("episodes_summary.csv")
+        self.df_episodes_all_path = self.ep_logdir = Path(self.logdir).joinpath("episodes_all.csv")
         
         self.df_episodes_summary:pd.DataFrame = pd.DataFrame()
-        self.dfs:list[pd.DataFrame] = []
+        self.df_episodes_all:pd.DataFrame = pd.DataFrame()
+        
+        self.df_episode_buffer: list[pd.DataFrame] = []
         for i in range(self.training_env.num_envs):
-            self.dfs.append(pd.DataFrame())
+            self.df_episode_buffer.append(pd.DataFrame())
     
     def _create_log_name(self, logdir, nth_vec, episode):
         return Path(logdir).joinpath(f"./ep-{episode}_env-{nth_vec}.csv")
@@ -125,33 +128,33 @@ class  CSVCallback(BaseCallback):
                 'reward':self.rewards[i],
                 'velocity':self.velocity[i, 0]
                 }
-            new = pd.DataFrame.from_dict([row])
-            self.dfs[i] = pd.concat([self.dfs[i],new])
+            self.df_episode_buffer[i] = pd.concat([self.df_episode_buffer[i],
+                                                   pd.DataFrame.from_dict([row])])
             
     def _check_episodes(self):
         for i in range(self.training_env.num_envs):
             if self.dones[i] == True:
                 ep = self.infos[i]['episode_number']
-                file = self._create_log_name(self.ep_logdir,i,ep)
-                self.dfs[i].to_csv(file, index=False)
-                
-                
                 row = {
                     "episode":ep,
                     "env":i,
-                    "reward_sum":self.dfs[i]['reward'].sum(),
-                    "reward_mean":self.dfs[i]['reward'].mean(),
-                    "step_max":self.dfs[i]['step'].max(),
-                    "dist_min":self.dfs[i]['dist'].min(),
-                    "dist_mean":self.dfs[i]['dist'].mean(),
-                    "pos_X_mean":self.dfs[i]['pos_X'].mean(),
-                    "pos_Y_mean":self.dfs[i]['pos_Y'].mean(),
-                    "file":file}
+                    "reward_sum":self.df_episode_buffer[i]['reward'].sum(),
+                    "reward_mean":self.df_episode_buffer[i]['reward'].mean(),
+                    "step_max":self.df_episode_buffer[i]['step'].max(),
+                    "dist_min":self.df_episode_buffer[i]['dist'].min(),
+                    "dist_mean":self.df_episode_buffer[i]['dist'].mean(),
+                    "pos_X_mean":self.df_episode_buffer[i]['pos_X'].mean(),
+                    "pos_Y_mean":self.df_episode_buffer[i]['pos_Y'].mean()
+                    }
                 
-                self.dfs[i].drop(self.dfs[i].index, inplace=True)
-                new_row = pd.DataFrame.from_dict([row])
+                self.df_episodes_all = pd.concat([self.df_episodes_all,
+                                                  self.df_episode_buffer[i]])
+                self.df_episodes_summary = pd.concat([self.df_episodes_summary,
+                                                      pd.DataFrame.from_dict([row])])
+                self.df_episode_buffer[i].drop(self.df_episode_buffer[i].index, inplace=True)
                 
-                self.df_episodes_summary = pd.concat([self.df_episodes_summary,new_row])
+                self.df_episodes_summary.to_csv(self.df_episodes_summary_path, index=False)
+                self.df_episodes_all.to_csv(self.df_episodes_all_path, index=False)
                 
     def _on_step(self) -> bool:
         self.infos = self.locals['infos']
@@ -179,4 +182,5 @@ class  CSVCallback(BaseCallback):
         return True
     
     def _on_training_end(self):
-        self.df_episodes_summary.to_csv(self.logdir+"/episodes_summary.csv", index=False)
+        self.df_episodes_summary.to_csv(self.df_episodes_summary_path, index=False)
+        self.df_episodes_all.to_csv(self.df_episodes_all_path, index=False)

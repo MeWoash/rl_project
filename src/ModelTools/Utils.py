@@ -36,7 +36,7 @@ def load_dfs(log_dir:str):
     
     return df_summary, df_all
 
-def batch_by_episodes(df, episode_divide_factor=100):
+def generator_episodes(df, episode_divide_factor=100):
     max_ep = df.index.max()[0]
     data_sorted = df.sort_index()
     
@@ -50,6 +50,11 @@ def batch_by_episodes(df, episode_divide_factor=100):
         upper_bound = idxs[i + 1]
         
         yield (lower_bound, upper_bound), data_sorted.loc[(slice(lower_bound, upper_bound), slice(None)), :]
+        
+def generator_episodes_best(df, best = 1):
+    data_sorted = df.sort_index()
+    for (lower_bound, upper_bound), batch in generator_episodes(data_sorted):
+        yield (lower_bound, upper_bound), get_n_best_rewards(batch, best)
         
 def group_by_episodes(df):
     for indexes, grouped in df.groupby(level=df.index.names):

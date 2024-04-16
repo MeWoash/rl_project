@@ -25,10 +25,16 @@ def do_basic_analysis(log_dir):
     # generate_heatmap_video(df_episodes, log_dir, "heatmap.mp4", sigma=1, bins=101)
     # generate_trajectory_video(df_episodes, log_dir, "trajectories.mp4")
     
-    _, filltered = list(batch_by_episodes(df_episodes, 10))[0]
+    _, filltered = list(generator_episodes(df_episodes, 10))[0]
     
-    vidGen:VideoGenerator = VideoGenerator(PlotWrapper([PlotHeatMap(), PlotTrajectory()]), log_dir, "wrapped.mp4", frame_size=(1080,1080), dpi=200)
-    vidGen.generate_video(df_episodes)
+    vidGen:VideoGenerator = VideoGenerator(PlotWrapper([PlotHeatMap(), PlotTrajectory()]), log_dir, frame_size=(1080,1080), dpi=200)
+    
+    vidGen.generate_video(df_episodes, "trajectories.mp4", "Episodes trajectories")
+    vidGen.generate_video(df_episodes, "best_trajectories.mp4", "Best runs Episodes trajectories", generator_function=generator_episodes_best)
+    
+    best = get_n_best_rewards(df_episodes, 20)
+    fig, axs = plt.subplots(1, 2, figsize=(10,7))
+    _,_ = PlotWrapper([PlotTrajectory(), PlotHeatMap()], fig, axs).plot(best)
     
     # plt.show()
 

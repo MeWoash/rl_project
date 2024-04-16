@@ -1,7 +1,7 @@
 from math import ceil
 from pathlib import Path
 import time
-from typing import Callable
+from typing import Callable, Generator
 
 import cv2
 from matplotlib import pyplot as plt
@@ -22,7 +22,6 @@ class VideoGenerator():
     def __init__(self,
                 plot_wrapper: PlotWrapper,
                 dir:str,
-                filename:str="out.mp4",
                 frame_size = (480, 480),
                 fps = 10,
                 dpi = 100) -> None:
@@ -37,19 +36,26 @@ class VideoGenerator():
         self.axes: list[Axes]
         self.fig, self.axes = plt.subplots(*self.plot_wrapper.subplot_layout, figsize=self.fig_size, dpi=dpi)
         
-        plot_wrapper.assign_axes(axes = self.axes)
+        plot_wrapper.assign_axes(self.fig, self.axes)
         
-        self.output_file = str(Path(dir, filename).resolve())
+        self.dir = dir
 
-    def generate_video(self,df):
+    def generate_video(self,
+                       df: pd.DataFrame,
+                       file_name,
+                       fig_title = "",
+                       generator_function: Generator = generator_episodes):
         
+        output_file = str(Path(self.dir, file_name).resolve())
+        
+        self.fig.suptitle(fig_title)
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(self.output_file, fourcc, self.fps, self.frame_size)
+        out = cv2.VideoWriter(output_file, fourcc, self.fps, self.frame_size)
         arr = []
     
-        for (lower_bound, upper_bound), filtered in batch_by_episodes(df, 100):
-    
+        for (lower_bound, upper_bound), filtered in generator_function(df):
+            
             self.plot_wrapper.plot(filtered)
             self.fig.suptitle(f"episode: <{lower_bound}, {upper_bound})")
             self.fig.canvas.draw()

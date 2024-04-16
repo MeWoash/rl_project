@@ -45,6 +45,12 @@ class PlotBaseAbstract(ABC):
 
     @property
     def fig(self) -> Axes:
+        """
+        To avoid situation when plot has assgigned ax which does not belong to figure, it doesnt have fig setter.
+
+        Returns:
+            Axes: Figure
+        """
         return self._fig
 
 
@@ -78,7 +84,7 @@ class PlotTrajectory(PlotBaseAbstract):
         return self._fig, self._ax
         
 class PlotHeatMap(PlotBaseAbstract):
-    def __init__(self, ax=None, sigma=1, bins=51) -> None:
+    def __init__(self, ax=None, sigma=1, bins=101) -> None:
         super().__init__(ax)
         self.sigma = sigma
         self.bins = bins
@@ -103,46 +109,31 @@ class PlotHeatMap(PlotBaseAbstract):
 class PlotWrapper():
     def __init__(self,
                  generators: list[Type[PlotBaseAbstract]] | None = None,
-                 subplot_layout = None,
-                 axes: Axes | None = None) -> None:
-        self._fig: Figure = None
-        self._axes: list[Axes] = []
-        self._generators:list[Type[PlotBaseAbstract]] = []
-        self.subplot_layout = None
-        
-        if generators is not None:
-            self.create_wrapper(generators, axes, subplot_layout)
-    
-    def create_wrapper(self,
-                       generators: list[Type[PlotBaseAbstract]],
-                       subplot_layout: Tuple[int, int]|None = None,
-                       axes: list[Axes]|None = None):
-        
+                 fig: Figure | None = None,
+                 axes: list[Axes] | None = None):
+                 
         self._generators = generators
-        self.assign_axes(subplot_layout, axes)
-
-    def assign_axes(self, subplot_layout=None, axes=None):
         
-        if axes is not None:
-            assert len(axes)>=len(self._generators)
-            self._axes = axes[:len(self._generators)]
-            self._fig = self._axes[0].get_figure()
-        else:
-            if subplot_layout is None:
-                subplot_layout = [1, len(self._generators)]
-            self.subplot_layout = subplot_layout
-            
-            assert len(self._generators) <= self.subplot_layout[0]*self.subplot_layout[1]
-            self._fig, self._axes = plt.subplots(*self.subplot_layout, squeeze=True)
+        self.assign_axes(fig, axes)
         
+    def assign_axes(self,
+                    fig: Figure | None = None,
+                    axes: np.ndarray[Axes] | np.ndarray[np.ndarray[Axes]] | None = None):
         
+        self._fig: Figure = fig
+        self._axes: np.ndarray[Axes] | np.ndarray[np.ndarray[Axes]] | None = axes
         
-        if len(self._axes) == 1:
-            self._axes = [self._axes]
+        if self._fig is None or self._axes is None:
+            self._fig, self._axes = plt.subplots(1, len(self._generators), squeeze=False)
+        
+        # IMPORTANT CHECK
+        self.subplot_layout: Tuple[int] | enum.Any = self._axes.shape
+        self._axes = self._axes.flatten()
+        assert len(self._generators) <= len(self._axes)
         
         for i, gen in enumerate(self._generators):
             gen.ax = self._axes[i]
-    
+
     def plot(self, df):
 
         for gen in self._generators:

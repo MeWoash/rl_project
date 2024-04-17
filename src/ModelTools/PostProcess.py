@@ -19,29 +19,23 @@ from ModelTools.VideoGenerators import *
 # autopep8: on
 
 
-def do_basic_analysis(log_dir):
+def do_basic_analysis(log_dir: str):
     df_summary, df_episodes = load_dfs(log_dir)
+    media_dir = Path(log_dir, "media")
     
-    # generate_heatmap_video(df_episodes, log_dir, "heatmap.mp4", sigma=1, bins=101)
-    # generate_trajectory_video(df_episodes, log_dir, "trajectories.mp4")
+    # _, filltered = list(generator_episodes(df_episodes, 10))[0]
     
-    _, filltered = list(generator_episodes(df_episodes, 10))[0]
+    fig, axs = plt.subplots(2, 2, figsize=(15,10))
+    wrapper = PlotWrapper([PlotHeatMap(), PlotTrajectory(), PlotBestTrajectory()], fig, axs)
     
-    vidGen:VideoGenerator = VideoGenerator(PlotWrapper([PlotHeatMap(), PlotTrajectory()]), log_dir, frame_size=(1080,1080), dpi=200)
-    
+    vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(720, 720), dpi=100)
     vidGen.generate_video(df_episodes, "trajectories.mp4", "Episodes trajectories")
-    vidGen.generate_video(df_episodes, "best_trajectories.mp4", "Best runs Episodes trajectories", generator_function=generator_episodes_best)
     
-    best = get_n_best_rewards(df_episodes, 20)
-    fig, axs = plt.subplots(1, 2, figsize=(10,7))
-    _,_ = PlotWrapper([PlotTrajectory(), PlotHeatMap()], fig, axs).plot(best)
-    
-    # plt.show()
 
 @timeit
 def do_basic_analysis_timed(log_dir):
     do_basic_analysis(log_dir)
 
 if __name__ == "__main__":
-    log_dir = rf"D:\kody\rl_project\out\logs\A2C\A2C_1"
+    log_dir = rf"D:\kody\rl_project\out\logs\A2C\A2C_2"
     do_basic_analysis_timed(log_dir)

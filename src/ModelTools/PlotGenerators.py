@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import enum
 from math import ceil
 import sys
-from typing import Tuple, Type, TypeVar, Union
+from typing import Any, Tuple, Type, TypeVar, Union
 import matplotlib
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -21,16 +21,27 @@ from ModelTools.Utils import *
 # import MJCFGenerator
 
 class PlotBaseAbstract(ABC):
-    def __init__(self, ax = None) -> None:
+    def __init__(self,
+                 ax = None,
+                 ) -> None:
+        
         self._fig: Figure = None
         self._ax: Axes = ax
+        self._ax_label = ""
         
         if ax is None:
             self._fig, self._ax = plt.subplots(1,1)
         else:
             self._fig = ax.get_figure()
 
-
+    @property
+    def ax_label(self) -> Axes:
+        return self._ax_label
+    
+    @ax_label.setter
+    def ax_label(self, val):
+        self._ax_label = val
+    
     @property
     def ax(self) -> Axes:
         return self._ax
@@ -55,16 +66,21 @@ class PlotBaseAbstract(ABC):
 
 
     @abstractmethod
-    def plot(self, df):
-        raise NotImplementedError("Plot not implemented in derived class!")
+    def plot(self):
+        self._ax.set_title(self._ax_label)
 
 
 class PlotTrajectory(PlotBaseAbstract):
-    def __init__(self, ax= None, legend = False) -> None:
+    def __init__(self,
+                 ax= None,
+                 legend = False
+                 )-> None:
         super().__init__(ax)
         self.legend = legend
+        self.ax_label = "trajectory"
         
-    def plot(self, df):
+    def plot(self, df) -> Tuple[Figure | Axes]:
+        super().plot()
         for indexes, grouped in group_by_episodes(df):
             x = grouped['pos_X'].to_numpy()
             y = grouped['pos_Y'].to_numpy()
@@ -82,14 +98,36 @@ class PlotTrajectory(PlotBaseAbstract):
             self._ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     
         return self._fig, self._ax
+    
+    
+class PlotBestTrajectory(PlotTrajectory):
+    def __init__(self,
+                 ax= None,
+                 legend = False,
+                 n_best = 1
+                 ) -> None:
+        super().__init__(ax)
+        self.legend = legend
+        self.n_best = n_best
+        self.ax_label = f"top {n_best} trajectory"
+        
+    def plot(self, df):
+        best = get_n_best_rewards(df, self.n_best)
+        return super().plot(best)
         
 class PlotHeatMap(PlotBaseAbstract):
-    def __init__(self, ax=None, sigma=1, bins=101) -> None:
+    def __init__(self,
+                 ax=None,
+                 sigma=1,
+                 bins=101
+                 ) -> None:
         super().__init__(ax)
         self.sigma = sigma
         self.bins = bins
+        self.ax_label = "trajectory heatmap"
         
-    def plot(self, df):
+    def plot(self, df) -> Tuple[Figure | Axes]:
+        super().plot()
         heatmap, xedges, yedges = np.histogram2d(df['pos_X'], df['pos_Y'], bins=self.bins, range=MAP_BOUNDARY)
         heatmap = gaussian_filter(heatmap, sigma=self.sigma)
         extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
@@ -110,32 +148,41 @@ class PlotWrapper():
     def __init__(self,
                  generators: list[Type[PlotBaseAbstract]] | None = None,
                  fig: Figure | None = None,
-                 axes: list[Axes] | None = None):
+                 axes: list[Axes] | None = None
+                 ):
                  
         self._generators = generators
-        
         self.assign_axes(fig, axes)
-        
+    
+    @property
+    def fig(self) -> Figure:
+        if self._fig is None:
+            raise Exception("Fig has not been assigned yet.")
+        return self._fig
+    
+    @property
+    def axes(self)-> np.ndarray[Axes]:
+        if self._axes is None:
+            raise Exception("Axes havent been assigned yet.")
+        return self._axes
+    
     def assign_axes(self,
                     fig: Figure | None = None,
                     axes: np.ndarray[Axes] | np.ndarray[np.ndarray[Axes]] | None = None):
         
-        self._fig: Figure = fig
-        self._axes: np.ndarray[Axes] | np.ndarray[np.ndarray[Axes]] | None = axes
+        if fig is None or axes is None:
+            fig, axes = plt.subplots(1, len(self._generators), squeeze=False)
         
-        if self._fig is None or self._axes is None:
-            self._fig, self._axes = plt.subplots(1, len(self._generators), squeeze=False)
+        self._fig = fig
+        self._axes: np.ndarray[Axes] = axes.flatten()
         
         # IMPORTANT CHECK
-        self.subplot_layout: Tuple[int] | enum.Any = self._axes.shape
-        self._axes = self._axes.flatten()
         assert len(self._generators) <= len(self._axes)
         
         for i, gen in enumerate(self._generators):
             gen.ax = self._axes[i]
 
     def plot(self, df):
-
         for gen in self._generators:
             gen.plot(df)
         

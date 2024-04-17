@@ -22,23 +22,22 @@ class VideoGenerator():
     def __init__(self,
                 plot_wrapper: PlotWrapper,
                 dir:str,
-                frame_size = (480, 480),
+                frame_size = (720, 720),
                 fps = 10,
                 dpi = 100) -> None:
         
-        self.plot_wrapper:PlotWrapper = plot_wrapper
-        self.frame_size= frame_size
-        self.fps = fps
-        self.dpi = dpi
-        self.fig_size = (frame_size[0] / dpi, frame_size[1] / dpi)
+        self._plot_wrapper:PlotWrapper = plot_wrapper
+        self._frame_size= frame_size
+        self._fps = fps
+        self._dpi = dpi
+        fig_size = (frame_size[0] / dpi, frame_size[1] / dpi)
 
-        self.fig: Figure
-        self.axes: list[Axes]
-        self.fig, self.axes = plt.subplots(*self.plot_wrapper.subplot_layout, figsize=self.fig_size, dpi=dpi)
+        self._fig: Figure = self._plot_wrapper.fig
+        self._axes: np.ndarray[Axes] = self._plot_wrapper.axes
         
-        plot_wrapper.assign_axes(self.fig, self.axes)
-        
-        self.dir = dir
+        self._fig.set_size_inches(fig_size)
+        self._fig.set_dpi(dpi)
+        self._dir = dir
 
     def generate_video(self,
                        df: pd.DataFrame,
@@ -46,33 +45,34 @@ class VideoGenerator():
                        fig_title = "",
                        generator_function: Generator = generator_episodes):
         
-        output_file = str(Path(self.dir, file_name).resolve())
+        output_file = str(Path(self._dir, file_name).resolve())
         
-        self.fig.suptitle(fig_title)
         
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_file, fourcc, self.fps, self.frame_size)
+        out = cv2.VideoWriter(output_file, fourcc, self._fps, self._frame_size)
         arr = []
     
         for (lower_bound, upper_bound), filtered in generator_function(df):
             
-            self.plot_wrapper.plot(filtered)
-            self.fig.suptitle(f"episode: <{lower_bound}, {upper_bound})")
-            self.fig.canvas.draw()
+            self._plot_wrapper.plot(filtered)
+            title = f"{fig_title}\nepisode: <{lower_bound}, {upper_bound})"
+            self._fig.suptitle(title)
+            self._fig.canvas.draw()
 
-            rgba_image = np.frombuffer(self.fig.canvas.buffer_rgba(), dtype=np.uint8)
-
-            w, h = self.fig.canvas.get_width_height()
+            rgba_image = np.frombuffer(self._fig.canvas.buffer_rgba(), dtype=np.uint8)
+            
+            w, h = self._fig.canvas.get_width_height()
             rgba_image = rgba_image.reshape((h, w, 4))
 
             rgb_image = rgba_image[:, :, :3]
-            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
-            bgr_image = cv2.resize(bgr_image, self.frame_size)
             
+            bgr_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2BGR)
+            bgr_image = cv2.resize(bgr_image, self._frame_size)
+               
             out.write(bgr_image)
-            for ax in self.axes:
+            for ax in self._axes:
                 ax.cla()
 
         out.release()
-        plt.close(self.fig)
+        plt.close(self._fig)
         return arr

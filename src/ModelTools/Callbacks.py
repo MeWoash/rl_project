@@ -103,7 +103,7 @@ class  CSVCallback(BaseCallback):
             # self.contact = self.observations[:,ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]
             # self.range = self.observations[:,ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]
             self.pos = self.observations[:,ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]
-            # self.eul = self.observations[:,ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]
+            # self.eul = self.observations[:,ObsIndex.CAR_YAW_BEGIN:ObsIndex.CAR_YAW_END+1]
             
             # autopep8: on
             self._buffer_overall_stats()

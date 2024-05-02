@@ -22,7 +22,7 @@ class VideoGenerator():
     def __init__(self,
                 plot_wrapper: PlotWrapper,
                 dir:str,
-                frame_size = (720, 720),
+                frame_size = (1080, 1080),
                 fps = 10,
                 dpi = 100) -> None:
         

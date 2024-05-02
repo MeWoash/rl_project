@@ -40,7 +40,7 @@ class  CSVCallback(BaseCallback):
     def _buffer_episode_stats(self):
         for i in range(self.training_env.num_envs):
             ep = self.infos[i]['episode_number']
-            ep_time = round(self.infos[i]['episode_time'], 3)*1000
+            ep_time = round(self.infos[i]['episode_time'], 0)*1000
             
             row: dict[str] = {
                 "episode":ep,
@@ -86,7 +86,7 @@ class  CSVCallback(BaseCallback):
     def _save_best_model(self, new_reward):
         if new_reward > self.best_reward:
             self.best_reward= new_reward
-            self.model.save(Path(self.logdir, f'best_model_rew-{int(self.best_reward*100)}_step-{self.num_timesteps}'))
+            self.model.save(Path(self.logdir,'models', f'best_model_rew-{round(self.best_reward*1000,3)}_step-{self.num_timesteps}'))
                 
     def _on_step(self) -> bool:
         self.infos = self.locals['infos']

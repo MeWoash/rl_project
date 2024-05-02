@@ -27,15 +27,17 @@ class  CSVCallback(BaseCallback):
         self.df_episode_buffer: list[pd.DataFrame] = []
         for i in range(self.training_env.num_envs):
             self.df_episode_buffer.append(pd.DataFrame())
+            
+        self.best_reward = 0
     
-    def _create_log_name(self, logdir, nth_vec, episode):
-        return Path(logdir).joinpath(f"./ep-{episode}_env-{nth_vec}.csv")
-    
-    def _overall_stats(self):
+    def _buffer_overall_stats(self):
         mean_reward = np.mean(self.rewards)
         self.logger.record_mean('observations/mean_reward', mean_reward)
+        
+        mean_dist = np.mean(self.distance)
+        self.logger.record_mean('observations/mean_dist', mean_dist)
     
-    def _episode_stats(self):
+    def _buffer_episode_stats(self):
         for i in range(self.training_env.num_envs):
             ep = self.infos[i]['episode_number']
             ep_time = round(self.infos[i]['episode_time'], 3)*1000
@@ -79,6 +81,13 @@ class  CSVCallback(BaseCallback):
                 self.df_episodes_summary.to_csv(self.df_episodes_summary_path, index=False)
                 self.df_episodes_all.to_csv(self.df_episodes_all_path, index=False)
                 
+                self._save_best_model(row['reward_mean'])
+                
+    def _save_best_model(self, new_reward):
+        if new_reward > self.best_reward:
+            self.best_reward= new_reward
+            self.model.save(Path(self.logdir, f'best_model_rew-{int(self.best_reward*100)}_step-{self.num_timesteps}'))
+                
     def _on_step(self) -> bool:
         self.infos = self.locals['infos']
         self.dones = self.locals['dones']
@@ -97,15 +106,13 @@ class  CSVCallback(BaseCallback):
             # self.eul = self.observations[:,ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]
             
             # autopep8: on
-            self._overall_stats()
-            self._episode_stats()
+            self._buffer_overall_stats()
+            self._buffer_episode_stats()
         self.iteration+=1
         self._check_episodes()
-        
+        # print(f"step: {self.locals['n_steps']}/{self.locals['n_rollout_steps']}")
         return True
     
     def _on_training_end(self):
         self.df_episodes_summary.to_csv(self.df_episodes_summary_path, index=False)
         self.df_episodes_all.to_csv(self.df_episodes_all_path, index=False)
-        
-        do_basic_analysis(self.logdir)

@@ -1,64 +1,38 @@
-import gymnasium
-import CustomEnvs  # Registering envs
-
-
 from pathlib import Path
-import matplotlib.pyplot as plt
+from CustomEnvs import CarParkingEnv
+from ModelTools.Callbacks import *
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
+from stable_baselines3 import A2C, SAC
 
-from ModelTools.ModelWrapper import ModelWrapper
-from ModelTools.ModelPresets import *
-from CustomEnvs.CarParking import CarParkingEnv, ObsIndex
-import numpy as np
+RL_MODEL_DIR = Path(__file__).parent.joinpath("../out/models").resolve()
+RL_LOGS_DIR = Path(__file__).parent.joinpath("../out/logs").resolve()
 
-MODEL_DIR = Path(__file__).parent.joinpath("../out/models").resolve()
+modelContructor = A2C
 
+def test_env():
 
-def describe_obs(obs):
-    d = f"""
-speed:      {obs[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}    
-dist:       {obs[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}
-adiff:      {obs[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}
-contact:    {obs[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}
-range:      {obs[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}
-pos:        {obs[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}
-eul:        {obs[ObsIndex.EUL_BEGIN:ObsIndex.EUL_END+1]}"""
-
-    return d
-
-
-def test_env(preset):
-    modelWrapper = ModelWrapper()
-    modelWrapper.create_gym_env("human")
-    modelWrapper.create_model(**preset['createModelArgs'])
-    modelWrapper.load_model()
-
-    truncated = False
-    terminated = False
-    observation, info = modelWrapper.env.reset()
-
+    env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
+                            n_envs=1,
+                            vec_env_cls=DummyVecEnv,
+                            env_kwargs={"render_mode": "human"})
+    
+    modelConstrucotr = A2C
+    
+    logdir = f"{RL_LOGS_DIR.joinpath(modelConstrucotr.__name__)}"
+    print(f"MODEL LOGDIR = {logdir}")
+    
+    model = modelConstrucotr.load(rf"D:\kody\rl_project\out\logs\A2C\A2C_5\best_model_rew-82_step-9720.zip")
+    
+    obs = env.reset()
     while True:
-        action, states = modelWrapper.model.predict(
-            observation, deterministic=True)
-        observation, reward, terminated, truncated, info = modelWrapper.env.step(
-            action)
-        if truncated or terminated:
-            modelWrapper.env.reset()
-
-
-def test_vec_env(preset):
-    modelWrapper = ModelWrapper()
-    modelWrapper.create_vec_env(**preset['createEnvArgs']['envArgs'])
-    modelWrapper.create_model(**preset['createModelArgs'])
-    modelWrapper.load_model()
-
-    observation = modelWrapper.env.reset()
-    while True:
-        action, states = modelWrapper.model.predict(
-            observation, deterministic=True)
-        observation, reward, done, info = modelWrapper.env.step(action)
+        actions, states = model.predict(obs)
+        obs, rewards, dones, infos = env.step(actions)
+        
+        if dones.any():
+            obs = env.reset()
 
 
 if __name__ == "__main__":
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
-    # test_vec_env(A2C_PRESET)
-    test_env(A2C_PRESET)
+    test_env()

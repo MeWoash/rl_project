@@ -106,21 +106,22 @@ class CarParkingEnv(gymnasium.Env):
                  xml_file: str = MODEL_PATH,
                  render_mode: str = "none",
                  simulation_frame_skip: int = 4,
+                 time_limit = 30,
                  capture_frames = False,
                  capture_fps = 24,
                  frame_size = (480, 480), # Width, Height
                  **kwargs):
 
+        self.time_limit = time_limit
         self.fullpath = xml_file
-        self.render_mode = render_mode
         self.simulation_frame_skip = simulation_frame_skip
         
+        # RENDER VARIABLES
+        self.render_mode = render_mode
         self.capture_frames = capture_frames
         self.capture_fps = capture_fps
         self.frame_size = frame_size
-        
-        
-        self.time_velocity_not_low = None
+             
 
         # TODO CAMERA SETTINGS
         self.camera_name = None
@@ -130,6 +131,24 @@ class CarParkingEnv(gymnasium.Env):
         self._initialize_simulation()
         self._set_default_action_space()
         self._set_default_observation_space()
+        
+        
+        # TRUNCATE VARIABLES
+        self.time_velocity_not_low = 0
+
+        # REWARD VARIABLES
+        self.episode_mujoco_max_step = self.time_limit / self.model.opt.timestep
+        self.episode_env_max_step = self.episode_mujoco_max_step/self.simulation_frame_skip
+        self.angle_total_cost = 0
+        self.velocity_total_cost = 0
+        
+        self.velocity_max_cost = max([abs(self.action_space.low[0]), abs(self.action_space.high[0])]) * self.episode_env_max_step
+        self.angle_max_cost = max([abs(self.action_space.low[1]), abs(self.action_space.high[1])]) * self.episode_env_max_step
+        
+        
+        self.dist_punish_weight = 0.75 
+        self.velocity_punish_weight = 0.125
+        self.angle_punish_weight = 0.125
 
     def _set_default_action_space(self):
 
@@ -200,12 +219,11 @@ class CarParkingEnv(gymnasium.Env):
 
 
     def _prep_overlay(self, overlay: TextOverlay):
-        overlay.add("Step",f"{round(self.data.time / self.model.opt.timestep)}", "bottom left")
+        overlay.add("Env Step",f"{self.episode_env_step:.0f} / {self.episode_env_max_step:.0f}", "bottom left")
+        overlay.add("MuJoCo Step",f"{self.episode_mujoco_step:.0f} / {self.episode_mujoco_max_step:.0f}", "bottom left")
         overlay.add("episode", f"{self.episode}", "bottom left")
-        overlay.add("time", "%.2f"%self.data.time, "bottom left")
-        overlay.add("steps/1s", f"{1 / (self.model.opt.timestep*self.simulation_frame_skip)}", "bottom left")
+        overlay.add("time", f"{self.data.time:.2f} / {self.time_limit:.2f}", "bottom left")
         overlay.add("Env stats", "values", "top left")
-        overlay.add("reward","%.2f"%self.reward, "top left")
         overlay.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
         overlay.add("dist",f"{self.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}", "top left")
         overlay.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")
@@ -216,6 +234,13 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("Model Action", "values", "top right")
         overlay.add("engine", "%.2f" % self.action[0], "top right")
         overlay.add("wheel", "%.2f" % self.action[1], "top right")
+        
+        overlay.add("Reward metrics", "values", "bottom right")
+        overlay.add("reward","%.2f"%self.reward, "bottom right")
+        
+        overlay.add("dist", f"{self.observation[ObsIndex.DISTANCE_BEGIN]:.2f} ~ {self.norm_dist:.2f}", "bottom right")
+        overlay.add("v_sum", f"{self.velocity_total_cost:.2f} ~ {self.norm_velocity_total_cost:.2f}", "bottom right")
+        overlay.add("a_sum", f"{self.angle_total_cost:.2f} ~ {self.norm_angle_total_cost:.2f}", "bottom right")
 
 
     def close(self):
@@ -241,7 +266,14 @@ class CarParkingEnv(gymnasium.Env):
         mujoco.mj_step(self.model, self.data, nstep=n_frames)
         mujoco.mj_rnePostConstraint(self.model, self.data)
 
+    def _calculate_additional_variables(self):
+        self.episode_mujoco_step = self.data.time / self.model.opt.timestep
+        self.episode_mujoco_time = self.data.time
+        self.episode_env_step = self.episode_mujoco_step / self.simulation_frame_skip
+    
     def step(self, action):
+        self._calculate_additional_variables()
+        
         self.action = action
         self._apply_forces(action)
         self._do_simulation(self.simulation_frame_skip)
@@ -254,8 +286,8 @@ class CarParkingEnv(gymnasium.Env):
         self.truncated = self._check_truncated_condition()
 
         self.info = {
-            "episode_time":self.data.time,
-            "episode_step":self.data.time / self.model.opt.timestep,
+            "episode_mujoco_time": self.episode_mujoco_time,
+            "episode_mujoco_step": self.episode_mujoco_step,
             "episode_number":self.episode,
                      }
         renderRetVal = self.render()
@@ -264,21 +296,25 @@ class CarParkingEnv(gymnasium.Env):
         return self.observation, self.reward, self.terminated, self.truncated, self.info
 
     def _calculate_reward(self):
+        
+        self.velocity_total_cost += abs(self.action[0])
+        self.angle_total_cost += abs(self.action[1])
+        
+        
+        self.norm_dist = normalize_data(self.observation[ObsIndex.DISTANCE_BEGIN], 0, self.dist_punish_weight, 0, MAX_X_Y_DIST)
+        self.norm_velocity_total_cost = normalize_data(self.velocity_total_cost, 0, self.velocity_punish_weight, 0, self.velocity_max_cost)
+        self.norm_angle_total_cost = normalize_data(self.angle_total_cost, 0, self.angle_punish_weight, 0, self.angle_max_cost)
+        
+        punish = self.norm_dist + self.norm_velocity_total_cost + self.norm_angle_total_cost
 
-        normdist = normalize_data(
-            self.observation[ObsIndex.DISTANCE_BEGIN], 0, 1, 0, MAX_X_Y_DIST)
-        total_dist_reward = 1 - normdist
-
-        time_punish = normalize_data(self.data.time, 0, 0.5, 0, 30)
-
-        reward = total_dist_reward * (1 - time_punish)
+        reward = 1 - punish
         return reward
 
     def _check_terminate_condition(self):
         terminated = False
         if self.observation[ObsIndex.DISTANCE_BEGIN] <= 0.25 \
                 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) <= 0.1 \
-                and math.radians(-5) <= self.observation[ObsIndex.ANGLE_DIFF_BEGIN] <= math.radians(10):
+                and self.observation[ObsIndex.ANGLE_DIFF_BEGIN] <= math.radians(10):
             terminated = True
         return terminated
 
@@ -289,11 +325,10 @@ class CarParkingEnv(gymnasium.Env):
                 or self.observation[ObsIndex.DISTANCE_BEGIN] >= 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.3:
             self.time_velocity_not_low = self.data.time
 
-        if self.time_velocity_not_low is not None:
-            if self.data.time - self.time_velocity_not_low >= 3:
-                truncated = True
+        if self.data.time - self.time_velocity_not_low >= 3:
+            truncated = True
 
-        if self.data.time > 30:
+        if self.data.time > self.time_limit:
             truncated = True
         elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
             truncated = True
@@ -344,7 +379,11 @@ class CarParkingEnv(gymnasium.Env):
 
     def reset(self, **kwargs):
         self._reset_simulation()
-        self.time_velocity_not_low = None
+        
+        self.time_velocity_not_low = 0
+        self.angle_total_cost = 0
+        self.velocity_total_cost = 0
+        
         self.episode += 1
         observation = self._get_obs()
         return observation, {}

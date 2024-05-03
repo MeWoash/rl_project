@@ -79,8 +79,12 @@ def generator_episodes_best(df, best = 1):
         yield (lower_bound, upper_bound), get_n_best_rewards(batch, best)
         
 def group_by_episodes(df):
-    for indexes, grouped in df.groupby(level=df.index.names):
+    for indexes, grouped in df.groupby(level=['episode','env']):
         yield indexes, grouped
+        
+def group_by_envs(df):
+    for index, grouped in df.groupby(level='env'):
+        yield index, grouped
         
 def get_n_best_rewards(df, n_episodes=10):
     grouped = df.groupby(by=['episode','env'])

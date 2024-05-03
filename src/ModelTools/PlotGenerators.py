@@ -115,7 +115,67 @@ class PlotBestTrajectory(PlotTrajectory):
     def plot(self, df):
         best = get_n_best_rewards(df, self.n_best)
         return super().plot(best)
+
+
+class PlotRewardCurve(PlotBaseAbstract):
+    def __init__(self,
+                 df_episodes_all,
+                 ax= None,
+                 legend = False
+                 )-> None:
+        super().__init__(ax)
+        self.legend = legend
+        self.ax_label = "rewards"
+        self.df_episodes_all = df_episodes_all
+        
+    def plot(self, df) -> Tuple[Figure | Axes]:
+        super().plot()
+        
+        for index, grouped in group_by_envs(self.df_episodes_all):
+            
+            learning_step = grouped['learning_step'].to_numpy()
+            episode_norm_cum_reward = grouped['episode_norm_cum_reward'].to_numpy()
+            
+            line  = self._ax.plot(learning_step,
+                          episode_norm_cum_reward,
+                          label=f"env-{index}",
+                          color='blue',
+                          alpha=0.4)
+            
+            
+        for indexes, grouped in group_by_episodes(df):
+            learning_step = grouped['learning_step'].to_numpy()
+            episode_norm_cum_reward = grouped['episode_norm_cum_reward'].to_numpy()
+            
+            self._ax.plot(learning_step,
+                          episode_norm_cum_reward,
+                          label=f"ep-{indexes[0]}_env-{indexes[1]}",
+                          linewidth=2)
+
+        self._ax.grid(True)
+        self._ax.set_xlabel('learning step')
+        self._ax.set_ylabel('episode normalized cumulative reward')
+        
+        if self.legend:
+            self._ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     
+        return self._fig, self._ax
+     
+class PlotBestRewardCurve(PlotRewardCurve):
+    def __init__(self,
+                 df_episodes_all,
+                 ax= None,
+                 legend = False,
+                 n_best = 1
+                 ) -> None:
+        super().__init__(df_episodes_all, ax, legend)
+        self.n_best = n_best
+        self.ax_label = f"top {n_best} on cumulative reward"
+        
+    def plot(self, df):
+        best = get_n_best_rewards(df, self.n_best)
+        return super().plot(best)
+
 class PlotActions(PlotBaseAbstract):
     def __init__(self,
                  ax= None,

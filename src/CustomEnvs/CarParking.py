@@ -292,7 +292,7 @@ class CarParkingEnv(gymnasium.Env):
         self.truncated = self._check_truncated_condition()
 
         self.cumulative_reward += self.reward
-        self.norm_cumulative_reward = normalize_data(self.cumulative_reward, 0, 1, -1, (self.episode_env_step+1)*self.max_step_reward)
+        self.norm_cumulative_reward = normalize_data(self.cumulative_reward, 0, 1, 0, (self.episode_env_step+1)*self.max_step_reward)
         
         self.info = {
             "episode_mujoco_time": self.episode_mujoco_time,

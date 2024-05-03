@@ -109,6 +109,7 @@ class  CSVCallback(BaseCallback):
         
         self.df_episodes_summary:pd.DataFrame = pd.DataFrame()
         self.df_episodes_all:pd.DataFrame = pd.DataFrame()
+        self.df_training_stats:pd.DataFrame = pd.DataFrame()
         
         self.episode_buffers: list[EpisodeStatsBuffer] = []
         
@@ -137,7 +138,10 @@ class  CSVCallback(BaseCallback):
             
         self.observations = self.locals['new_obs']
         self.rewards = self.locals['rewards']
-        self.actions = self.locals['actions']
+        
+        self.actions = self.locals.get('clipped_actions')
+        if self.actions is None:
+            self.actions = self.locals['actions']
         
         # autopep8: off
         self.velocity = self.observations[:,ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]

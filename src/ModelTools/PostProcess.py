@@ -32,29 +32,29 @@ def generate_media(log_dir: str):
     
     # # BEST ACTIONS
     fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotWrapper([PlotBestActions(ax, n_best=1, legend=True)]).plot(df_episodes)
+    PlotBestActions(ax, n_best=1, legend=True).plot(df_episodes)
     generate_fig_file(fig, media_dir, "best_actions")
     
     # #HEATMAP
     fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotWrapper([PlotHeatMap(ax, sigma=2, bins=51)]).plot(df_episodes)
+    PlotHeatMap(ax, sigma=2, bins=51).plot(df_episodes)
     generate_fig_file(fig, media_dir, "heat_map")
     
     # #PlotBestTrajectory
     fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotWrapper([PlotBestTrajectory(ax, n_best=5)]).plot(df_episodes)
+    PlotBestTrajectory(n_best=5, legend=True).plot(df_episodes)
     generate_fig_file(fig, media_dir, "best_trajectories")
     
     #PlotBestRewardCurve
     fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotWrapper([PlotBestRewardCurve(df_episodes, ax, n_best=1, legend=True)]).plot(df_episodes)
+    PlotBestRewardCurve(df_episodes, ax, n_best=1, legend=True).plot(df_episodes)
     generate_fig_file(fig, media_dir, "best_rewards")
     
     # ALL IN ONE
     fig, axs = plt.subplots(2, 2, figsize=(15,10))
     wrapper = PlotWrapper([PlotHeatMap(sigma=2, bins=51),
                            PlotBestRewardCurve(df_episodes, n_best=1, legend=True),
-                           PlotBestTrajectory(n_best=1),
+                           PlotBestTrajectory(n_best=1, legend=True),
                            PlotBestActions(n_best=1, legend=True)], fig, axs)
     wrapper.plot(df_episodes)
     generate_fig_file(fig, media_dir, "mixed_stats")
@@ -63,7 +63,7 @@ def generate_media(log_dir: str):
     fig, axs = plt.subplots(2, 2, figsize=(15,10))
     wrapper = PlotWrapper([PlotHeatMap(sigma=2, bins=51),
                            PlotBestRewardCurve(df_episodes, n_best=1, legend=True),
-                           PlotBestTrajectory(n_best=1),
+                           PlotBestTrajectory(n_best=1, legend=True),
                            PlotBestActions(n_best=1, legend=True)], fig, axs)
     vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(1920, 1080), dpi=100)
     vidGen.generate_video(df_episodes, "trajectories.mp4", "Episodes trajectories")

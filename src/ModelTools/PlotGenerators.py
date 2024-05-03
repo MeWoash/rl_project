@@ -31,7 +31,7 @@ class PlotBaseAbstract(ABC):
         self._ax_label = ""
         
         if ax is None:
-            self._fig, self._ax = plt.subplots(1,1)
+            self._fig, self._ax = plt.subplots(1,1, figsize=(10,7))
         else:
             self._fig = ax.get_figure()
 
@@ -74,7 +74,7 @@ class PlotBaseAbstract(ABC):
 class PlotTrajectory(PlotBaseAbstract):
     def __init__(self,
                  ax= None,
-                 legend = False
+                 legend = True
                  )-> None:
         super().__init__(ax)
         self.legend = legend
@@ -104,7 +104,7 @@ class PlotTrajectory(PlotBaseAbstract):
 class PlotBestTrajectory(PlotTrajectory):
     def __init__(self,
                  ax= None,
-                 legend = False,
+                 legend = True,
                  n_best = 1
                  ) -> None:
         super().__init__(ax)
@@ -121,7 +121,7 @@ class PlotRewardCurve(PlotBaseAbstract):
     def __init__(self,
                  df_episodes_all,
                  ax= None,
-                 legend = False
+                 legend = True
                  )-> None:
         super().__init__(ax)
         self.legend = legend
@@ -138,9 +138,8 @@ class PlotRewardCurve(PlotBaseAbstract):
             
             line  = self._ax.plot(learning_step,
                           episode_norm_cum_reward,
-                          label=f"env-{index}",
                           color='blue',
-                          alpha=0.4)
+                          alpha=0.2)
             
             
         for indexes, grouped in group_by_episodes(df):
@@ -150,8 +149,9 @@ class PlotRewardCurve(PlotBaseAbstract):
             self._ax.plot(learning_step,
                           episode_norm_cum_reward,
                           label=f"ep-{indexes[0]}_env-{indexes[1]}",
-                          linewidth=2)
-
+                          color='green',
+                          linewidth=4)
+        
         self._ax.grid(True)
         self._ax.set_xlabel('learning step')
         self._ax.set_ylabel('episode normalized cumulative reward')
@@ -165,7 +165,7 @@ class PlotBestRewardCurve(PlotRewardCurve):
     def __init__(self,
                  df_episodes_all,
                  ax= None,
-                 legend = False,
+                 legend = True,
                  n_best = 1
                  ) -> None:
         super().__init__(df_episodes_all, ax, legend)
@@ -179,7 +179,7 @@ class PlotBestRewardCurve(PlotRewardCurve):
 class PlotActions(PlotBaseAbstract):
     def __init__(self,
                  ax= None,
-                 legend = False
+                 legend = True
                  )-> None:
         super().__init__(ax)
         self.legend = legend
@@ -190,7 +190,7 @@ class PlotActions(PlotBaseAbstract):
         for indexes, grouped in group_by_episodes(df):
             action_engine = grouped['action_engine'].to_numpy()
             action_angle = grouped['action_angle'].to_numpy()
-            x = grouped['episode_mujoco_time'].to_numpy()
+            x = grouped['learning_step'].to_numpy()
             
             color_engine = 'blue'
             color_angle = 'green'
@@ -209,8 +209,7 @@ class PlotActions(PlotBaseAbstract):
             # self._ax.plot(x_new, interp_angle, label="angle (interp)", color=color_angle)
 
         self._ax.grid(True)
-        
-        self._ax.set_xlabel('env time [ms]')
+        self._ax.set_xlabel('learning_step')
         self._ax.set_ylabel('y')
         
         if self.legend:
@@ -221,7 +220,7 @@ class PlotActions(PlotBaseAbstract):
 class PlotBestActions(PlotActions):
     def __init__(self,
                  ax= None,
-                 legend = False,
+                 legend = True,
                  n_best = 1
                  ) -> None:
         super().__init__(ax)

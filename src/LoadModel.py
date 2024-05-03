@@ -18,7 +18,7 @@ def test_env():
     
     modelConstrucotr = A2C
     
-    model = modelConstrucotr.load(rf"out\learning\A2C\A2C_1\models\best_model_rew-83_step-135408.zip")
+    model = modelConstrucotr.load(rf"out\learning\A2C\A2C_2\models\best_model_rew-823.489_step-69808")
     
     obs = env.reset()
     while True:

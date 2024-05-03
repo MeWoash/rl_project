@@ -39,5 +39,5 @@ def do_basic_analysis_timed(log_dir):
     do_basic_analysis(log_dir)
 
 if __name__ == "__main__":
-    log_dir = rf"D:\kody\rl_project\out\logs\SAC\SAC_3"
+    log_dir = rf"out\learning\A2C\A2C_2"
     do_basic_analysis_timed(log_dir)

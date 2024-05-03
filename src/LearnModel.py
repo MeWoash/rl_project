@@ -15,7 +15,7 @@ if __name__ == "__main__":
                             vec_env_cls=SubprocVecEnv,
                             env_kwargs={"render_mode": "none"})
     
-    modelConstrucotr = SAC
+    modelConstrucotr = A2C
     
     logdir = f"{OUT_RL_DIR.joinpath(modelConstrucotr.__name__)}"
     print(f"MODEL LOGDIR = {logdir}")

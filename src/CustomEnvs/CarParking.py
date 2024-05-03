@@ -104,7 +104,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def __init__(self,
                  xml_file: str = MODEL_PATH,
-                 render_mode: str = "rgb_array",
+                 render_mode: str = "none",
                  simulation_frame_skip: int = 4,
                  capture_frames = False,
                  capture_fps = 24,
@@ -161,8 +161,15 @@ class CarParkingEnv(gymnasium.Env):
              [MAP_SIZE[0]/2, MAP_SIZE[1]/2]])
         car_eulerRange = np.array([0, np.pi]).reshape(2, 1)
 
+        # KEEP ORDER AS IN OBSINDEX
         boundMatrix = np.hstack(
-            [carSpeedRange, distRange, angleDiff, contactRange, range_sensorsRange, carPositionGlobalRange, car_eulerRange])
+            [carSpeedRange,
+             distRange,
+             angleDiff,
+             contactRange,
+             carPositionGlobalRange,
+             car_eulerRange,
+             range_sensorsRange])
 
         self.observation_space = Box(
             low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)

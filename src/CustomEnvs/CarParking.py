@@ -121,7 +121,7 @@ class CarParkingEnv(gymnasium.Env):
         self.capture_frames = capture_frames
         self.capture_fps = capture_fps
         self.frame_size = frame_size
-             
+        np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
 
         # TODO CAMERA SETTINGS
         self.camera_name = None
@@ -344,7 +344,6 @@ class CarParkingEnv(gymnasium.Env):
             
         if truncated:
             self.reward -= self.max_step_reward * (self.episode_env_max_step - self.episode_env_step)
-            print(f"{self.episode}, rew {self.reward}")
         return truncated
 
     def _get_obs(self):
@@ -390,7 +389,6 @@ class CarParkingEnv(gymnasium.Env):
         return observation
 
     def reset(self, **kwargs):
-        # print(f"Terminal reward: {self.reward:.2f}")
         # print(f"Terminal cumulative reward: {self.cumulative_reward:.2f} ~ {self.norm_cumulative_reward:.2f}")
         self._reset_simulation()
         

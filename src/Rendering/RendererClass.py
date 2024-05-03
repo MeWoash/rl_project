@@ -65,4 +65,5 @@ class Renderer:
         return self.viewer.render(camera_id, overlays)
     
     def close(self):
-        self.viewer.close()
+        if self.viewer is not None:
+            self.viewer.close()

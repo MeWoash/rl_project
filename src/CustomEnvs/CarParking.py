@@ -149,6 +149,10 @@ class CarParkingEnv(gymnasium.Env):
         self.dist_punish_weight = 0.75 
         self.velocity_punish_weight = 0.125
         self.angle_punish_weight = 0.125
+        self.cumulative_reward = 0
+        self.max_step_reward = 1
+        
+        assert self.dist_punish_weight + self.velocity_punish_weight + self.angle_punish_weight == self.max_step_reward, f"Weights have to sum to {self.max_step_reward}"
 
     def _set_default_action_space(self):
 
@@ -232,11 +236,12 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("eul",f"{self.observation[ObsIndex.CAR_YAW_BEGIN:ObsIndex.CAR_YAW_END+1]}", "top left")
         overlay.add("range",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}", "top left")
         overlay.add("Model Action", "values", "top right")
-        overlay.add("engine", "%.2f" % self.action[0], "top right")
-        overlay.add("wheel", "%.2f" % self.action[1], "top right")
+        overlay.add("engine", f"{self.action[0]:.2f}", "top right")
+        overlay.add("wheel", f"{self.action[1]:.2f}", "top right")
         
         overlay.add("Reward metrics", "values", "bottom right")
-        overlay.add("reward","%.2f"%self.reward, "bottom right")
+        overlay.add("reward", f"{self.reward:.2f}", "bottom right")
+        overlay.add("cum_reward", f"{self.cumulative_reward:.2f} ~ {self.norm_cumulative_reward:.2f}", "bottom right")
         
         overlay.add("dist", f"{self.observation[ObsIndex.DISTANCE_BEGIN]:.2f} ~ {self.norm_dist:.2f}", "bottom right")
         overlay.add("v_sum", f"{self.velocity_total_cost:.2f} ~ {self.norm_velocity_total_cost:.2f}", "bottom right")
@@ -267,9 +272,9 @@ class CarParkingEnv(gymnasium.Env):
         mujoco.mj_rnePostConstraint(self.model, self.data)
 
     def _calculate_additional_variables(self):
-        self.episode_mujoco_step = self.data.time / self.model.opt.timestep
+        self.episode_mujoco_step =  int(round(self.data.time / self.model.opt.timestep))
         self.episode_mujoco_time = self.data.time
-        self.episode_env_step = self.episode_mujoco_step / self.simulation_frame_skip
+        self.episode_env_step = int(round(self.episode_mujoco_step / self.simulation_frame_skip))
     
     def step(self, action):
         self._calculate_additional_variables()
@@ -285,14 +290,18 @@ class CarParkingEnv(gymnasium.Env):
         self.terminated = self._check_terminate_condition()
         self.truncated = self._check_truncated_condition()
 
+        self.cumulative_reward += self.reward
+        self.norm_cumulative_reward = normalize_data(self.cumulative_reward, 0, 1, 0, (self.episode_env_step+1)*self.max_step_reward)
+        
         self.info = {
             "episode_mujoco_time": self.episode_mujoco_time,
             "episode_mujoco_step": self.episode_mujoco_step,
+            "episode_env_step": self.episode_env_step,
             "episode_number":self.episode,
+            "episode_cumulative_reward":self.cumulative_reward,
+            "episode_norm_cumulative_reward": self.norm_cumulative_reward
                      }
         renderRetVal = self.render()
-
-        # print(self.reward)
         return self.observation, self.reward, self.terminated, self.truncated, self.info
 
     def _calculate_reward(self):
@@ -307,7 +316,8 @@ class CarParkingEnv(gymnasium.Env):
         
         punish = self.norm_dist + self.norm_velocity_total_cost + self.norm_angle_total_cost
 
-        reward = 1 - punish
+        reward = self.max_step_reward - punish
+        
         return reward
 
     def _check_terminate_condition(self):
@@ -327,12 +337,14 @@ class CarParkingEnv(gymnasium.Env):
 
         if self.data.time - self.time_velocity_not_low >= 3:
             truncated = True
-
-        if self.data.time > self.time_limit:
+        elif self.data.time > self.time_limit:
             truncated = True
         elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
             truncated = True
-
+            
+        if truncated:
+            self.reward -= self.max_step_reward * (self.episode_env_max_step - self.episode_env_step)
+            print(f"{self.episode}, rew {self.reward}")
         return truncated
 
     def _get_obs(self):
@@ -378,14 +390,25 @@ class CarParkingEnv(gymnasium.Env):
         return observation
 
     def reset(self, **kwargs):
+        # print(f"Terminal reward: {self.reward:.2f}")
+        # print(f"Terminal cumulative reward: {self.cumulative_reward:.2f} ~ {self.norm_cumulative_reward:.2f}")
         self._reset_simulation()
         
         self.time_velocity_not_low = 0
+        
         self.angle_total_cost = 0
+        self.norm_angle_total_cost = 0
+        
         self.velocity_total_cost = 0
+        self.norm_velocity_total_cost = 0
+        
+        self.cumulative_reward = 0
+        self.norm_cumulative_reward = 0
         
         self.episode += 1
+        
         observation = self._get_obs()
+        
         return observation, {}
 
 

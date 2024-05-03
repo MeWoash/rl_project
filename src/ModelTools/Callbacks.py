@@ -24,7 +24,13 @@ class EpisodeStatsBuffer:
         
     def update_state(self):
         
-        if self.callback.dones[self.env_index] == True
+        if self.callback.dones[self.env_index] == True:
+            if self.callback.infos[self.env_index].get("TimeLimit.truncated", False):
+                terminal_observation = self.callback.infos[self.env_index].get("terminal_observation")
+                self.callback.velocity[self.env_index] = terminal_observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]
+                self.callback.distance[self.env_index] = terminal_observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]
+                self.callback.angle_diff[self.env_index] = terminal_observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]
+                self.callback.pos[self.env_index] = terminal_observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]
             self.flush_all()
         else:
             if self.log_counter % self.log_interval==0:

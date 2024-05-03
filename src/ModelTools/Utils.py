@@ -1,4 +1,5 @@
 from math import ceil
+import os
 from pathlib import Path
 import time
 from typing import Callable
@@ -14,6 +15,27 @@ SUMMARY_FILE_NAME = 'episodes_summary.csv'
 MAP_SIZE = [20, 20, 20, 5]  # MJCFGenerator.Generator._map_length
 MAP_BOUNDARY = [[-MAP_SIZE[0]/2, MAP_SIZE[0]/2],[-MAP_SIZE[1]/2, MAP_SIZE[1]/2]] # X, Y
 
+
+def get_last_modified_file(directory_path, suffix=".zip"):
+    latest_time = 0
+    latest_file = None
+
+    for root, dirs, files in os.walk(directory_path):
+        for filename in files:
+            if filename.endswith(suffix):
+                filepath = os.path.join(root, filename)
+                if os.path.isfile(filepath):
+                    file_mtime = os.path.getmtime(filepath)
+                    
+                    if file_mtime > latest_time:
+                        latest_time = file_mtime
+                        latest_file = filepath
+
+    if latest_file:
+        print(f"Last modified {suffix} file: {latest_file}")
+    else:
+        print(f"No {suffix} files found.")
+    return latest_file
 
 def timeit(func):
     """Measure function time"""

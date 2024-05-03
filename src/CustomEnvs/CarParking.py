@@ -137,6 +137,7 @@ class CarParkingEnv(gymnasium.Env):
         self.time_velocity_not_low = 0
 
         # REWARD VARIABLES
+        self.reward_range = (-1, 1)
         self.episode_mujoco_max_step = self.time_limit / self.model.opt.timestep
         self.episode_env_max_step = self.episode_mujoco_max_step/self.simulation_frame_skip
         self.angle_total_cost = 0
@@ -291,7 +292,7 @@ class CarParkingEnv(gymnasium.Env):
         self.truncated = self._check_truncated_condition()
 
         self.cumulative_reward += self.reward
-        self.norm_cumulative_reward = normalize_data(self.cumulative_reward, 0, 1, 0, (self.episode_env_step+1)*self.max_step_reward)
+        self.norm_cumulative_reward = normalize_data(self.cumulative_reward, 0, 1, -1, (self.episode_env_step+1)*self.max_step_reward)
         
         self.info = {
             "episode_mujoco_time": self.episode_mujoco_time,
@@ -343,7 +344,7 @@ class CarParkingEnv(gymnasium.Env):
             truncated = True
             
         if truncated:
-            self.reward -= self.max_step_reward * (self.episode_env_max_step - self.episode_env_step)
+            self.reward -= 1
         return truncated
 
     def _get_obs(self):

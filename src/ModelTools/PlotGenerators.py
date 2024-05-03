@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
 import matplotlib.cm as cm
 from pathlib import Path
+from scipy.interpolate import interp1d
 
 # autopep8: off
 sys.path.append(str(Path(__file__,'..','..').resolve()))
@@ -109,7 +110,65 @@ class PlotBestTrajectory(PlotTrajectory):
         super().__init__(ax)
         self.legend = legend
         self.n_best = n_best
-        self.ax_label = f"top {n_best} trajectory"
+        self.ax_label = f"top {n_best} rewarded trajectory"
+        
+    def plot(self, df):
+        best = get_n_best_rewards(df, self.n_best)
+        return super().plot(best)
+    
+class PlotActions(PlotBaseAbstract):
+    def __init__(self,
+                 ax= None,
+                 legend = False
+                 )-> None:
+        super().__init__(ax)
+        self.legend = legend
+        self.ax_label = "actions"
+        
+    def plot(self, df) -> Tuple[Figure | Axes]:
+        super().plot()
+        for indexes, grouped in group_by_episodes(df):
+            action_engine = grouped['action_engine'].to_numpy()
+            action_angle = grouped['action_angle'].to_numpy()
+            x = grouped['episode_mujoco_time'].to_numpy()
+            
+            color_engine = 'blue'
+            color_angle = 'green'
+            
+            self._ax.plot(x, action_engine, label="engine", linestyle='-', color=color_engine, alpha=1)
+            self._ax.fill_between(x, action_engine, color=color_engine, alpha=0.3)
+            
+            self._ax.plot(x, action_angle, label="angle", linestyle='-', color=color_angle, alpha=1)
+            self._ax.fill_between(x, action_angle, color=color_angle, alpha=0.3)
+            
+            # INTERPOLATE
+            # x_new = np.linspace(x.min(), x.max(), 30)
+            # interp_engine = interp1d(x, action_engine, kind='cubic')(x_new)
+            # interp_angle = interp1d(x, action_angle, kind='cubic')(x_new)
+            # self._ax.plot(x_new, interp_engine, label="engine (interp)", color=color_engine)
+            # self._ax.plot(x_new, interp_angle, label="angle (interp)", color=color_angle)
+
+        self._ax.grid(True)
+        
+        self._ax.set_xlabel('env time [ms]')
+        self._ax.set_ylabel('y')
+        
+        if self.legend:
+            self._ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    
+        return self._fig, self._ax
+    
+class PlotBestActions(PlotActions):
+    def __init__(self,
+                 ax= None,
+                 legend = False,
+                 n_best = 1
+                 ) -> None:
+        super().__init__(ax)
+        self.legend = legend
+        self.n_best = n_best
+        self.ax_label = f"top {n_best} rewarded action"
+        
         
     def plot(self, df):
         best = get_n_best_rewards(df, self.n_best)
@@ -118,8 +177,8 @@ class PlotBestTrajectory(PlotTrajectory):
 class PlotHeatMap(PlotBaseAbstract):
     def __init__(self,
                  ax=None,
-                 sigma=1,
-                 bins=101
+                 sigma=2,
+                 bins=51
                  ) -> None:
         super().__init__(ax)
         self.sigma = sigma
@@ -171,7 +230,7 @@ class PlotWrapper():
                     axes: np.ndarray[Axes] | np.ndarray[np.ndarray[Axes]] | None = None):
         
         if fig is None or axes is None:
-            fig, axes = plt.subplots(1, len(self._generators), squeeze=False)
+            fig, axes = plt.subplots(1, len(self._generators), squeeze=False, figsize=(10,7))
         
         self._fig = fig
         self._axes: np.ndarray[Axes] = axes.flatten()

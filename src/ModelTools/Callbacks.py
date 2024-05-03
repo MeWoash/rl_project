@@ -24,7 +24,7 @@ class EpisodeStatsBuffer:
         
     def update_state(self):
         
-        if self.callback.dones[self.env_index] == True:
+        if self.callback.dones[self.env_index] == True
             self.flush_all()
         else:
             if self.log_counter % self.log_interval==0:
@@ -114,12 +114,16 @@ class  CSVCallback(BaseCallback):
     
     def _log_episode_end_stats(self, row):
         self.logger.record('observation/episode_norm_cum_reward',row['episode_norm_cum_reward'])
+        self.logger.record('observation/dist_mean', row['dist_mean'])
         self.logger.record('observation/time_max', row['episode_mujoco_time'])
     
     def _save_best_model(self, new_reward):
         if new_reward > self.best_reward:
             self.best_reward= new_reward
             self.model.save(Path(self.logdir,'models', f'best_model_rew-{int(self.best_reward*1000)}_step-{self.num_timesteps}'))
+                
+    def _on_training_start(self) -> None:
+        return super()._on_training_start()    
                 
     def _on_step(self) -> bool:
         self.infos = self.locals['infos']

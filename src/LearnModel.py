@@ -13,7 +13,7 @@ def train_model(modelConstructor = A2C):
     env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
                             n_envs=1,
                             vec_env_cls=DummyVecEnv,
-                            env_kwargs={"render_mode": "human"})
+                            env_kwargs={"render_mode": "none"})
     
 
     logdir = f"{OUT_RL_DIR.joinpath(modelConstructor.__name__)}"

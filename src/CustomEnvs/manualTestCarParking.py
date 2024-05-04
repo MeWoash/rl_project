@@ -51,7 +51,7 @@ adiff:      {obs[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}
 contact:    {obs[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}
 range:      {obs[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}
 pos:        {obs[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}
-eul:        {obs[ObsIndex.CAR_YAW_BEGIN:ObsIndex.CAR_YAW_END+1]}"""
+eul:        {obs[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]}"""
 
     return d
 

@@ -47,27 +47,35 @@ N_RANGE_SENSORS = CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS
 
 # INCLUSIVE INDEXES
 class ObsIndex(IntEnum):
+    # 1 val
     VELOCITY_BEGIN = 0
     VELOCITY_END = 0
 
+    # 1 val
     DISTANCE_BEGIN = 1
     DISTANCE_END = 1
 
+    # 2 val
     ANGLE_DIFF_BEGIN = 2
-    ANGLE_DIFF_END = 2
+    ANGLE_DIFF_END = 3
 
-    CONTACT_BEGIN = 3
-    CONTACT_END = 3
+    # 2 val
+    CONTACT_BEGIN = 4
+    CONTACT_END = 5
 
-    POS_BEGIN = 4
-    POS_END = 5
+    # 2 val 
+    POS_BEGIN = 6
+    POS_END = 7
 
-    CAR_YAW_BEGIN = 6
-    CAR_YAW_END = 6
+    # 2 val
+    YAW_BEGIN = 8
+    YAW_END = 9
     
-    RANGE_BEGIN = 7
-    RANGE_END = 14
-    OBS_SIZE = 15
+    # 8 val
+    RANGE_BEGIN = 10
+    RANGE_END = 17
+    
+    OBS_SIZE = 18
 
 
 
@@ -180,14 +188,14 @@ class CarParkingEnv(gymnasium.Env):
 
         carSpeedRange = np.array([-10, 10]).reshape(2, 1)
         distRange = np.array([0, MAX_X_Y_DIST]).reshape(2, 1)
-        angleDiff = np.array([-np.pi, np.pi]).reshape(2, 1)
-        contactRange = np.array([0, MAX_SENSOR_VAL]).reshape(2, 1)
+        angleDiff = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
+        contactRange = np.tile(np.array([0, MAX_SENSOR_VAL]).reshape(2, 1), (1, 2))
         range_sensorsRange = np.tile(
             np.array([0, MAX_SENSOR_VAL]).reshape(2, 1), (1, N_RANGE_SENSORS))
         carPositionGlobalRange = np.array(
             [[-MAP_SIZE[0]/2, -MAP_SIZE[1]/2],
              [MAP_SIZE[0]/2, MAP_SIZE[1]/2]])
-        car_eulerRange = np.array([0, np.pi]).reshape(2, 1)
+        car_eulerRange = np.tile(np.array([0, np.pi]).reshape(2, 1), (1, 2))
 
         # KEEP ORDER AS IN OBSINDEX
         boundMatrix = np.hstack(
@@ -238,7 +246,7 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")
         overlay.add("contact",f"{self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}", "top left")
         overlay.add("pos",f"{self.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}", "top left")
-        overlay.add("eul",f"{self.observation[ObsIndex.CAR_YAW_BEGIN:ObsIndex.CAR_YAW_END+1]}", "top left")
+        overlay.add("eul",f"{self.observation[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]}", "top left")
         overlay.add("range",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}", "top left")
         overlay.add("Model Action", "values", "top right")
         overlay.add("engine", f"{self.action[0]:.2f}", "top right")
@@ -329,7 +337,8 @@ class CarParkingEnv(gymnasium.Env):
         terminated = False
         if self.observation[ObsIndex.DISTANCE_BEGIN] <= 0.25 \
                 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) <= 0.1 \
-                and self.observation[ObsIndex.ANGLE_DIFF_BEGIN] <= math.radians(10):
+                and self.observation[ObsIndex.ANGLE_DIFF_BEGIN] <= math.radians(10)\
+                and self.observation[ObsIndex.ANGLE_DIFF_END] <= math.radians(10):  
             terminated = True
         return terminated
 
@@ -344,7 +353,7 @@ class CarParkingEnv(gymnasium.Env):
             truncated = True
         elif self.data.time > self.time_limit:
             truncated = True
-        elif self.observation[ObsIndex.CONTACT_BEGIN] > 0:
+        elif any(contact_val > 0 for contact_val in self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]):
             truncated = True
             
         if truncated:
@@ -370,28 +379,38 @@ class CarParkingEnv(gymnasium.Env):
 
         distToTarget = np.linalg.norm(carPositionParking[:2])
 
-        contact_data = self.data.sensor(
-            f"{CAR_NAME}/touch_sensor").data[0]
-
+        contact_data = [
+            self.data.sensor(f"{CAR_NAME}/touch_sensor").data[0],
+            self.data.sensor(f"{CAR_NAME}/{TRAILER_NAME}/touch_sensor").data[0]
+        ]
+        
+        
+        # GET ANGLES
         carQuat = self.data.body(f"{CAR_NAME}/").xquat
-        # roll_x, pitch_y, yaw_z
-        car_euler = quat_to_euler(carQuat)
+        car_euler = quat_to_euler(carQuat) # roll_x, pitch_y, yaw_z
+        
+        trailerQuat = self.data.body(f"{CAR_NAME}/{TRAILER_NAME}/").xquat
+        trailer_euler = quat_to_euler(trailerQuat) # roll_x, pitch_y, yaw_z
 
         targetQuat = self.data.body(f"{PARKING_NAME}/").xquat
-        # targetroll_x, targetpitch_y, targetyaw_z
-        target_euler = quat_to_euler(targetQuat)
-
-        angleDiff = car_euler[2] - target_euler[2]
-        normalizedAngleDiff = normalize_angle_diff(angleDiff)
+        target_euler = quat_to_euler(targetQuat) # roll_x, pitch_y, yaw_z
         
+        # ANGLE DIFFS
+        carAngleDiff = car_euler[2] - target_euler[2]
+        normalizedCarAngleDiff = normalize_angle_diff(carAngleDiff)
+        
+        trailerAngleDiff = car_euler[2] - target_euler[2]
+        normalizedTrailerAngleDiff = normalize_angle_diff(trailerAngleDiff)
+        
+        # GATHER OBS
         observation = np.zeros(ObsIndex.OBS_SIZE, dtype=np.float32)
         
         observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1] = carSpeed
         observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1] = distToTarget
-        observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1] = normalizedAngleDiff
+        observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1] = normalizedCarAngleDiff, normalizedTrailerAngleDiff
         observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1] = contact_data
         observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1] = carPositionGlobal[:2]
-        observation[ObsIndex.CAR_YAW_BEGIN:ObsIndex.CAR_YAW_END+1] = car_euler[2]
+        observation[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1] = car_euler[2], trailer_euler[2]
         observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1] = range_sensors
         
         return observation

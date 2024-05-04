@@ -12,6 +12,12 @@ import numpy as np
 ASSET_DIR = Globals.ASSETS_DIR
 
 
+CUSTOM_OBSTACLES = [
+    {"size":[0.5, 5, 1],  "pos":[5, -3, 0]},
+    {"size":[5, 1, 1],  "pos":[0, 8, 0]},
+    {"size":[1, 1, 1],  "pos":[-1, -1, 0]}
+]
+
 def calculateCameraHeight(x, y, fov_y_degrees):
     fov_y_radians = math.radians(fov_y_degrees)
     h = max(x, y) / 2*math.tan(fov_y_radians / 2)
@@ -20,7 +26,7 @@ def calculateCameraHeight(x, y, fov_y_degrees):
 
 class Wheel:
     _wheel_mass = 30
-    _wheel_friction = (1, 1e-3, 1e-3)
+    _wheel_friction = [1.2, 0.01, 0.02]
     _wheel_angle_limit = (-45, 45)
     _wheelRadius: float = 0.3
     _wheelThickness: float = 0.2
@@ -150,7 +156,6 @@ class Trailer:
             
         # ## OTHERS
         mjcf_model.sensor.add("touch", name=f"touch_sensor", site=touch_site, cutoff=self._maxSensorVal)
-        # mjcf_model.sensor.add("framepos", name=f"pos_global_sensor", objtype="site", objname=self.center_site)
         
         # autopep8: on
         return mjcf_model, front_attachment_site
@@ -252,7 +257,7 @@ class Car:
 class ParkingSpot:
     _lineHeightSize = 0.001
     _friction = [1.0, 0.005, 0.0001]
-    _targetPaddings = (1.3, 1.5)
+    _targetPaddings = (1.2, 1.5)
     _lineWidth = 0.15
 
     def __init__(self,
@@ -268,21 +273,27 @@ class ParkingSpot:
     def construct_tree(self):
         mjcf_model = mjcf.RootElement(model=self._model_name)
 
-        targetXSize = (self._carSize[0]/2)*self._targetPaddings[0]
-        targetYSize = (self._carSize[1]/2)*self._targetPaddings[1]
-        lineWidthSize = self._lineWidth/2
-        lineHeightSize = self._lineHeightSize
-
-        # autopep8: off
         material = mjcf_model.asset.add("material", name=f"line_material",rgba=[1, 1, 1, 1])
         self.site_center = mjcf_model.worldbody.add("site",name=f"site_center",  type="cylinder",size=[0.1, 0.001],  material=material)
 
-        mjcf_model.worldbody.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[targetXSize - lineWidthSize, 0, 0],       friction=self._friction, material=material)
-        mjcf_model.worldbody.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, targetYSize - lineWidthSize, 0],       friction=self._friction, material=material)
-        mjcf_model.worldbody.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[ 0, -(targetYSize - lineWidthSize), 0],   friction=self._friction, material=material)
-        mjcf_model.worldbody.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0],    friction=self._friction, material=material)
-        # autopep8: on
+        self._create_parking_spot(mjcf_model, "car_parking_spot", self._carSize, material)
+        for i in range(1):
+            offset_x = -(self._carSize[0] + self.trailerSize[3])
+            self._create_parking_spot(mjcf_model, f"trailer_parking_spot_{i}", self.trailerSize, material, offset_x)
+            
         return mjcf_model
+
+    def _create_parking_spot(self, mjcf_model, name, size, material, offset_x=0):
+        targetXSize = (size[0]/2)*self._targetPaddings[0]
+        targetYSize = (size[1]/2)*self._targetPaddings[1]
+        lineWidthSize = self._lineWidth/2
+        lineHeightSize = self._lineHeightSize
+        
+        parking_spot = mjcf_model.worldbody.add("body", name=name, pos=[offset_x, 0, 0])
+        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[targetXSize - lineWidthSize, 0, 0], friction=self._friction, material=material)
+        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, targetYSize - lineWidthSize, 0], friction=self._friction, material=material)
+        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, -(targetYSize - lineWidthSize), 0], friction=self._friction, material=material)
+        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0], friction=self._friction, material=material)
 
 
 class Generator:
@@ -390,6 +401,9 @@ class Generator:
         wall_material = self.mjcf_model.asset.add(  "material",     name="wall_material",   rgba=[1, 1, 1, 0.000001])
         ground_texture = self.mjcf_model.asset.add( "texture",      name="ground_texture",  type="2d",              file=ASSET_DIR+"/ground.png")
         ground_material = self.mjcf_model.asset.add("material",     name="ground_material", texture=ground_texture, texrepeat=[25, 25])
+        
+        obstacle_texture = self.mjcf_model.asset.add( "texture",      name="obstacle_texture",  type="2d",              file=ASSET_DIR+"/rustymetal.png")
+        obstacle_material = self.mjcf_model.asset.add("material",     name="obstacle_material", texture=obstacle_texture, )
 
         self.mjcf_model.worldbody.add("geom",   name="ground",    type="plane",   size=[x, y, t],   friction= [1.0, 0.005, 0.0001], material=ground_material)
         self.mjcf_model.worldbody.add("geom",   name="ceiling",   type="box",     size=[x, y, t],   pos= [0, 0, self.map_length[2]],rgba= [0, 0, 0, 0])
@@ -399,6 +413,12 @@ class Generator:
         self.mjcf_model.worldbody.add("geom",   name="wall4",     type="box",     size=[x, t, h],   pos= [0, -(y+t), h],            material=wall_material)
         self.mjcf_model.worldbody.add("light",  name="mainLight", dir=[0, 0, -1], pos=[0, 0, 100],  diffuse= [1, 1, 1],             castshadow= True)
 
+        
+        
+        # CUSTOM OBSTACLES
+        for obstacle_kwargs in CUSTOM_OBSTACLES:
+            self.mjcf_model.worldbody.add("geom",type="box", material=obstacle_material, **obstacle_kwargs)
+        
     def _generate_camera(self):
         camHeight = calculateCameraHeight(
             self.map_length[0], self.map_length[1], 90)
@@ -421,8 +441,8 @@ class Generator:
 if __name__ == "__main__":
     generator = Generator()
     # Here Change properties
-    generator.car_pos = 0, 0
-    generator.parking_pos = 0,0
+    generator.car_pos = -5, -5
+    generator.parking_pos = 7,5
 
     generator.construct_tree()
     generator.export_with_assets()

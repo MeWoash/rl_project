@@ -5,6 +5,7 @@ from dm_control import viewer
 from pathlib import Path
 
 from networkx import radius
+from sympy import euler
 
 import Globals
 import numpy as np
@@ -20,8 +21,11 @@ CUSTOM_OBSTACLES = [
     {"size":[1, 1, 1],  "pos":[-2, -1, 0]}
 ]
 
+# POS Z WILL BE OVERWRITTEN TO MATCH SURFACE
 SPAWN_POINTS = [
-    {"pos":[-5, -5]}
+    {"pos":[-5, -5, 0], "euler":[0, 0, 0]},
+    {"pos":[7, -5, 0], "euler":[0, 0, 90]},
+    {"pos":[-8, 5, 0], "euler":[0, 0, -90]}
 ]
 
 def calculateCameraHeight(x, y, fov_y_degrees):
@@ -428,14 +432,14 @@ class Generator:
         spawn_height = self.calculate_car_spawn_height()
         self.spawn_points = []
         for i, spawn_point in enumerate(SPAWN_POINTS):
+            spawn_point['pos'][2] = spawn_height
             self.spawn_points.append(
                 self.mjcf_model.worldbody.add("site",
                                               name=f"spawn_point_{i}",
                                               type="ellipsoid",
                                               size="0.2 0.1 0.1",
                                               rgba=(0.408, 0.592, 0.941, 1),
-                                              pos=(*spawn_point['pos'], spawn_height),
-                                            #   quat=(0.92387953, 0, 0, 0.38268343)
+                                              **spawn_point
                                               )
             )
         

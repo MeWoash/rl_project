@@ -39,7 +39,7 @@ MAX_SENSOR_VAL = MJCFGenerator.Car._maxSensorVal
 WHEEL_ANGLE_RANGE = [math.radians(MJCFGenerator.Wheel._wheel_angle_limit[0]), math.radians(MJCFGenerator.Wheel._wheel_angle_limit[1])]
 
 CAR_N_RANGE_SENSORS = 5
-TRAILER_N_RANGE_SENSORS = 3
+TRAILER_N_RANGE_SENSORS = 5
 N_RANGE_SENSORS = CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS
 
 
@@ -73,9 +73,9 @@ class ObsIndex(IntEnum):
     
     # 8 val
     RANGE_BEGIN = 10
-    RANGE_END = 17
+    RANGE_END = 19
     
-    OBS_SIZE = 18
+    OBS_SIZE = 20
 
 
 
@@ -121,7 +121,7 @@ class CarParkingEnv(gymnasium.Env):
                  time_limit = 30,
                  capture_frames = False,
                  capture_fps = 24,
-                 frame_size = (480, 480), # Width, Height
+                 frame_size = (1920, 1080), # Width, Height
                  **kwargs):
 
         self.time_limit = time_limit
@@ -399,7 +399,7 @@ class CarParkingEnv(gymnasium.Env):
         carAngleDiff = car_euler[2] - target_euler[2]
         normalizedCarAngleDiff = normalize_angle_diff(carAngleDiff)
         
-        trailerAngleDiff = car_euler[2] - target_euler[2]
+        trailerAngleDiff = trailer_euler[2] - target_euler[2]
         normalizedTrailerAngleDiff = normalize_angle_diff(trailerAngleDiff)
         
         # GATHER OBS

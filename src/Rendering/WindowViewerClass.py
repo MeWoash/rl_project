@@ -128,6 +128,7 @@ class WindowViewer(BaseRender):
             # OVERLAY HERE
             if overlay is not None and not self._hide_menu:
                 overlay.add("FPS", f"{int(1 / self._time_per_render)}", "bottom left")
+                overlay.add("Capture Frames", f"{self._capture_frames}: {len(self._frames)}", "bottom left")
                 overlay.add_to_viewport(self.con, self.viewport)
 
             if self._capture_frames:
@@ -175,13 +176,16 @@ class WindowViewer(BaseRender):
             self._hide_menu = not self._hide_menu
         elif key == glfw.KEY_S:
             self.render_movie()
+        elif key == glfw.KEY_C:
+            new_val = not self._capture_frames
+            self._capture_frames = new_val
+            self._frames.clear()
         elif key == glfw.KEY_F:
             self.render_image()
         if key == glfw.KEY_ESCAPE:
             print("Pressed ESC")
             print("Quitting.")
-            glfw.destroy_window(self.window)
-            glfw.terminate()
+            self.close()
 
     def _cursor_pos_callback(
         self, window: "glfw.LP__GLFWwindow", xpos: float, ypos: float

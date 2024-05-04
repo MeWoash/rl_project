@@ -11,11 +11,17 @@ import numpy as np
 
 ASSET_DIR = Globals.ASSETS_DIR
 
+PARKING_POS = [4, 5, 0]
 
 CUSTOM_OBSTACLES = [
-    {"size":[0.5, 5, 1],  "pos":[5, -3, 0]},
+    {"size":[0.5, 2, 1],  "pos":[4, 1, 0]},
+    {"size":[0.5, 2, 1],  "pos":[4, -7, 0]},
     {"size":[5, 1, 1],  "pos":[0, 8, 0]},
-    {"size":[1, 1, 1],  "pos":[-1, -1, 0]}
+    {"size":[1, 1, 1],  "pos":[-2, -1, 0]}
+]
+
+SPAWN_POINTS = [
+    {"pos":[-5, -5]}
 ]
 
 def calculateCameraHeight(x, y, fov_y_degrees):
@@ -80,7 +86,7 @@ class Wheel:
 class Trailer:
     _wheelFriction: Tuple[float, float, float] = (1, 1e-3, 1e-3)
     _wheelAxisSpacing: float = 0.3
-    _wheelSpacing: float = 1
+    _wheelSpacing: float = 0.79
     _wheelMountHeight: float = -0.25
     _trailerMass: float = 1500
     _wheelMass: float = 30
@@ -144,8 +150,8 @@ class Trailer:
             [-chassisXSize, chassisYsize, 0],
             [-chassisXSize, 0, 0],
             [-chassisXSize, -chassisYsize, 0],
-            # [0, chassisYsize, 0],
-            # [0, -chassisYsize, 0]
+            [0, chassisYsize, 0],
+            [0, -chassisYsize, 0]
         ])
         sensor_size = (1e-6, 1e-6)
         sensor_pos_scale_factor = 1e-3
@@ -163,7 +169,7 @@ class Trailer:
 class Car:
     _wheelFriction: Tuple[float, float, float] = (1, 1e-3, 1e-3)
     _wheelAxisSpacing: float = 0.6
-    _wheelSpacing: float = 1
+    _wheelSpacing: float = 0.79
     _wheelMountHeight: float = -0.25
     _carMass: float = 1500
     _wheelMass: float = 30
@@ -290,10 +296,10 @@ class ParkingSpot:
         lineHeightSize = self._lineHeightSize
         
         parking_spot = mjcf_model.worldbody.add("body", name=name, pos=[offset_x, 0, 0])
-        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[targetXSize - lineWidthSize, 0, 0], friction=self._friction, material=material)
-        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, targetYSize - lineWidthSize, 0], friction=self._friction, material=material)
-        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, -(targetYSize - lineWidthSize), 0], friction=self._friction, material=material)
-        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0], friction=self._friction, material=material)
+        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[targetXSize - lineWidthSize, 0, 0], friction=self._friction, material=material, contype=0, conaffinity=0)
+        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, targetYSize - lineWidthSize, 0], friction=self._friction, material=material, contype=0, conaffinity=0)
+        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, -(targetYSize - lineWidthSize), 0], friction=self._friction, material=material, contype=0, conaffinity=0)
+        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0], friction=self._friction, material=material, contype=0, conaffinity=0)
 
 
 class Generator:
@@ -311,21 +317,15 @@ class Generator:
         self._car_dims = (2, 1, 0.25)
         self._trailer_dims = (1.75, 1, 0.25, 0.7)
         self._car_pos = (0, 0)
-        self._parking_pos = (0, 0, 0)
-        self._hitch_angle_limit = (-60, 60)
+        self._parking_pos = PARKING_POS
+        self._hitch_angle_limit = None
         
         self.carGenerator = Car(self._carName, self._car_dims)
         self.trailerGenerator = Trailer(self._trailerName, self._trailer_dims)
         self.parkingSpotGenerator = ParkingSpot(self._spotName, self._car_dims, self._trailer_dims)
 
-    @property
-    def car_pos(self):
-        return self._car_pos
-
-    @car_pos.setter
-    def car_pos(self, val):
-        self._car_pos = [val[0], val[1], Wheel._wheelRadius +
-                         self._car_dims[2] * abs(Car._wheelMountHeight)]
+    def calculate_car_spawn_height(self) -> float:
+        return Wheel._wheelRadius + self._car_dims[2] * abs(Car._wheelMountHeight)
 
     @property
     def map_length(self):
@@ -360,9 +360,8 @@ class Generator:
         self._generate_camera()
 
         # CAR
-        self.car_attachment_site = self.mjcf_model.worldbody.add("site", name="car_attachment_site", pos=self._car_pos)
         carMJCF, carRearAttachmentSite = self.carGenerator.construct_tree()
-        car_attachment_body = self.car_attachment_site.attach(carMJCF)
+        car_attachment_body = self.spawn_points[-1].attach(carMJCF)
         car_attachment_body.add("freejoint")
         
         #TRAILER
@@ -389,7 +388,12 @@ class Generator:
         
         b_attachment_body = site_a.attach(body_b)
         b_attachment_body.pos = new_pos
-        b_attachment_body.add("joint", type="hinge", axis=[0, 0, 1], pos=site_b_pos, range=self._hitch_angle_limit)
+        b_attachment_body.add("joint",
+                              type="hinge",
+                              axis=[0, 0, 1], pos=site_b_pos,
+                            #   range=self._hitch_angle_limit
+                              )
+            
     
     def _generate_map(self):
 
@@ -413,11 +417,27 @@ class Generator:
         self.mjcf_model.worldbody.add("geom",   name="wall4",     type="box",     size=[x, t, h],   pos= [0, -(y+t), h],            material=wall_material)
         self.mjcf_model.worldbody.add("light",  name="mainLight", dir=[0, 0, -1], pos=[0, 0, 100],  diffuse= [1, 1, 1],             castshadow= True)
 
-        
-        
         # CUSTOM OBSTACLES
         for obstacle_kwargs in CUSTOM_OBSTACLES:
             self.mjcf_model.worldbody.add("geom",type="box", material=obstacle_material, **obstacle_kwargs)
+            
+        self._generate_spawn_points()
+            
+            
+    def _generate_spawn_points(self):
+        spawn_height = self.calculate_car_spawn_height()
+        self.spawn_points = []
+        for i, spawn_point in enumerate(SPAWN_POINTS):
+            self.spawn_points.append(
+                self.mjcf_model.worldbody.add("site",
+                                              name=f"spawn_point_{i}",
+                                              type="ellipsoid",
+                                              size="0.2 0.1 0.1",
+                                              rgba=(0.408, 0.592, 0.941, 1),
+                                              pos=(*spawn_point['pos'], spawn_height),
+                                            #   quat=(0.92387953, 0, 0, 0.38268343)
+                                              )
+            )
         
     def _generate_camera(self):
         camHeight = calculateCameraHeight(
@@ -441,8 +461,6 @@ class Generator:
 if __name__ == "__main__":
     generator = Generator()
     # Here Change properties
-    generator.car_pos = -5, -5
-    generator.parking_pos = 7,5
 
     generator.construct_tree()
     generator.export_with_assets()

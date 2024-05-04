@@ -79,7 +79,7 @@ class BaseRender(ABC):
 
     def render_movie(self, filename = "tmp.mp4"):
         if self._capture_frames == False:
-            raise Exception(f"Cannot render movie because capturing frames was disabled. Captured Frames: {len(self._frames)}")
+            return
             
         # filename = f"out-thread-{threading.get_ident()}.mp4"
         output_file = str(MEDIA_DIR/filename)
@@ -96,6 +96,7 @@ class BaseRender(ABC):
         self._frames.clear()
         out.release()
         self._nth_render_call = 0
+        print(f"Output file at: {output_file}")
         
     def render_image(self, filename = "tmp.jpg"):
         output_file = str(MEDIA_DIR/filename)
@@ -111,6 +112,7 @@ class BaseRender(ABC):
                             self.viewport.width, 3)[::-1, :, :])
         bgr_buffer = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2BGR)
         cv2.imwrite(output_file, bgr_buffer)
+        print(f"Output file at: {output_file}")
         return rgb_img
 
     def _set_mujoco_buffer(self):

@@ -37,7 +37,7 @@ class Renderer:
                                            self._simulation_frame_skip,
                                            self._capture_frames,
                                            self._capture_fps,
-                                           (1080, 720))
+                                           (1280, 720))
                 pass
             elif render_mode in {"rgb_array", "depth_array", "none"}:
                 self.viewer = OffScreenViewer(self._model,

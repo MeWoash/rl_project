@@ -37,9 +37,9 @@ def train_model(modelConstructor = A2C, n_envs = 16, total_timesteps = 200_000):
 if __name__ == "__main__":
 
 
-    modelConstructor = A2C
-    n_envs = 16
-    total_timesteps = 200_000
+    modelConstructor = SAC
+    n_envs = 1
+    total_timesteps = 500_000
     logdir = train_model(modelConstructor, n_envs, total_timesteps)
     generate_media(logdir)
     

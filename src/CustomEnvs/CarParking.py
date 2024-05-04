@@ -24,8 +24,9 @@ MODEL_NAME = "out.xml"
 MJCF_OUT_DIR = MJCFGenerator.MJCF_OUT_DIR
 MODEL_PATH = os.path.join(str(MJCF_OUT_DIR), MODEL_NAME)
 
-CAR_NAME = MJCFGenerator.Generator._carName # NOT GUARANTEED TO MATCH
-PARKING_NAME = MJCFGenerator.Generator._spotName # NOT GUARANTEED TO MATCH
+CAR_NAME = MJCFGenerator.Generator._carName
+TRAILER_NAME = MJCFGenerator.Generator._trailerName
+PARKING_NAME = MJCFGenerator.Generator._spotName
 
 
 # TODO PARAMETERS SHOULD BE SCRAPED FROM MJDATA
@@ -36,7 +37,10 @@ MAX_X_Y_Z_DIST = math.sqrt(MAP_SIZE[2]**2 +
 MAX_SENSOR_VAL = MJCFGenerator.Car._maxSensorVal
 
 WHEEL_ANGLE_RANGE = [math.radians(MJCFGenerator.Wheel._wheel_angle_limit[0]), math.radians(MJCFGenerator.Wheel._wheel_angle_limit[1])]
-N_RANGE_SENSORS = 8
+
+CAR_N_RANGE_SENSORS = 5
+TRAILER_N_RANGE_SENSORS = 3
+N_RANGE_SENSORS = CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS
 
 
 # autopep8: on
@@ -357,9 +361,12 @@ class CarParkingEnv(gymnasium.Env):
         carSpeed = self.data.sensor(f'{CAR_NAME}/speed_sensor').data[0]
 
         range_sensors = []
-        for i in range(N_RANGE_SENSORS):
+        for i in range(CAR_N_RANGE_SENSORS):
             range_sensors.append(self.data.sensor(
                 f'{CAR_NAME}/range_sensor_{i}').data[0])
+        for i in range(TRAILER_N_RANGE_SENSORS):
+            range_sensors.append(self.data.sensor(
+                f'{CAR_NAME}/{TRAILER_NAME}/range_sensor_{i}').data[0])
 
         distToTarget = np.linalg.norm(carPositionParking[:2])
 

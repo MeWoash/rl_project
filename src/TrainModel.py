@@ -9,9 +9,9 @@ import LoadModel
 OUT_RL_DIR = Path(__file__).parent.joinpath("../out/learning").resolve()
 
 
-def train_model(modelConstructor = A2C):
+def train_model(modelConstructor = A2C, n_envs = 16, total_timesteps = 200_000):
     env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
-                            n_envs=16,
+                            n_envs=n_envs,
                             vec_env_cls=SubprocVecEnv,
                             env_kwargs={"render_mode": "none"})
     
@@ -27,7 +27,7 @@ def train_model(modelConstructor = A2C):
     
     CALLBACKS = [CSVCallback(log_interval = 20)]
     
-    model.learn(total_timesteps=200_000,
+    model.learn(total_timesteps=total_timesteps,
                 progress_bar=True,
                 callback=CALLBACKS)
     
@@ -38,8 +38,9 @@ if __name__ == "__main__":
 
 
     modelConstructor = A2C
-    logdir = train_model(modelConstructor)
-    
+    n_envs = 16
+    total_timesteps = 200_000
+    logdir = train_model(modelConstructor, n_envs, total_timesteps)
     generate_media(logdir)
     
     # last_model = LoadModel.get_last_modified_file(Path(logdir,'models'))

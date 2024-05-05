@@ -42,7 +42,7 @@ def generate_media(log_dir: str):
     
     # #PlotBestTrajectory
     fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotBestTrajectory(n_best=5, legend=True).plot(df_episodes)
+    PlotBestTrajectory(ax, n_best=5, legend=True).plot(df_episodes)
     generate_fig_file(fig, media_dir, "best_trajectories")
     
     #PlotBestRewardCurve

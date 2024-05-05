@@ -49,6 +49,6 @@ def load_model(modelConstructor, model_path):
 if __name__ == "__main__":
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
     
-    modelContructor = SAC
+    modelContructor = A2C
     last_model = get_last_modified_file(rf"out\learning")
     load_model(modelContructor, last_model)

@@ -127,6 +127,7 @@ class  CSVCallback(BaseCallback):
     def _save_best_model(self, new_reward):
         if new_reward > self.best_reward:
             self.best_reward= new_reward
+            print(f"New best mean reward: {self.best_reward:0.3f} at step: {self.num_timesteps}")
             self.model.save(Path(self.logdir,'models', f'best_model_rew-{int(self.best_reward*1000)}_step-{self.num_timesteps}'))
                 
     def _on_training_start(self) -> None:

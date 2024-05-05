@@ -1,3 +1,4 @@
+from cgitb import reset
 from unittest.mock import Base
 from pynput import keyboard
 import numpy as np
@@ -17,12 +18,18 @@ def on_press(key):
             current_action[0] = 1.0
         elif key == keyboard.Key.down:
             current_action[0] = -1.0
+            
         if key == keyboard.Key.left:
             current_action[1] = -1
         elif key == keyboard.Key.right:
             current_action[1] = 1
+            
+        if key.char == 'r':
+            env.reset()
+            
     except BaseException as e:
-        print(e)
+        pass
+        # print(e)
 
 
 def on_release(key):
@@ -59,9 +66,11 @@ eul:        {obs[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]}"""
 if __name__ == "__main__":
     env = CarParkingEnv(render_mode="human")
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
+    env.reset(0)
     while True:
         observation, reward, terminated, truncated, info = env.step(
             current_action)
         # print(describe_obs(observation))
         if terminated or truncated:
             env.reset()
+

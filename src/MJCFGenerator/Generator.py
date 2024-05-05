@@ -22,7 +22,7 @@ CUSTOM_OBSTACLES = [
 ]
 
 # POS Z WILL BE OVERWRITTEN TO MATCH SURFACE
-SPAWN_POINTS = [
+SPAWN_POINTS: list[dict[str, list[int]]] = [
     {"pos":[-5, -5, 0], "euler":[0, 0, 0]},
     {"pos":[7, -5, 0], "euler":[0, 0, 90]},
     {"pos":[-8, 5, 0], "euler":[0, 0, -90]}
@@ -306,46 +306,23 @@ class ParkingSpot:
         parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0], friction=self._friction, material=material, contype=0, conaffinity=0)
 
 
-class Generator:
+class GeneratorClass:
     model_name = "MainModel"
     _carName = "mainCar"
     _trailerName = "mainTrailer"
     _spotName = "parkingSpot"
     _offheight = 720
     _offwidth = 1280
-    
+    _parking_pos = PARKING_POS
+    _map_length = [20, 20, 20, 5]
+    _car_dims = (2, 1, 0.25)
+    _trailer_dims = (1.75, 1, 0.25, 0.7)
+    _carSpawnHeight = Wheel._wheelRadius + _car_dims[2] * abs(Car._wheelMountHeight)
 
     def __init__(self):
-        # MAP PROPS
-        self._map_length = [20, 20, 20, 5]
-        self._car_dims = (2, 1, 0.25)
-        self._trailer_dims = (1.75, 1, 0.25, 0.7)
-        self._car_pos = (0, 0)
-        self._parking_pos = PARKING_POS
-        self._hitch_angle_limit = None
-        
         self.carGenerator = Car(self._carName, self._car_dims)
         self.trailerGenerator = Trailer(self._trailerName, self._trailer_dims)
         self.parkingSpotGenerator = ParkingSpot(self._spotName, self._car_dims, self._trailer_dims)
-
-    def calculate_car_spawn_height(self) -> float:
-        return Wheel._wheelRadius + self._car_dims[2] * abs(Car._wheelMountHeight)
-
-    @property
-    def map_length(self):
-        return self._map_length
-
-    @map_length.setter
-    def map_length(self, val):
-        self._mapL_mapLength = val
-
-    @property
-    def parking_pos(self):
-        return self._parking_pos
-
-    @parking_pos.setter
-    def parking_pos(self, val):
-        self._parking_pos = [val[0], val[1], 0]
 
     def construct_tree(self):
         self.mjcf_model: mjcf.RootElement = mjcf.RootElement(model=self.model_name)
@@ -365,8 +342,8 @@ class Generator:
 
         # CAR
         carMJCF, carRearAttachmentSite = self.carGenerator.construct_tree()
-        car_attachment_body = self.spawn_points[-1].attach(carMJCF)
-        car_attachment_body.add("freejoint")
+        car_attachment_body = self.spawn_points[0].attach(carMJCF)
+        car_attachment_body.add("freejoint", name="")
         
         #TRAILER
         trailerMJCF, TrailerFrontAttachmentSite = self.trailerGenerator.construct_tree()
@@ -395,7 +372,6 @@ class Generator:
         b_attachment_body.add("joint",
                               type="hinge",
                               axis=[0, 0, 1], pos=site_b_pos,
-                            #   range=self._hitch_angle_limit
                               )
             
     
@@ -429,7 +405,7 @@ class Generator:
             
             
     def _generate_spawn_points(self):
-        spawn_height = self.calculate_car_spawn_height()
+        spawn_height = GeneratorClass._carSpawnHeight
         self.spawn_points = []
         for i, spawn_point in enumerate(SPAWN_POINTS):
             spawn_point['pos'][2] = spawn_height
@@ -463,7 +439,7 @@ class Generator:
 
 
 if __name__ == "__main__":
-    generator = Generator()
+    generator = GeneratorClass()
     # Here Change properties
 
     generator.construct_tree()

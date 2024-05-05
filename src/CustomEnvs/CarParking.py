@@ -12,6 +12,8 @@ import sys
 import os
 import math
 from enum import IntEnum
+from scipy.spatial.transform import Rotation
+
 
 SELF_DIR = Path(__file__).parent.resolve()
 sys.path.append(str(SELF_DIR.parent))
@@ -24,13 +26,14 @@ MODEL_NAME = "out.xml"
 MJCF_OUT_DIR = MJCFGenerator.MJCF_OUT_DIR
 MODEL_PATH = os.path.join(str(MJCF_OUT_DIR), MODEL_NAME)
 
-CAR_NAME = MJCFGenerator.Generator._carName
-TRAILER_NAME = MJCFGenerator.Generator._trailerName
-PARKING_NAME = MJCFGenerator.Generator._spotName
+CAR_NAME = MJCFGenerator.GeneratorClass._carName
+TRAILER_NAME = MJCFGenerator.GeneratorClass._trailerName
+PARKING_NAME = MJCFGenerator.GeneratorClass._spotName
+CAR_SPAWN_HEIGHT = MJCFGenerator.GeneratorClass._carSpawnHeight
 
 
 # TODO PARAMETERS SHOULD BE SCRAPED FROM MJDATA
-MAP_SIZE = [20, 20, 20, 5]
+MAP_SIZE = MJCFGenerator.GeneratorClass._map_length
 MAX_X_Y_DIST = math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2)
 MAX_X_Y_Z_DIST = math.sqrt(MAP_SIZE[2]**2 +
                            math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2))
@@ -101,7 +104,28 @@ def quat_to_euler(quat):
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw_z = math.atan2(t3, t4)
 
-    return roll_x, pitch_y, yaw_z
+    return [roll_x, pitch_y, yaw_z]
+
+def euler_to_quat(roll, pitch, yaw):
+
+    cy = np.cos(yaw * 0.5)
+    sy = np.sin(yaw * 0.5)
+    cp = np.cos(pitch * 0.5)
+    sp = np.sin(pitch * 0.5)
+    cr = np.cos(roll * 0.5)
+    sr = np.sin(roll * 0.5)
+
+    w = cr * cp * cy + sr * sp * sy
+    x = sr * cp * cy - cr * sp * sy
+    y = cr * sp * cy + sr * cp * sy
+    z = cr * cp * sy - sr * sp * cy
+
+    quat = np.array([w, x, y, z])
+
+    norm = np.linalg.norm(quat)
+    quat = quat / norm
+
+    return quat.flatten()
 
 
 class CarParkingEnv(gymnasium.Env):
@@ -122,8 +146,14 @@ class CarParkingEnv(gymnasium.Env):
                  capture_frames = False,
                  capture_fps = 24,
                  frame_size = (1920, 1080), # Width, Height
+                 enable_random_spawn = True,
+                 enable_spawn_noise = True,
                  **kwargs):
 
+        
+        self.enable_random_spawn= enable_random_spawn
+        self.enable_spawn_noise=enable_spawn_noise
+        
         self.time_limit = time_limit
         self.fullpath = xml_file
         self.simulation_frame_skip = simulation_frame_skip
@@ -138,12 +168,12 @@ class CarParkingEnv(gymnasium.Env):
         # TODO CAMERA SETTINGS
         self.camera_name = None
         self.camera_id = 0
-        self.episode = 0
+        self.episode_number = 0
 
         self._initialize_simulation()
         self._set_default_action_space()
         self._set_default_observation_space()
-        
+        self._calculate_spawn_points()
         
         # TRUNCATE VARIABLES
         self.time_velocity_not_low = 0
@@ -162,7 +192,7 @@ class CarParkingEnv(gymnasium.Env):
         self.dist_punish_weight = 0.75 
         self.velocity_punish_weight = 0.125
         self.angle_punish_weight = 0.125
-        self.cumulative_reward = 0
+        self.episode_cumulative_reward = 0
         self.max_step_reward = 1
         
         assert self.dist_punish_weight + self.velocity_punish_weight + self.angle_punish_weight == self.max_step_reward, f"Weights have to sum to {self.max_step_reward}"
@@ -225,7 +255,17 @@ class CarParkingEnv(gymnasium.Env):
 
     def _reset_simulation(self):
         mujoco.mj_resetData(self.model, self.data)
+        mujoco.mj_forward(self.model, self.data) #  WTHOUT THIS LINE FIRST STEP CONSIST 0s
 
+    def _calculate_spawn_points(self):
+        self.spawn_points = []
+        for spawn_params in MJCFGenerator.SPAWN_POINTS:
+            pos = spawn_params['pos']
+            pos[2] = MJCFGenerator.GeneratorClass._carSpawnHeight
+            quat = euler_to_quat(*np.radians(spawn_params['euler']))
+            self.spawn_points.append([*pos, *quat])
+            
+            
     def render(self):
         o = TextOverlay()
         if self.render_mode == "human":
@@ -238,7 +278,7 @@ class CarParkingEnv(gymnasium.Env):
     def _prep_overlay(self, overlay: TextOverlay):
         overlay.add("Env Step",f"{self.episode_env_step:.0f} / {self.episode_env_max_step:.0f}", "bottom left")
         overlay.add("MuJoCo Step",f"{self.episode_mujoco_step:.0f} / {self.episode_mujoco_max_step:.0f}", "bottom left")
-        overlay.add("episode", f"{self.episode}", "bottom left")
+        overlay.add("episode", f"{self.episode_number}", "bottom left")
         overlay.add("time", f"{self.data.time:.2f} / {self.time_limit:.2f}", "bottom left")
         overlay.add("Env stats", "values", "top left")
         overlay.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
@@ -247,14 +287,15 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("contact",f"{self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}", "top left")
         overlay.add("pos",f"{self.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}", "top left")
         overlay.add("eul",f"{self.observation[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]}", "top left")
-        overlay.add("range",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}", "top left")
+        overlay.add("range car",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_BEGIN+CAR_N_RANGE_SENSORS]}", "top left")
+        overlay.add("range trl",f"{self.observation[ObsIndex.RANGE_BEGIN+CAR_N_RANGE_SENSORS:ObsIndex.RANGE_END+1]}", "top left")
         overlay.add("Model Action", "values", "top right")
         overlay.add("engine", f"{self.action[0]:.2f}", "top right")
         overlay.add("wheel", f"{self.action[1]:.2f}", "top right")
         
         overlay.add("Reward metrics", "values", "bottom right")
         overlay.add("reward", f"{self.reward:.2f}", "bottom right")
-        overlay.add("cum_reward", f"{self.cumulative_reward:.2f} ~ {self.norm_cumulative_reward:.2f}", "bottom right")
+        overlay.add("cum_reward", f"{self.episode_cumulative_reward:.2f} ~ {self.episode_mean_reward:.2f}", "bottom right")
         
         overlay.add("dist", f"{self.observation[ObsIndex.DISTANCE_BEGIN]:.2f} ~ {self.norm_dist:.2f}", "bottom right")
         overlay.add("v_sum", f"{self.velocity_total_cost:.2f} ~ {self.norm_velocity_total_cost:.2f}", "bottom right")
@@ -303,34 +344,37 @@ class CarParkingEnv(gymnasium.Env):
         self.terminated = self._check_terminate_condition()
         self.truncated = self._check_truncated_condition()
 
-        self.cumulative_reward += self.reward
-        self.norm_cumulative_reward = normalize_data(self.cumulative_reward, 0, 1, 0, (self.episode_env_step+1)*self.max_step_reward)
+        self.episode_cumulative_reward += self.reward
+        self.episode_mean_reward = self.episode_cumulative_reward/(self.episode_env_step+1) #  normalize_data(self.cumulative_reward, 0, 1, 0, ()*self.max_step_reward)
         
-        self.info = {
+        renderRetVal = self.render()
+        return self.observation, self.reward, self.terminated, self.truncated, self._get_info()
+
+    def _get_info(self):
+        info = {
             "episode_mujoco_time": self.episode_mujoco_time,
             "episode_mujoco_step": self.episode_mujoco_step,
             "episode_env_step": self.episode_env_step,
-            "episode_number":self.episode,
-            "episode_cumulative_reward":self.cumulative_reward,
-            "episode_norm_cumulative_reward": self.norm_cumulative_reward
+            "episode_number":self.episode_number,
+            "episode_cumulative_reward":self.episode_cumulative_reward,
+            "episode_mean_reward": self.episode_mean_reward
                      }
-        renderRetVal = self.render()
-        return self.observation, self.reward, self.terminated, self.truncated, self.info
-
+        return info
+    
     def _calculate_reward(self):
         
         self.velocity_total_cost += abs(self.action[0])
         self.angle_total_cost += abs(self.action[1])
         
         
-        self.norm_dist = normalize_data(self.observation[ObsIndex.DISTANCE_BEGIN], 0, self.dist_punish_weight, 0, MAX_X_Y_DIST)
+        self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_distance), 0, self.dist_punish_weight, 0, self.init_distance)
+        
         self.norm_velocity_total_cost = normalize_data(self.velocity_total_cost, 0, self.velocity_punish_weight, 0, self.velocity_max_cost)
         self.norm_angle_total_cost = normalize_data(self.angle_total_cost, 0, self.angle_punish_weight, 0, self.angle_max_cost)
         
         punish = self.norm_dist + self.norm_velocity_total_cost + self.norm_angle_total_cost
 
         reward = self.max_step_reward - punish
-        
         return reward
 
     def _check_terminate_condition(self):
@@ -387,14 +431,14 @@ class CarParkingEnv(gymnasium.Env):
         
         # GET ANGLES
         carQuat = self.data.body(f"{CAR_NAME}/").xquat
-        car_euler = quat_to_euler(carQuat) # roll_x, pitch_y, yaw_z
+        car_euler = quat_to_euler(carQuat)
         
         trailerQuat = self.data.body(f"{CAR_NAME}/{TRAILER_NAME}/").xquat
-        trailer_euler = quat_to_euler(trailerQuat) # roll_x, pitch_y, yaw_z
-
-        targetQuat = self.data.body(f"{PARKING_NAME}/").xquat
-        target_euler = quat_to_euler(targetQuat) # roll_x, pitch_y, yaw_z
+        trailer_euler = quat_to_euler(trailerQuat)
         
+        targetQuat = self.data.body(f"{PARKING_NAME}/").xquat
+        target_euler = quat_to_euler(targetQuat)
+
         # ANGLE DIFFS
         carAngleDiff = car_euler[2] - target_euler[2]
         normalizedCarAngleDiff = normalize_angle_diff(carAngleDiff)
@@ -415,26 +459,57 @@ class CarParkingEnv(gymnasium.Env):
         
         return observation
 
-    def reset(self, **kwargs):
-        # print(f"Terminal cumulative reward: {self.cumulative_reward:.2f} ~ {self.norm_cumulative_reward:.2f}")
+    def random_spawn(self):
+        spawn_index = np.random.randint(0, len(self.spawn_points))
+        self.data.joint(f"{CAR_NAME}/").qpos = self.spawn_points[spawn_index]
+    
+    def add_spawn_noise(self):
+        # 3 sigmas rule
+        angle_diff = np.radians(45)
+        pos_diff = 2
+        
+        qpos = self.data.joint(f"{CAR_NAME}/").qpos
+        pos = qpos[:3]
+        quat = qpos[3:]
+        
+        eul = quat_to_euler(quat)
+        eul[2] = eul[2] + np.random.normal(0, angle_diff/3, size=1)
+        quat = euler_to_quat(*eul)
+        
+        
+        pos[0:2] = pos[0:2] + np.random.normal(0, pos_diff/3, size=2)
+        
+        maplength = MJCFGenerator.GeneratorClass._map_length
+        carSizeOffset = max(MJCFGenerator.GeneratorClass._car_dims)
+        pos[0] = np.clip(pos[0],  -maplength[0]/2 + carSizeOffset, maplength[0]/2 - carSizeOffset)
+        pos[1] = np.clip(pos[1], -maplength[1]/2 + carSizeOffset , maplength[1]/2 - carSizeOffset)
+        
+        self.data.joint(f"{CAR_NAME}/").qpos = [*pos, *quat]
+        
+    def reset(self, seed = None, **kwargs):
+        super().reset(seed=seed, **kwargs)
+        if seed is not None:
+            np.random.seed(seed)
+        
         self._reset_simulation()
+        if self.enable_random_spawn:
+            self.random_spawn()
+        if self.enable_spawn_noise:
+            self.add_spawn_noise()
         
+        # RESET VARAIBLES
         self.time_velocity_not_low = 0
-        
         self.angle_total_cost = 0
         self.norm_angle_total_cost = 0
-        
         self.velocity_total_cost = 0
         self.norm_velocity_total_cost = 0
-        
-        self.cumulative_reward = 0
-        self.norm_cumulative_reward = 0
-        
-        self.episode += 1
-        
-        observation = self._get_obs()
-        
-        return observation, {}
+        self.episode_cumulative_reward = 0
+        self.episode_mean_reward = 0
+        self.init_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/").qpos[:2] - self.data.site(f"{MJCFGenerator.GeneratorClass._spotName}/site_center").xpos[:2])
+        self.episode_number += 1
+
+        obs = self._get_obs()
+        return obs, {}
 
 
 if __name__ == "__main__":

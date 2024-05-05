@@ -134,20 +134,20 @@ class PlotRewardCurve(PlotBaseAbstract):
         for index, grouped in group_by_envs(self.df_episodes_all):
             
             learning_step = grouped['learning_step'].to_numpy()
-            episode_norm_cum_reward = grouped['episode_norm_cum_reward'].to_numpy()
+            episode_mean_reward = grouped['episode_mean_reward'].to_numpy()
             
             line  = self._ax.plot(learning_step,
-                          episode_norm_cum_reward,
+                          episode_mean_reward,
                           color='blue',
                           alpha=0.2)
             
             
         for indexes, grouped in group_by_episodes(df):
             learning_step = grouped['learning_step'].to_numpy()
-            episode_norm_cum_reward = grouped['episode_norm_cum_reward'].to_numpy()
+            episode_mean_reward = grouped['episode_mean_reward'].to_numpy()
             
             self._ax.plot(learning_step,
-                          episode_norm_cum_reward,
+                          episode_mean_reward,
                           label=f"ep-{indexes[0]}_env-{indexes[1]}",
                           color='green',
                           linewidth=4)

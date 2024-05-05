@@ -88,7 +88,7 @@ def group_by_envs(df):
         
 def get_n_best_rewards(df, n_episodes=10):
     grouped = df.groupby(by=['episode','env'])
-    acc = grouped.last().sort_values(by='episode_norm_cum_reward', ascending=False)
+    acc = grouped.last().sort_values(by='episode_mean_reward', ascending=False)
     indexes = acc[:n_episodes].index.to_list()
     best = df.loc[indexes]
     return best

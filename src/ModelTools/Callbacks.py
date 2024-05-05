@@ -46,7 +46,7 @@ class EpisodeStatsBuffer:
             "learning_step_max": self.df_episode_buffer.iloc[-1,:]['learning_step'],
             
             "episode_cum_reward":self.df_episode_buffer.iloc[-1,:]['episode_cum_reward'],
-            "episode_norm_cum_reward":self.df_episode_buffer.iloc[-1,:]['episode_norm_cum_reward'],
+            "episode_mean_reward":self.df_episode_buffer.iloc[-1,:]['episode_mean_reward'],
             "episode_mujoco_time":self.df_episode_buffer.iloc[-1,:]['episode_mujoco_time'],
             
             "dist_min":self.df_episode_buffer['dist'].min(),
@@ -61,7 +61,7 @@ class EpisodeStatsBuffer:
                                                  index=False)
         
         self.callback._log_episode_end_stats(summary_row)
-        self.callback._save_best_model(summary_row['episode_norm_cum_reward'])
+        self.callback._save_best_model(summary_row['episode_mean_reward'])
         
     def _flush_buffer(self):
         
@@ -87,7 +87,7 @@ class EpisodeStatsBuffer:
             'pos_Y':self.callback.pos[self.env_index, 1],
             'reward':self.callback.rewards[self.env_index],
             'episode_cum_reward':self.callback.infos[self.env_index]['episode_cumulative_reward'],
-            'episode_norm_cum_reward':self.callback.infos[self.env_index]['episode_norm_cumulative_reward'],
+            'episode_mean_reward':self.callback.infos[self.env_index]['episode_mean_reward'],
             'velocity':self.callback.velocity[self.env_index, 0],
             'action_engine': self.callback.actions[self.env_index, 0],
             'action_angle': self.callback.actions[self.env_index, 1],
@@ -120,7 +120,7 @@ class  CSVCallback(BaseCallback):
         self.best_reward = 0
     
     def _log_episode_end_stats(self, row):
-        self.logger.record('observation/episode_norm_cum_reward',row['episode_norm_cum_reward'])
+        self.logger.record('observation/episode_mean_reward',row['episode_mean_reward'])
         self.logger.record('observation/dist_mean', row['dist_mean'])
         self.logger.record('observation/time_max', row['episode_mujoco_time'])
     

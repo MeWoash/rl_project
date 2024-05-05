@@ -13,8 +13,8 @@ def train_model(modelConstructor = A2C, n_envs = 16, total_timesteps = 200_000):
     env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
                             n_envs=n_envs,
                             vec_env_cls=SubprocVecEnv,
-                            env_kwargs={"render_mode": "none"})
-    
+                            env_kwargs={"render_mode": "human"})
+    env.seed(0)
 
     logdir = f"{OUT_RL_DIR.joinpath(modelConstructor.__name__)}"
     print(f"MODEL LOGDIR = {logdir}")
@@ -37,9 +37,9 @@ def train_model(modelConstructor = A2C, n_envs = 16, total_timesteps = 200_000):
 if __name__ == "__main__":
 
 
-    modelConstructor = SAC
+    modelConstructor = A2C
     n_envs = 1
-    total_timesteps = 500_000
+    total_timesteps = 10_000
     logdir = train_model(modelConstructor, n_envs, total_timesteps)
     generate_media(logdir)
     

@@ -377,8 +377,8 @@ class GeneratorClass:
     
     def _generate_map(self):
 
-        x, y, h, t = self.map_length[0]/2, self.map_length[1] / \
-            2, self.map_length[2]/2, self.map_length[3]/2
+        x, y, h, t = self._map_length[0]/2, self._map_length[1] / \
+            2, self._map_length[2]/2, self._map_length[3]/2
 
         # autopep8: off
         self.mjcf_model.asset.add( "texture", name="sky_texture", type="skybox", file=ASSET_DIR+"/sky1.png")
@@ -390,7 +390,7 @@ class GeneratorClass:
         obstacle_material = self.mjcf_model.asset.add("material",     name="obstacle_material", texture=obstacle_texture, )
 
         self.mjcf_model.worldbody.add("geom",   name="ground",    type="plane",   size=[x, y, t],   friction= [1.0, 0.005, 0.0001], material=ground_material)
-        self.mjcf_model.worldbody.add("geom",   name="ceiling",   type="box",     size=[x, y, t],   pos= [0, 0, self.map_length[2]],rgba= [0, 0, 0, 0])
+        self.mjcf_model.worldbody.add("geom",   name="ceiling",   type="box",     size=[x, y, t],   pos= [0, 0, self._map_length[2]],rgba= [0, 0, 0, 0])
         self.mjcf_model.worldbody.add("geom",   name="wall1",     type="box",     size=[t, y, h],   pos= [-(x+t), 0, h],            material=wall_material)
         self.mjcf_model.worldbody.add("geom",   name="wall2",     type="box",     size=[t, y, h],   pos= [x+t, 0, h],               material=wall_material)
         self.mjcf_model.worldbody.add("geom",   name="wall3",     type="box",     size=[ x, t, h],  pos= [0, y+t, h],               material=wall_material)
@@ -421,7 +421,7 @@ class GeneratorClass:
         
     def _generate_camera(self):
         camHeight = calculateCameraHeight(
-            self.map_length[0], self.map_length[1], 90)
+            self._map_length[0], self._map_length[1], 90)
         self.mjcf_model.worldbody.add("camera", name="topDownCam", pos=[
                                       0, 0, camHeight], euler=[0, 0, 0], fovy=90)
 

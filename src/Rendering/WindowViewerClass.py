@@ -80,7 +80,8 @@ class WindowViewer(BaseRender):
 
     def __del__(self):
         """Eliminate all of the OpenGL glfw contexts and windows"""
-        self.free()
+        # self.free()
+        pass
 
     def render(self,
                camera_id,

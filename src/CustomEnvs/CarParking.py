@@ -181,20 +181,28 @@ class CarParkingEnv(gymnasium.Env):
         self.reward_range = (-1, 1)
         self.episode_mujoco_max_step = self.time_limit / self.model.opt.timestep
         self.episode_env_max_step = self.episode_mujoco_max_step/self.simulation_frame_skip
-        self.angle_total_cost = 0
-        self.velocity_total_cost = 0
+        self.angle_cost = 0
+        self.velocity_cost = 0
         
         self.velocity_max_cost = max([abs(self.action_space.low[0]), abs(self.action_space.high[0])]) * self.episode_env_max_step
         self.angle_max_cost = max([abs(self.action_space.low[1]), abs(self.action_space.high[1])]) * self.episode_env_max_step
         
         
         self.dist_punish_weight = 0.75 
-        self.velocity_punish_weight = 0.125
-        self.angle_punish_weight = 0.125
-        self.episode_cumulative_reward = 0
+        self.angle_diff_punish_weight = 0.25
+        self.velocity_punish_weight = 0
+        self.angle_cost_punish_weight = 0
         self.max_step_reward = 1
         
-        assert self.dist_punish_weight + self.velocity_punish_weight + self.angle_punish_weight == self.max_step_reward, f"Weights have to sum to {self.max_step_reward}"
+        self.episode_cumulative_reward = 0
+        
+        
+        assert\
+              self.dist_punish_weight \
+            + self.velocity_punish_weight\
+            + self.angle_cost_punish_weight \
+            + self.angle_diff_punish_weight\
+                == self.max_step_reward, f"Weights have to sum to {self.max_step_reward}"
 
     def _set_default_action_space(self):
 
@@ -297,10 +305,10 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("cum_reward", f"{self.episode_cumulative_reward:.2f} ~ {self.episode_mean_reward:.2f}", "bottom right")
         
         overlay.add("dist", f"{self.observation[ObsIndex.DISTANCE_BEGIN]:.2f} ~ {self.norm_dist:.2f}", "bottom right")
-        overlay.add("v_sum", f"{self.velocity_total_cost:.2f} ~ {self.norm_velocity_total_cost:.2f}", "bottom right")
-        overlay.add("a_sum", f"{self.angle_total_cost:.2f} ~ {self.norm_angle_total_cost:.2f}", "bottom right")
-
-
+        overlay.add("v_sum", f"{self.velocity_cost:.2f} ~ {self.norm_velocity_cost:.2f}", "bottom right")
+        overlay.add("a_sum", f"{self.angle_cost:.2f} ~ {self.norm_angle_cost:.2f}", "bottom right")
+        overlay.add("a_diff", f"{self.angle_diff:.2f} ~ {self.norm_angle_diff:.2f}", "bottom right")
+        
     def close(self):
         """Close all processes like rendering contexts"""
         if self.mujoco_renderer is not None:
@@ -362,16 +370,24 @@ class CarParkingEnv(gymnasium.Env):
     
     def _calculate_reward(self):
         
-        self.velocity_total_cost += abs(self.action[0])
-        self.angle_total_cost += abs(self.action[1])
+        self.velocity_cost += abs(self.action[0])
+        self.angle_cost += abs(self.action[1])
         
+        self.angle_diff = np.sum(self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1])
+        DIST_SCALE = 2
+        exp_scale = np.exp(-self.observation[ObsIndex.DISTANCE_BEGIN]/DIST_SCALE)
+        
+        self.norm_angle_diff = normalize_data(self.angle_diff,
+                                              0, self.angle_diff_punish_weight*exp_scale,
+                                              0, len(self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1])*math.pi)
+        self.norm_angle_diff = np.clip(self.norm_angle_diff, 0, self.angle_diff_punish_weight)
         
         self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_distance), 0, self.dist_punish_weight, 0, self.init_distance)
         
-        self.norm_velocity_total_cost = normalize_data(self.velocity_total_cost, 0, self.velocity_punish_weight, 0, self.velocity_max_cost)
-        self.norm_angle_total_cost = normalize_data(self.angle_total_cost, 0, self.angle_punish_weight, 0, self.angle_max_cost)
+        self.norm_velocity_cost = normalize_data(self.velocity_cost, 0, self.velocity_punish_weight, 0, self.velocity_max_cost)
+        self.norm_angle_cost = normalize_data(self.angle_cost, 0, self.angle_cost_punish_weight, 0, self.angle_max_cost)
         
-        punish = self.norm_dist + self.norm_velocity_total_cost + self.norm_angle_total_cost
+        punish = self.norm_dist + self.norm_velocity_cost + self.norm_angle_cost + self.norm_angle_diff
 
         reward = self.max_step_reward - punish
         return reward
@@ -498,10 +514,10 @@ class CarParkingEnv(gymnasium.Env):
         
         # RESET VARAIBLES
         self.time_velocity_not_low = 0
-        self.angle_total_cost = 0
-        self.norm_angle_total_cost = 0
-        self.velocity_total_cost = 0
-        self.norm_velocity_total_cost = 0
+        self.angle_cost = 0
+        self.norm_angle_cost = 0
+        self.velocity_cost = 0
+        self.norm_velocity_cost = 0
         self.episode_cumulative_reward = 0
         self.episode_mean_reward = 0
         self.init_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/").qpos[:2] - self.data.site(f"{MJCFGenerator.GeneratorClass._spotName}/site_center").xpos[:2])
@@ -513,6 +529,5 @@ class CarParkingEnv(gymnasium.Env):
 
 if __name__ == "__main__":
     env = CarParkingEnv(render_mode="human")
-
     from stable_baselines3.common.env_checker import check_env
-    check_env(env)
+    check_env(env, skip_render_check=True)

@@ -7,7 +7,10 @@ This project creates custom environment to train autonomous car driving model. I
 # Environment preview
 ![replay](https://github.com/MeWoash/rl_project/assets/54074264/33d50480-802a-414d-a37c-2f25658c5eb0)
 
+# Python Virtual Environment
+Python=3.10 + one of
+- [requirements-cuda.txt](./requirements-cuda.txt)
+- [requirements-cuda-freeze.txt](./requirements-cuda-freeze.txt)
+- [requirements.txt](./requirements.txt)
 
-
-
-
+You can use it with [create_venv.bat](./create_venv.bat) as an argument.

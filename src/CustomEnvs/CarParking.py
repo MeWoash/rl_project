@@ -5,7 +5,6 @@ from traceback import print_tb
 import numpy as np
 import gymnasium
 import mujoco
-from gymnasium.envs.mujoco import MujocoEnv
 from gymnasium.spaces import Box
 from typing import Dict, Text, Tuple, Union
 import sys

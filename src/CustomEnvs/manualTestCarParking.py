@@ -1,5 +1,3 @@
-from cgitb import reset
-from unittest.mock import Base
 from pynput import keyboard
 import numpy as np
 import gymnasium

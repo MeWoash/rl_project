@@ -12,24 +12,26 @@ if __name__ == "__main__":
 
     TRAIN_VECTOR = \
     [
+        # ===========CONFIG LEARNING===============
         {
-            "modelConstructor":SAC,
-            "n_envs":1,
-            "total_timesteps":1_000_000,
+            "modelConstructor" : SAC,
+            "total_timesteps" : 300_000,
+            "model_kwargs" : {
+                "device":"cuda",
+            },
+            "make_env_kwargs" : {
+                "vec_env_cls": DummyVecEnv,
+                "n_envs":1,
+                "env_kwargs":{
+                    "render_mode": "none",
+                    "enable_random_spawn": True,
+                    "enable_spawn_noise": True
+                }
+            }
         },
-        {
-            "modelConstructor":A2C,
-            "n_envs":16,
-            "total_timesteps":5_000_000,
-        },
-        {
-            "modelConstructor":SAC,
-            "n_envs":16,
-            "total_timesteps":5_000_000,
-        }
+        
     ]
     
     for kwargs in TRAIN_VECTOR:
         logdir = train_model(**kwargs)
         generate_media(logdir)
-    

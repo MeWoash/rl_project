@@ -480,8 +480,8 @@ class CarParkingEnv(gymnasium.Env):
     
     def add_spawn_noise(self):
         # 3 sigmas rule
-        angle_diff = np.radians(45)
-        pos_diff = 2
+        angle_diff = np.radians(10)
+        pos_diff = 1
         
         qpos = self.data.joint(f"{CAR_NAME}/").qpos
         pos = qpos[:3]

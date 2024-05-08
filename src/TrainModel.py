@@ -9,28 +9,44 @@ import LoadModel
 OUT_RL_DIR = Path(__file__).parent.joinpath("../out/learning").resolve()
 
 
-def train_model(modelConstructor = A2C, n_envs = 16, total_timesteps = 200_000):
+DEFAULT_MAKE_ENV_KWARGS = {
+                    "vec_env_cls": DummyVecEnv,
+                    "n_envs":1,
+                    "render_mode": "none",
+                    "enable_random_spawn": False,
+                    "enable_spawn_noise": True
+                    }
+
+DEFAULT_MODEL_KWARGS = {
+    "device":"cuda",
+}
+
+def train_model(modelConstructor = SAC,
+                total_timesteps = 500_000,
+                model_kwargs = DEFAULT_MODEL_KWARGS,
+                env_kwargs = DEFAULT_MAKE_ENV_KWARGS
+                ):
+    
     env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
-                            n_envs=n_envs,
-                            vec_env_cls=DummyVecEnv,
-                            env_kwargs={"render_mode": "none"})
+                            **env_kwargs
+                            )
     env.seed(0)
 
     logdir = f"{OUT_RL_DIR.joinpath(modelConstructor.__name__)}"
     print(f"MODEL LOGDIR = {logdir}")
     
     model = modelConstructor(env=env,
-                policy="MlpPolicy",
-                device= "cuda",
                 verbose = 0,
                 tensorboard_log=logdir,
+                policy="MlpPolicy",
+                **model_kwargs
                 )
     
     CALLBACKS = [CSVCallback(log_interval = 20)]
     
-    model.learn(total_timesteps=total_timesteps,
-                progress_bar=True,
-                callback=CALLBACKS
+    model.learn(progress_bar=True,
+                callback=CALLBACKS,
+                total_timesteps = total_timesteps
                 )
     
     env.close()
@@ -39,10 +55,28 @@ def train_model(modelConstructor = A2C, n_envs = 16, total_timesteps = 200_000):
 if __name__ == "__main__":
 
 
+    # ===========CONFIG LEARNING===============
     modelConstructor = SAC
-    n_envs = 1
-    total_timesteps = 1_000_000
-    logdir = train_model(modelConstructor, n_envs, total_timesteps)
+    total_timesteps = 300_000
+    model_kwargs = {
+    "device":"cuda",
+    }
+    make_env_kwargs = {
+    "vec_env_cls": DummyVecEnv,
+    "n_envs":1,
+    "env_kwargs":{
+        "render_mode": "none",
+        "enable_random_spawn": True,
+        "enable_spawn_noise": True
+        }
+    }
+    
+    # ==========================================
+    
+    logdir = train_model(modelConstructor,
+                         total_timesteps,
+                         model_kwargs,
+                         make_env_kwargs)
     generate_media(logdir)
     
     # last_model = LoadModel.get_last_modified_file(Path(logdir,'models'))

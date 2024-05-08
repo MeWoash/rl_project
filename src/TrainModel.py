@@ -24,11 +24,11 @@ DEFAULT_MODEL_KWARGS = {
 def train_model(modelConstructor = SAC,
                 total_timesteps = 500_000,
                 model_kwargs = DEFAULT_MODEL_KWARGS,
-                env_kwargs = DEFAULT_MAKE_ENV_KWARGS
+                make_env_kwargs = DEFAULT_MAKE_ENV_KWARGS
                 ):
     
     env = make_vec_env("CustomEnvs/CarParkingEnv-v0",
-                            **env_kwargs
+                            **make_env_kwargs
                             )
     env.seed(0)
 

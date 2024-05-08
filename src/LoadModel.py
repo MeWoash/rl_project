@@ -6,7 +6,7 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3 import A2C, SAC
 
-# OUT_RL_DIR = Path(__file__).parent.joinpath("../out/learning").resolve()
+OUT_RL_DIR = Path(__file__).parent.joinpath("../out/learning").resolve()
 
 modelContructor = A2C
 
@@ -49,6 +49,6 @@ def load_model(modelConstructor, model_path):
 if __name__ == "__main__":
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
     
-    modelContructor = A2C
-    last_model = get_last_modified_file(rf"out\learning")
+    modelContructor = SAC
+    last_model = get_last_modified_file(str(OUT_RL_DIR))
     load_model(modelContructor, last_model)

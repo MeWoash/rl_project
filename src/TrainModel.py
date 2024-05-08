@@ -21,7 +21,7 @@ def train_model(modelConstructor = A2C, n_envs = 16, total_timesteps = 200_000):
     
     model = modelConstructor(env=env,
                 policy="MlpPolicy",
-                device= "cpu",
+                device= "cuda",
                 verbose = 0,
                 tensorboard_log=logdir,
                 )
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     modelConstructor = SAC
     n_envs = 1
-    total_timesteps = 200_000
+    total_timesteps = 1_000_000
     logdir = train_model(modelConstructor, n_envs, total_timesteps)
     generate_media(logdir)
     

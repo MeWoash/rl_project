@@ -190,7 +190,7 @@ class CarParkingEnv(gymnasium.Env):
         
         self.dist_punish_weight = 0.75 
         self.angle_diff_punish_weight = 0.25
-        self.velocity_punish_weight = 0
+        self.velocity_cost_punish_weight = 0
         self.angle_cost_punish_weight = 0
         self.max_step_reward = 1
         
@@ -199,7 +199,7 @@ class CarParkingEnv(gymnasium.Env):
         
         assert\
               self.dist_punish_weight \
-            + self.velocity_punish_weight\
+            + self.velocity_cost_punish_weight\
             + self.angle_cost_punish_weight \
             + self.angle_diff_punish_weight\
                 == self.max_step_reward, f"Weights have to sum to {self.max_step_reward}"
@@ -384,7 +384,7 @@ class CarParkingEnv(gymnasium.Env):
         
         self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_distance), 0, self.dist_punish_weight, 0, self.init_distance)
         
-        self.norm_velocity_cost = normalize_data(self.velocity_cost, 0, self.velocity_punish_weight, 0, self.velocity_max_cost)
+        self.norm_velocity_cost = normalize_data(self.velocity_cost, 0, self.velocity_cost_punish_weight, 0, self.velocity_max_cost)
         self.norm_angle_cost = normalize_data(self.angle_cost, 0, self.angle_cost_punish_weight, 0, self.angle_max_cost)
         
         punish = self.norm_dist + self.norm_velocity_cost + self.norm_angle_cost + self.norm_angle_diff

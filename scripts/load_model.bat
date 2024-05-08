@@ -1,4 +1,4 @@
 @echo off
 CALL activate_venv.bat
 @echo on
-python %WORKSPACE%\src\LoadModel.py
+python "%WORKSPACE%\src\LoadModel.py"

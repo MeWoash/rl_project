@@ -29,9 +29,63 @@ if __name__ == "__main__":
                 }
             }
         },
+        # ===========CONFIG LEARNING===============
+        {
+            "modelConstructor" : A2C,
+            "total_timesteps" : 300_000,
+            "model_kwargs" : {
+                "device":"cuda",
+            },
+            "make_env_kwargs" : {
+                "vec_env_cls": DummyVecEnv,
+                "n_envs":1,
+                "env_kwargs":{
+                    "render_mode": "none",
+                    "enable_random_spawn": True,
+                    "enable_spawn_noise": True
+                }
+            }
+        },
+        # ===========CONFIG LEARNING===============
+        {
+            "modelConstructor" : SAC,
+            "total_timesteps" : 300_000,
+            "model_kwargs" : {
+                "device":"cuda",
+            },
+            "make_env_kwargs" : {
+                "vec_env_cls": DummyVecEnv,
+                "n_envs":1,
+                "env_kwargs":{
+                    "render_mode": "none",
+                    "enable_random_spawn": False,
+                    "enable_spawn_noise": True
+                }
+            }
+        },
+        # ===========CONFIG LEARNING===============
+        {
+            "modelConstructor" : A2C,
+            "total_timesteps" : 300_000,
+            "model_kwargs" : {
+                "device":"cuda",
+            },
+            "make_env_kwargs" : {
+                "vec_env_cls": DummyVecEnv,
+                "n_envs":1,
+                "env_kwargs":{
+                    "render_mode": "none",
+                    "enable_random_spawn": False,
+                    "enable_spawn_noise": True
+                }
+            }
+        },
         
     ]
     
     for kwargs in TRAIN_VECTOR:
         logdir = train_model(**kwargs)
-        generate_media(logdir)
+        try:
+            generate_media(logdir)
+        except Exception as e:
+            print(e)

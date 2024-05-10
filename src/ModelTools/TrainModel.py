@@ -1,13 +1,17 @@
+# autopep8: off
 from pathlib import Path
-from CustomEnvs import CarParkingEnv
-from ModelTools.Callbacks import *
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3 import A2C, SAC
-import LoadModel
+import sys
 
-OUT_RL_DIR = Path(__file__).parent.joinpath("../out/learning").resolve()
+sys.path.append(str(Path(__file__,'..','..').resolve()))
+from CustomEnvs import CarParkingEnv
+from ModelTools.Callbacks import *
+from PathsConfig import *
+from MJCFGenerator.Generator import generate_MJCF 
 
+# autopep8: on
 
 DEFAULT_MAKE_ENV_KWARGS = {
                     "vec_env_cls": DummyVecEnv,
@@ -32,7 +36,7 @@ def train_model(modelConstructor = SAC,
                             )
     env.seed(0)
 
-    logdir = f"{OUT_RL_DIR.joinpath(modelConstructor.__name__)}"
+    logdir = str(Path(OUT_RL_DIR, modelConstructor.__name__))
     print(f"MODEL LOGDIR = {logdir}")
     
     model = modelConstructor(env=env,
@@ -70,9 +74,9 @@ if __name__ == "__main__":
         "enable_spawn_noise": True
         }
     }
-    
     # ==========================================
     
+    generate_MJCF()
     logdir = train_model(modelConstructor,
                          total_timesteps,
                          model_kwargs,

@@ -1,10 +1,17 @@
+# autopep8: off
+from pathlib import Path
+import sys
 from pynput import keyboard
 import numpy as np
 import gymnasium
 from gymnasium.spaces import Box
 import math
-from CarParking import CarParkingEnv, ObsIndex
 
+sys.path.append(str(Path(__file__,'..','..').resolve()))
+
+from CustomEnvs.CarParking import *
+
+# autopep8: on
 
 current_action = np.array([0.0, 0.0])
 

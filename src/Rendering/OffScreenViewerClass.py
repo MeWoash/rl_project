@@ -1,12 +1,19 @@
+# autopep8: off
 import os
+from pathlib import Path
+import sys
 from typing import Optional
 import mujoco
 import numpy as np
 import glfw
 import matplotlib.pyplot as plt
 
+sys.path.append(str(Path(__file__,'..','..').resolve()))
+
 from Rendering.BaseRendererClass import BaseRender
 from Rendering.Utils import _ALL_RENDERERS
+
+# autopep8: on
 
 class OffScreenViewer(BaseRender):
     """Offscreen rendering class with opengl context."""

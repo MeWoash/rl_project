@@ -1,7 +1,13 @@
+# autopep8: off
+from pathlib import Path
+import sys
 import matplotlib.pyplot as plt
+
+sys.path.append(str(Path(__file__,'..','..').resolve()))
 
 from Rendering.OffScreenViewerClass import OffScreenViewer
 from Rendering.WindowViewerClass import WindowViewer
+# autopep8: on
 
 class Renderer:
     def __init__(self,

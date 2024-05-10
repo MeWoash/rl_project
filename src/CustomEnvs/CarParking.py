@@ -12,36 +12,17 @@ import os
 import math
 from enum import IntEnum
 from scipy.spatial.transform import Rotation
+from MJCFGenerator.Config import *
 
 
-SELF_DIR = Path(__file__).parent.resolve()
-sys.path.append(str(SELF_DIR.parent))
-
-import MJCFGenerator
+sys.path.append(str(Path(__file__,'..','..').resolve()))
+from MJCFGenerator import Generator
 from Rendering.RendererClass import Renderer
 from Rendering.Utils import TextOverlay
 
-MODEL_NAME = "out.xml"
-MJCF_OUT_DIR = MJCFGenerator.MJCF_OUT_DIR
-MODEL_PATH = os.path.join(str(MJCF_OUT_DIR), MODEL_NAME)
+from PathsConfig import *
 
-CAR_NAME = MJCFGenerator.GeneratorClass._carName
-TRAILER_NAME = MJCFGenerator.GeneratorClass._trailerName
-PARKING_NAME = MJCFGenerator.GeneratorClass._spotName
-CAR_SPAWN_HEIGHT = MJCFGenerator.GeneratorClass._carSpawnHeight
-
-
-# TODO PARAMETERS SHOULD BE SCRAPED FROM MJDATA
-MAP_SIZE = MJCFGenerator.GeneratorClass._map_length
-MAX_X_Y_DIST = math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2)
-MAX_X_Y_Z_DIST = math.sqrt(MAP_SIZE[2]**2 +
-                           math.sqrt(MAP_SIZE[0]**2 + MAP_SIZE[1]**2))
-MAX_SENSOR_VAL = MJCFGenerator.Car._maxSensorVal
-
-WHEEL_ANGLE_RANGE = [math.radians(MJCFGenerator.Wheel._wheel_angle_limit[0]), math.radians(MJCFGenerator.Wheel._wheel_angle_limit[1])]
-
-CAR_N_RANGE_SENSORS = 5
-TRAILER_N_RANGE_SENSORS = 5
+MAX_X_Y_DIST = math.sqrt(MAP_LENGTH[0]**2 + MAP_LENGTH[1]**2)
 N_RANGE_SENSORS = CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS
 
 
@@ -138,7 +119,6 @@ class CarParkingEnv(gymnasium.Env):
     }
 
     def __init__(self,
-                 xml_file: str = MODEL_PATH,
                  render_mode: str = "none",
                  simulation_frame_skip: int = 4,
                  time_limit = 30,
@@ -154,7 +134,6 @@ class CarParkingEnv(gymnasium.Env):
         self.enable_spawn_noise=enable_spawn_noise
         
         self.time_limit = time_limit
-        self.fullpath = xml_file
         self.simulation_frame_skip = simulation_frame_skip
         
         # RENDER VARIABLES
@@ -226,12 +205,12 @@ class CarParkingEnv(gymnasium.Env):
         carSpeedRange = np.array([-10, 10]).reshape(2, 1)
         distRange = np.array([0, MAX_X_Y_DIST]).reshape(2, 1)
         angleDiff = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
-        contactRange = np.tile(np.array([0, MAX_SENSOR_VAL]).reshape(2, 1), (1, 2))
+        contactRange = np.tile(np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, 2))
         range_sensorsRange = np.tile(
-            np.array([0, MAX_SENSOR_VAL]).reshape(2, 1), (1, N_RANGE_SENSORS))
+            np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, N_RANGE_SENSORS))
         carPositionGlobalRange = np.array(
-            [[-MAP_SIZE[0]/2, -MAP_SIZE[1]/2],
-             [MAP_SIZE[0]/2, MAP_SIZE[1]/2]])
+            [[-MAP_LENGTH[0]/2, -MAP_LENGTH[1]/2],
+             [MAP_LENGTH[0]/2, MAP_LENGTH[1]/2]])
         car_eulerRange = np.tile(np.array([0, np.pi]).reshape(2, 1), (1, 2))
 
         # KEEP ORDER AS IN OBSINDEX
@@ -249,8 +228,9 @@ class CarParkingEnv(gymnasium.Env):
         return self.observation_space
 
     def _initialize_simulation(self):
-        # source MujocoEnv
-        self.model = mujoco.MjModel.from_xml_path(self.fullpath)
+        
+        model_path = os.path.join(str(MJCF_OUT_DIR), MJCF_MODEL_NAME)
+        self.model = mujoco.MjModel.from_xml_path(model_path)
         self.data = mujoco.MjData(self.model)
 
         self.mujoco_renderer: Renderer = Renderer(self.model,
@@ -266,9 +246,8 @@ class CarParkingEnv(gymnasium.Env):
 
     def _calculate_spawn_points(self):
         self.spawn_points = []
-        for spawn_params in MJCFGenerator.SPAWN_POINTS:
+        for spawn_params in SPAWN_POINTS:
             pos = spawn_params['pos']
-            pos[2] = MJCFGenerator.GeneratorClass._carSpawnHeight
             quat = euler_to_quat(*np.radians(spawn_params['euler']))
             self.spawn_points.append([*pos, *quat])
             
@@ -317,7 +296,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _apply_forces(self, action=None):
         enginePowerCtrl = action[0]
-        wheelsAngleCtrl = normalize_data(action[1], *WHEEL_ANGLE_RANGE)
+        wheelsAngleCtrl = normalize_data(action[1], *WHEEL_ANGLE_LIMIT)
 
         self.data.actuator(f"{CAR_NAME}/engine").ctrl = enginePowerCtrl
         self.data.actuator(f"{CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl
@@ -494,8 +473,8 @@ class CarParkingEnv(gymnasium.Env):
         
         pos[0:2] = pos[0:2] + np.random.normal(0, pos_diff/3, size=2)
         
-        maplength = MJCFGenerator.GeneratorClass._map_length
-        carSizeOffset = max(MJCFGenerator.GeneratorClass._car_dims)
+        maplength = MAP_LENGTH
+        carSizeOffset = max(CAR_DIMS)
         pos[0] = np.clip(pos[0],  -maplength[0]/2 + carSizeOffset, maplength[0]/2 - carSizeOffset)
         pos[1] = np.clip(pos[1], -maplength[1]/2 + carSizeOffset , maplength[1]/2 - carSizeOffset)
         
@@ -520,7 +499,7 @@ class CarParkingEnv(gymnasium.Env):
         self.norm_velocity_cost = 0
         self.episode_cumulative_reward = 0
         self.episode_mean_reward = 0
-        self.init_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/").qpos[:2] - self.data.site(f"{MJCFGenerator.GeneratorClass._spotName}/site_center").xpos[:2])
+        self.init_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/").qpos[:2] - self.data.site(f"{PARKING_NAME}/site_center").xpos[:2])
         self.episode_number += 1
 
         obs = self._get_obs()

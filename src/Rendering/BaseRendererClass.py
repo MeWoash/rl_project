@@ -1,10 +1,16 @@
+# autopep8: off
 from abc import ABC
 from ast import Raise
+from pathlib import Path
+import sys
 import cv2
 import mujoco
 import numpy as np
+import sys
+sys.path.append(str(Path(__file__,'..','..').resolve()))
+from PathsConfig import MEDIA_DIR
 
-from Rendering.Utils import MEDIA_DIR
+# autopep8: on
 
 class BaseRender(ABC):
     def __init__(

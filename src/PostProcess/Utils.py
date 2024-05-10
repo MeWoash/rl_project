@@ -1,3 +1,5 @@
+# autopep8: off
+
 from math import ceil
 import os
 from pathlib import Path
@@ -9,6 +11,8 @@ from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
+
+# autopep8: on
 
 EPISODES_FILE_NAME = 'episodes_all.csv'
 SUMMARY_FILE_NAME = 'episodes_summary.csv'

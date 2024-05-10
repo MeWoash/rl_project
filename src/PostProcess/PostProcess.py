@@ -1,5 +1,7 @@
 # autopep8: off
 import os
+
+from PathsConfig import OUT_RL_DIR
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 from math import ceil
 import sys
@@ -16,9 +18,9 @@ from pathlib import Path
 
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from ModelTools.Utils import timeit
-from ModelTools.PlotGenerators import *
-from ModelTools.VideoGenerators import *
+from PostProcess.Utils import timeit
+from PostProcess.PlotGenerators import *
+from PostProcess.VideoGenerators import *
 # autopep8: on
 
 
@@ -73,6 +75,6 @@ def generate_media_timed(log_dir):
     generate_media(log_dir)
 
 if __name__ == "__main__":
-    log_dir = rf"/home/mkorzen/git/rl_project/out/learning/SAC/SAC_12"
-    # last_modified = str(Path(get_last_modified_file(f"out/learning", '.csv'),'..').resolve())
-    generate_media_timed(log_dir)
+    log_dir = str(OUT_RL_DIR.join('SAC','SAC_1'))
+    last_modified = str(Path(get_last_modified_file(f"out/learning", '.csv'),'..').resolve())
+    generate_media_timed(last_modified)

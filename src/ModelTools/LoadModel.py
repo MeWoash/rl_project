@@ -1,15 +1,19 @@
+# autopep8: off
 import os
 from pathlib import Path
-from CustomEnvs import CarParkingEnv
-from ModelTools.Callbacks import *
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3 import A2C, SAC
+import sys
 
-OUT_RL_DIR = Path(__file__).parent.joinpath("../out/learning").resolve()
+sys.path.append(str(Path(__file__,'..','..').resolve()))
+import PathsConfig
+from CustomEnvs import CarParkingEnv
+from ModelTools.Callbacks import *
+
+# autopep8: on
 
 modelContructor = A2C
-
 def get_last_modified_file(directory_path, suffix=".zip"):
     latest_time = 0
     latest_file = None
@@ -50,5 +54,5 @@ if __name__ == "__main__":
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
     
     modelContructor = SAC
-    last_model = get_last_modified_file(str(OUT_RL_DIR))
+    last_model = get_last_modified_file(str(PathsConfig.OUT_RL_DIR))
     load_model(modelContructor, last_model)

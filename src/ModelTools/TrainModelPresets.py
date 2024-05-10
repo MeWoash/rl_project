@@ -17,8 +17,8 @@ if __name__ == "__main__":
     [
         # ===========CONFIG LEARNING===============
         {
-            "modelConstructor" : A2C,
-            "total_timesteps" : 10_000,
+            "modelConstructor" : SAC,
+            "total_timesteps" : 100_000,
             "model_kwargs" : {
                 "device":"cpu"
             },

@@ -12,55 +12,15 @@ import os
 import math
 from enum import IntEnum
 from scipy.spatial.transform import Rotation
-from MJCFGenerator.Config import *
-
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from MJCFGenerator import Generator
 from Rendering.RendererClass import Renderer
 from Rendering.Utils import TextOverlay
-
+from MJCFGenerator.Config import *
 from PathsConfig import *
 
-MAX_X_Y_DIST = math.sqrt(MAP_LENGTH[0]**2 + MAP_LENGTH[1]**2)
 N_RANGE_SENSORS = CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS
-
-
 # autopep8: on
-
-# INCLUSIVE INDEXES
-class ObsIndex(IntEnum):
-    # 1 val
-    VELOCITY_BEGIN = 0
-    VELOCITY_END = 0
-
-    # 1 val
-    DISTANCE_BEGIN = 1
-    DISTANCE_END = 1
-
-    # 2 val
-    ANGLE_DIFF_BEGIN = 2
-    ANGLE_DIFF_END = 3
-
-    # 2 val
-    CONTACT_BEGIN = 4
-    CONTACT_END = 5
-
-    # 2 val 
-    POS_BEGIN = 6
-    POS_END = 7
-
-    # 2 val
-    YAW_BEGIN = 8
-    YAW_END = 9
-    
-    # 8 val
-    RANGE_BEGIN = 10
-    RANGE_END = 19
-    
-    OBS_SIZE = 20
-
-
 
 def normalize_data(x, dst_a, dst_b, min_x=-1, max_x=1):
     normalized = dst_a + ((x - min_x)*(dst_b-dst_a))/(max_x-min_x)
@@ -107,6 +67,37 @@ def euler_to_quat(roll, pitch, yaw):
 
     return quat.flatten()
 
+# INCLUSIVE INDEXES
+class ObsIndex(IntEnum):
+    # 1 val
+    VELOCITY_BEGIN = 0
+    VELOCITY_END = 0
+
+    # 1 val
+    DISTANCE_BEGIN = 1
+    DISTANCE_END = 1
+
+    # 2 val
+    ANGLE_DIFF_BEGIN = 2
+    ANGLE_DIFF_END = 3
+
+    # 2 val
+    CONTACT_BEGIN = 4
+    CONTACT_END = 5
+
+    # 2 val 
+    POS_BEGIN = 6
+    POS_END = 7
+
+    # 2 val
+    YAW_BEGIN = 8
+    YAW_END = 9
+    
+    # 8 val
+    RANGE_BEGIN = 10
+    RANGE_END = 19
+    
+    OBS_SIZE = 20
 
 class CarParkingEnv(gymnasium.Env):
     metadata = {
@@ -201,9 +192,9 @@ class CarParkingEnv(gymnasium.Env):
         return self.action_space
 
     def _set_default_observation_space(self):
-
+        max_xy_dist = math.sqrt(MAP_LENGTH[0]**2 + MAP_LENGTH[1]**2)
         carSpeedRange = np.array([-10, 10]).reshape(2, 1)
-        distRange = np.array([0, MAX_X_Y_DIST]).reshape(2, 1)
+        distRange = np.array([0, max_xy_dist]).reshape(2, 1)
         angleDiff = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
         contactRange = np.tile(np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, 2))
         range_sensorsRange = np.tile(
@@ -211,7 +202,7 @@ class CarParkingEnv(gymnasium.Env):
         carPositionGlobalRange = np.array(
             [[-MAP_LENGTH[0]/2, -MAP_LENGTH[1]/2],
              [MAP_LENGTH[0]/2, MAP_LENGTH[1]/2]])
-        car_eulerRange = np.tile(np.array([0, np.pi]).reshape(2, 1), (1, 2))
+        car_eulerRange = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
 
         # KEEP ORDER AS IN OBSINDEX
         boundMatrix = np.hstack(

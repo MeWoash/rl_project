@@ -23,9 +23,17 @@ CUSTOM_OBSTACLES = [
 
 # POS Z WILL BE OVERWRITTEN TO MATCH SURFACE
 SPAWN_POINTS: list[dict[str, list[int]]] = [
-    {"pos":[-5, -5, 0], "euler":[0, 0, 0]},
-    {"pos":[7, -5, 0], "euler":[0, 0, 90]},
-    {"pos":[-8, 5, 0], "euler":[0, 0, -90]}
+    {"pos": [-5, -5, 0], "euler": [0, 0, -30]},
+    {"pos": [-6, -5, 0], "euler": [0, 0, 90]},
+    {"pos": [7, -5, 0], "euler": [0, 0, 90]},
+    {"pos": [5, -3, 0], "euler": [0, 0, 180]},
+    {"pos":[-7, -3, 0], "euler":[0, 0, 60]},
+    {"pos":[-6, 3, 0], "euler":[0, 0, -30]},
+    {"pos": [8, 8, 0], "euler": [0, 0, 40]},
+    {"pos": [1, -6, 0], "euler": [0, 0, 90]},
+
+    # {"pos":[-3, 5, 0], "euler":[0, 0, -5]},
+    # {"pos":[8, 3.5, 0], "euler":[0, 0, -15]}
 ]
 
 def calculateCameraHeight(x, y, fov_y_degrees):

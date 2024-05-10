@@ -188,8 +188,8 @@ class CarParkingEnv(gymnasium.Env):
         self.angle_max_cost = max([abs(self.action_space.low[1]), abs(self.action_space.high[1])]) * self.episode_env_max_step
         
         
-        self.dist_punish_weight = 0.75 
-        self.angle_diff_punish_weight = 0.25
+        self.dist_punish_weight = 0.25
+        self.angle_diff_punish_weight = 0.75
         self.velocity_cost_punish_weight = 0
         self.angle_cost_punish_weight = 0
         self.max_step_reward = 1
@@ -374,7 +374,7 @@ class CarParkingEnv(gymnasium.Env):
         self.angle_cost += abs(self.action[1])
         
         self.angle_diff = np.sum(self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1])
-        DIST_SCALE = 2
+        DIST_SCALE = 4
         exp_scale = np.exp(-self.observation[ObsIndex.DISTANCE_BEGIN]/DIST_SCALE)
         
         self.norm_angle_diff = normalize_data(self.angle_diff,
@@ -382,7 +382,7 @@ class CarParkingEnv(gymnasium.Env):
                                               0, len(self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1])*math.pi)
         self.norm_angle_diff = np.clip(self.norm_angle_diff, 0, self.angle_diff_punish_weight)
         
-        self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_distance), 0, self.dist_punish_weight, 0, self.init_distance)
+        self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_distance), 0, self.dist_punish_weight+self.angle_diff_punish_weight*(1-exp_scale), 0, self.init_distance)
         
         self.norm_velocity_cost = normalize_data(self.velocity_cost, 0, self.velocity_cost_punish_weight, 0, self.velocity_max_cost)
         self.norm_angle_cost = normalize_data(self.angle_cost, 0, self.angle_cost_punish_weight, 0, self.angle_max_cost)
@@ -404,8 +404,8 @@ class CarParkingEnv(gymnasium.Env):
     def _check_truncated_condition(self):
         truncated = False
 
-        if self.observation[ObsIndex.DISTANCE_BEGIN] < 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.05\
-                or self.observation[ObsIndex.DISTANCE_BEGIN] >= 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.3:
+        if self.observation[ObsIndex.DISTANCE_BEGIN] < 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.3\
+                or self.observation[ObsIndex.DISTANCE_BEGIN] >= 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 1:
             self.time_velocity_not_low = self.data.time
 
         if self.data.time - self.time_velocity_not_low >= 3:

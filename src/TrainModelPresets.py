@@ -15,71 +15,20 @@ if __name__ == "__main__":
         # ===========CONFIG LEARNING===============
         {
             "modelConstructor" : SAC,
-            "total_timesteps" : 300_000,
+            "total_timesteps" : 100_000_000_000,
             "model_kwargs" : {
-                "device":"cuda",
+                "device":"cpu"
             },
             "make_env_kwargs" : {
                 "vec_env_cls": DummyVecEnv,
-                "n_envs":1,
+                "n_envs": 1,
                 "env_kwargs":{
                     "render_mode": "none",
                     "enable_random_spawn": True,
                     "enable_spawn_noise": True
                 }
             }
-        },
-        # ===========CONFIG LEARNING===============
-        {
-            "modelConstructor" : A2C,
-            "total_timesteps" : 300_000,
-            "model_kwargs" : {
-                "device":"cuda",
-            },
-            "make_env_kwargs" : {
-                "vec_env_cls": DummyVecEnv,
-                "n_envs":1,
-                "env_kwargs":{
-                    "render_mode": "none",
-                    "enable_random_spawn": True,
-                    "enable_spawn_noise": True
-                }
-            }
-        },
-        # ===========CONFIG LEARNING===============
-        {
-            "modelConstructor" : SAC,
-            "total_timesteps" : 300_000,
-            "model_kwargs" : {
-                "device":"cuda",
-            },
-            "make_env_kwargs" : {
-                "vec_env_cls": DummyVecEnv,
-                "n_envs":1,
-                "env_kwargs":{
-                    "render_mode": "none",
-                    "enable_random_spawn": False,
-                    "enable_spawn_noise": True
-                }
-            }
-        },
-        # ===========CONFIG LEARNING===============
-        {
-            "modelConstructor" : A2C,
-            "total_timesteps" : 300_000,
-            "model_kwargs" : {
-                "device":"cuda",
-            },
-            "make_env_kwargs" : {
-                "vec_env_cls": DummyVecEnv,
-                "n_envs":1,
-                "env_kwargs":{
-                    "render_mode": "none",
-                    "enable_random_spawn": False,
-                    "enable_spawn_noise": True
-                }
-            }
-        },
+        }
         
     ]
     

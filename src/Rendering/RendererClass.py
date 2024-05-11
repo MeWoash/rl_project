@@ -10,21 +10,11 @@ from Rendering.WindowViewerClass import WindowViewer
 # autopep8: on
 
 class Renderer:
-    def __init__(self,
-                 model,
-                 data,
-                 simulation_frame_skip,
-                 capture_frames = True,
-                 capture_fps = 24,
-                 frame_size = (480, 480), #  Width, Height
-                 ) -> None:
-
-        self._model = model
-        self._data = data
-        self._simulation_frame_skip = simulation_frame_skip
-        self._capture_frames= capture_frames
-        self._capture_fps= capture_fps
-        self._frame_size= frame_size
+    def __init__(self, env) -> None:
+        
+        self.env = env
+        self.env.model = env.model
+        self.env.data = env.data
         
         self._viewers = {}
         self.viewer = None
@@ -38,23 +28,15 @@ class Renderer:
         self.viewer = self._viewers.get(render_mode)
         if self.viewer is None:
             if render_mode == "human":
-                self.viewer = WindowViewer(self._model,
-                                           self._data,
-                                           self._simulation_frame_skip,
-                                           self._capture_frames,
-                                           self._capture_fps,
+                self.viewer = WindowViewer(self.env,
                                            (1280, 720))
                 pass
             elif render_mode in {"rgb_array", "depth_array", "none"}:
-                self.viewer = OffScreenViewer(self._model,
-                                              self._data,
-                                              self._simulation_frame_skip,
-                                              self._capture_frames,
-                                              self._capture_fps,
-                                              self._frame_size)
+                self.viewer = OffScreenViewer(self.env,
+                                              (480, 480))
             else:
                 raise AttributeError(
-                    f"Unexpected mode: {render_mode}, expected modes: human, rgb_array, or depth_array"
+                    f"Unexpected mode: {render_mode}, expected modes: human, rgb_array, depth_array or none"
                 )
             # Add default camera parameters
             self._viewers[render_mode] = self.viewer

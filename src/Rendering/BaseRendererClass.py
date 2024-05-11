@@ -15,27 +15,21 @@ from PathsConfig import MEDIA_DIR
 class BaseRender(ABC):
     def __init__(
         self,
-        model,
-        data,
-        simulation_frame_skip,
-        capture_frames,
-        capture_fps,
+        env,
         frame_size,
     ):
         """Render context superclass for offscreen and window rendering."""
-        self._model = model
-        self._data = data
-        self._simulation_frame_skip = simulation_frame_skip
-        self._capture_frames = capture_frames
-        self._capture_fps = capture_fps
+        self.env = env
+        self._capture_frames = False
+        self._capture_fps = 24
         
         width, height = frame_size
 
         self._frames = []
         self._overlays = {}
         
-        buffer_width = self._model.vis.global_.offwidth
-        buffer_height = self._model.vis.global_.offheight
+        buffer_width = self.env.model.vis.global_.offwidth
+        buffer_height = self.env.model.vis.global_.offheight
         if width > buffer_width:
             raise ValueError('Image width {} > framebuffer width {}. Either reduce '
                              'the image width or specify a larger offscreen '
@@ -64,7 +58,7 @@ class BaseRender(ABC):
         )
 
         # This goes to specific visualizer
-        self.scn = mujoco.MjvScene(self._model, 1000)
+        self.scn = mujoco.MjvScene(self.env.model, 1000)
         self.cam = mujoco.MjvCamera()
         self.vopt = mujoco.MjvOption()
         self.pert = mujoco.MjvPerturb()
@@ -73,22 +67,33 @@ class BaseRender(ABC):
 
         # Keep in Mujoco Context
         self.con = mujoco.MjrContext(
-            self._model, mujoco.mjtFontScale.mjFONTSCALE_150)
+            self.env.model, mujoco.mjtFontScale.mjFONTSCALE_150)
 
         self._set_mujoco_buffer()
         
         # MY VARIABLES
-        render_steps_per_sec = 1 / (self._model.opt.timestep * self._simulation_frame_skip)
+        render_steps_per_sec = 1 / (self.env.model.opt.timestep * self.env.simulation_frame_skip)
         frame_skip_ratio = render_steps_per_sec / self._capture_fps
         self._nth_frame_capture = round(frame_skip_ratio)
         self._nth_render_call = 0
 
+    def set_capturing_frames(self, value: bool):
+        match value:
+            case True:
+                self._capture_frames = True
+            case False:
+                self._capture_frames = False
+            case _:
+                print("Wrong Argument!")
+                
+    
     def render_movie(self, filename = "tmp.mp4"):
         if self._capture_frames == False:
+            print("To save video enable capturing frames [c].")
             return
             
         # filename = f"out-thread-{threading.get_ident()}.mp4"
-        output_file = str(MEDIA_DIR/filename)
+        output_file = str(Path(MEDIA_DIR,filename))
         
         frame_size = (self.viewport.width, self.viewport.height)
         

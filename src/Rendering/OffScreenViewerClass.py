@@ -19,20 +19,12 @@ class OffScreenViewer(BaseRender):
     """Offscreen rendering class with opengl context."""
 
     def __init__(self,
-                 model,
-                 data,
-                 simulation_frame_skip,
-                 capture_frames,
-                 capture_fps,
-                 frame_size):
+                 env,
+                 frame_size = (480, 480)):
 
         # We must make GLContext before MjrContext
         self._get_opengl_backend(*frame_size)
-        super().__init__(model,
-                         data,
-                         simulation_frame_skip,
-                         capture_frames,
-                         capture_fps,
+        super().__init__(env,
                          frame_size)
         self._init_camera()
 
@@ -92,8 +84,8 @@ class OffScreenViewer(BaseRender):
             self.cam.fixedcamid = camera_id
 
         mujoco.mjv_updateScene(
-            self._model,
-            self._data,
+            self.env.model,
+            self.env.data,
             self.vopt,
             self.pert,
             self.cam,

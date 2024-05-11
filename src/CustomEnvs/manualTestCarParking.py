@@ -29,9 +29,6 @@ def on_press(key):
         elif key == keyboard.Key.right:
             current_action[1] = 1
             
-        if key.char == 'r':
-            env.reset()
-            
     except BaseException as e:
         pass
         # print(e)

@@ -116,9 +116,6 @@ class CarParkingEnv(gymnasium.Env):
                 time_limit = 30,
                 enable_random_spawn = True,
                 enable_spawn_noise = True,
-                capture_frames = False,
-                capture_fps = 24,
-                frame_size = (1920, 1080), # Width, Height
                 **kwargs):
 
         
@@ -130,9 +127,6 @@ class CarParkingEnv(gymnasium.Env):
         
         # RENDER VARIABLES
         self.render_mode = render_mode
-        self.capture_frames = capture_frames
-        self.capture_fps = capture_fps
-        self.frame_size = frame_size
         np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
 
         # TODO CAMERA SETTINGS
@@ -225,12 +219,7 @@ class CarParkingEnv(gymnasium.Env):
         self.model = mujoco.MjModel.from_xml_path(model_path)
         self.data = mujoco.MjData(self.model)
 
-        self.mujoco_renderer: Renderer = Renderer(self.model,
-                                                self.data,
-                                                self.simulation_frame_skip,
-                                                self.capture_frames,
-                                                self.capture_fps,
-                                                self.frame_size)
+        self.mujoco_renderer: Renderer = Renderer(self)
 
     def _reset_simulation(self):
         mujoco.mj_resetData(self.model, self.data)
@@ -376,7 +365,7 @@ class CarParkingEnv(gymnasium.Env):
         truncated = False
 
         if self.observation[ObsIndex.DISTANCE_BEGIN] < 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.3\
-                or self.observation[ObsIndex.DISTANCE_BEGIN] >= 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 1:
+                or self.observation[ObsIndex.DISTANCE_BEGIN] >= 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.6:
             self.time_velocity_not_low = self.data.time
 
         if self.data.time - self.time_velocity_not_low >= 3:

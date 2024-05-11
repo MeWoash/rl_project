@@ -17,12 +17,8 @@ class WindowViewer(BaseRender):
     """Class for window rendering in all MuJoCo environments."""
 
     def __init__(self,
-                 model,
-                 data,
-                 simulation_frame_skip,
-                 capture_frames,
-                 capture_fps,
-                 frame_size):
+                 env,
+                 frame_size=(1280,720)):
         glfw.init()
 
         self._button_left_pressed = False
@@ -59,12 +55,7 @@ class WindowViewer(BaseRender):
         glfw.set_scroll_callback(self.window, self._scroll_callback)
         glfw.set_key_callback(self.window, self._key_callback)
 
-        super().__init__(model,
-                         data,
-                         simulation_frame_skip,
-                         capture_frames,
-                         capture_fps,
-                         frame_size)
+        super().__init__(env, frame_size)
         glfw.swap_interval(1)
 
         self.cam.fixedcamid = 0
@@ -119,8 +110,8 @@ class WindowViewer(BaseRender):
 
             # update scene
             mujoco.mjv_updateScene(
-                self._model,
-                self._data,
+                self.env.model,
+                self.env.data,
                 self.vopt,
                 mujoco.MjvPerturb(),
                 self.cam,
@@ -169,25 +160,30 @@ class WindowViewer(BaseRender):
         glfw.terminate()
 
     def _key_callback(self, window, key: int, scancode, action: int, mods):
+        
         if action != glfw.RELEASE:
             return
-        # Switch cameras
-        elif key == glfw.KEY_TAB:
-            self.cam.fixedcamid += 1
-            self.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
-            if self.cam.fixedcamid >= self._model.ncam:
-                self.cam.fixedcamid = -1
-                self.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
-        elif key == glfw.KEY_H:
-            self._hide_menu = not self._hide_menu
-        elif key == glfw.KEY_S:
-            self.render_movie()
-        elif key == glfw.KEY_C:
-            new_val = not self._capture_frames
-            self._capture_frames = new_val
-            self._frames.clear()
-        elif key == glfw.KEY_F:
-            self.render_image()
+        
+        match key:
+            case glfw.KEY_TAB:  # Switch cameras
+                self.cam.fixedcamid += 1
+                self.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
+                if self.cam.fixedcamid >= self.env.model.ncam:
+                    self.cam.fixedcamid = -1
+                    self.cam.type = mujoco.mjtCamera.mjCAMERA_FREE
+            case glfw.KEY_H:
+                self._hide_menu = not self._hide_menu
+            case glfw.KEY_R:
+                self.env.reset()
+            case glfw.KEY_S:
+                self.render_movie()
+            case glfw.KEY_C:
+                new_val = not self._capture_frames
+                self._capture_frames = new_val
+                self._frames.clear()
+            case glfw.KEY_F:
+                self.render_image()
+            
         if key == glfw.KEY_ESCAPE:
             print("Pressed ESC")
             print("Quitting.")
@@ -223,7 +219,7 @@ class WindowViewer(BaseRender):
         width, height = glfw.get_framebuffer_size(window)
 
         mujoco.mjv_moveCamera(
-            self._model, action, dx / width, dy / height, self.scn, self.cam
+            self.env.model, action, dx / width, dy / height, self.scn, self.cam
         )
 
         self._last_mouse_x = int(self._scale * xpos)
@@ -244,7 +240,7 @@ class WindowViewer(BaseRender):
 
     def _scroll_callback(self, window, x_offset, y_offset: float):
         mujoco.mjv_moveCamera(
-            self._model,
+            self.env.model,
             mujoco.mjtMouse.mjMOUSE_ZOOM,
             0,
             -0.05 * y_offset,

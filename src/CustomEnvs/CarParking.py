@@ -69,6 +69,16 @@ def euler_to_quat(roll, pitch, yaw):
     return quat.flatten()
 
 # INCLUSIVE INDEXES
+
+class ACTION_INDEX(IntEnum):
+    # 1 val
+    ENGINE = 0
+    # 1 val
+    ANGLE = 1
+    # SUM
+    ACTION_SIZE = 2
+
+
 class OBS_INDEX(IntEnum):
     # 1 val
     VELOCITY_BEGIN = 0
@@ -190,24 +200,27 @@ class CarParkingEnv(gymnasium.Env):
 
     def _set_default_observation_space(self):
         max_xy_dist = math.sqrt(MAP_LENGTH[0]**2 + MAP_LENGTH[1]**2)
-        carSpeedRange = np.array([-10, 10]).reshape(2, 1)
-        distRange = np.array([0, max_xy_dist]).reshape(2, 1)
-        angleDiff = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
-        range_sensorsRange = np.tile(
+        
+        
+        velocity_bounds = np.array([-10, 10]).reshape(2, 1)
+        dist_bounds = np.array([0, max_xy_dist]).reshape(2, 1)
+        angle_diff_bounds = np.tile(np.array([0, np.pi]).reshape(2, 1), (1, 2))
+        range_sensors_bounds = np.tile(
             np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, N_RANGE_SENSORS))
-        carPositionGlobalRange = np.array(
-            [[-MAP_LENGTH[0]/2, -MAP_LENGTH[1]/2],
-             [MAP_LENGTH[0]/2, MAP_LENGTH[1]/2]])
-        car_eulerRange = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
+        car_rel_pos_bounds = np.array(
+            [[-MAP_LENGTH[0], -MAP_LENGTH[1]],
+             [MAP_LENGTH[0], MAP_LENGTH[1]]])
+        angle_bounds = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
 
         # KEEP ORDER AS IN OBSINDEX
-        boundMatrix = np.hstack(
-            [carSpeedRange,
-             distRange,
-             angleDiff,
-             carPositionGlobalRange,
-             car_eulerRange,
-             range_sensorsRange])
+        boundMatrix = np.zeros((2,OBS_INDEX.OBS_SIZE))
+        
+        boundMatrix[:, OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1] = velocity_bounds
+        boundMatrix[:, OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1] = dist_bounds
+        boundMatrix[:, OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1] = angle_diff_bounds
+        boundMatrix[:, OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1] = car_rel_pos_bounds
+        boundMatrix[:, OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1] = angle_bounds
+        boundMatrix[:, OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_END+1] = range_sensors_bounds
 
         self.observation_space = Box(
             low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)
@@ -261,8 +274,8 @@ class CarParkingEnv(gymnasium.Env):
         
         
         overlay.add("Model Action", "values", "top right")
-        overlay.add("engine", f"{self.action[0]:.2f}", "top right")
-        overlay.add("wheel", f"{self.action[1]:.2f}", "top right")
+        overlay.add("engine", f"{self.action[ACTION_INDEX.ENGINE]:.2f}", "top right")
+        overlay.add("wheel", f"{self.action[ACTION_INDEX.ANGLE]:.2f}", "top right")
         
         overlay.add("Reward metrics", "values", "bottom right")
         overlay.add("reward", f"{self.reward:.2f}", "bottom right")
@@ -279,9 +292,9 @@ class CarParkingEnv(gymnasium.Env):
             self.mujoco_renderer.close()
 
 
-    def _apply_forces(self, action=None):
-        enginePowerCtrl = action[0]
-        wheelsAngleCtrl = normalize_data(action[1], *WHEEL_ANGLE_LIMIT)
+    def _apply_forces(self, action):
+        enginePowerCtrl = action[ACTION_INDEX.ENGINE]
+        wheelsAngleCtrl = normalize_data(action[ACTION_INDEX.ANGLE], *WHEEL_ANGLE_LIMIT)
 
         self.data.actuator(f"{CAR_NAME}/engine").ctrl = enginePowerCtrl
         self.data.actuator(f"{CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl
@@ -337,8 +350,8 @@ class CarParkingEnv(gymnasium.Env):
     
     def _calculate_reward(self):
         
-        self.velocity_cost += abs(self.action[0])
-        self.angle_cost += abs(self.action[1])
+        self.velocity_cost += abs(self.action[ACTION_INDEX.ENGINE])
+        self.angle_cost += abs(self.action[ACTION_INDEX.ANGLE])
         
         self.angle_diff = np.sum(self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])
         DIST_SCALE = 4

@@ -111,15 +111,15 @@ class CarParkingEnv(gymnasium.Env):
     }
 
     def __init__(self,
-                 render_mode: str = "none",
-                 simulation_frame_skip: int = 4,
-                 time_limit = 30,
-                 capture_frames = False,
-                 capture_fps = 24,
-                 frame_size = (1920, 1080), # Width, Height
-                 enable_random_spawn = True,
-                 enable_spawn_noise = True,
-                 **kwargs):
+                render_mode: str = "none",
+                simulation_frame_skip: int = 4,
+                time_limit = 30,
+                enable_random_spawn = True,
+                enable_spawn_noise = True,
+                capture_frames = False,
+                capture_fps = 24,
+                frame_size = (1920, 1080), # Width, Height
+                **kwargs):
 
         
         self.enable_random_spawn= enable_random_spawn
@@ -238,7 +238,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _calculate_spawn_points(self):
         self.spawn_points = []
-        for spawn_params in SPAWN_POINTS:
+        for spawn_params in CAR_SPAWN_KWARGS:
             pos = spawn_params['pos']
             quat = euler_to_quat(*np.radians(spawn_params['euler']))
             self.spawn_points.append([*pos, *quat])
@@ -353,7 +353,7 @@ class CarParkingEnv(gymnasium.Env):
                                               0, len(self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1])*math.pi)
         self.norm_angle_diff = np.clip(self.norm_angle_diff, 0, self.angle_diff_punish_weight)
         
-        self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_distance), 0, self.dist_punish_weight+self.angle_diff_punish_weight*(1-exp_scale), 0, self.init_distance)
+        self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_car_distance), 0, self.dist_punish_weight+self.angle_diff_punish_weight*(1-exp_scale), 0, self.init_car_distance)
         
         self.norm_velocity_cost = normalize_data(self.velocity_cost, 0, self.velocity_cost_punish_weight, 0, self.velocity_max_cost)
         self.norm_angle_cost = normalize_data(self.angle_cost, 0, self.angle_cost_punish_weight, 0, self.angle_max_cost)
@@ -391,10 +391,10 @@ class CarParkingEnv(gymnasium.Env):
         return truncated
 
     def _get_obs(self):
-        carPositionGlobal = self.data.sensor(
+        car_pos = self.data.sensor(
             f'{CAR_NAME}/pos_global_sensor').data
 
-        carPositionParking = self.data.sensor(
+        car_parking_rel_pos = self.data.sensor(
             f"{CAR_NAME}_to_{PARKING_NAME}_pos").data
 
         carSpeed = self.data.sensor(f'{CAR_NAME}/speed_sensor').data[0]
@@ -407,7 +407,7 @@ class CarParkingEnv(gymnasium.Env):
             range_sensors.append(self.data.sensor(
                 f'{CAR_NAME}/{TRAILER_NAME}/range_sensor_{i}').data[0])
 
-        distToTarget = np.linalg.norm(carPositionParking[:2])
+        car_dist_to_parking = np.linalg.norm(car_parking_rel_pos[:2])
 
         contact_data = [
             self.data.sensor(f"{CAR_NAME}/touch_sensor").data[0],
@@ -436,10 +436,10 @@ class CarParkingEnv(gymnasium.Env):
         observation = np.zeros(ObsIndex.OBS_SIZE, dtype=np.float32)
         
         observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1] = carSpeed
-        observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1] = distToTarget
+        observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1] = car_dist_to_parking
         observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1] = normalizedCarAngleDiff, normalizedTrailerAngleDiff
         observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1] = contact_data
-        observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1] = carPositionGlobal[:2]
+        observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1] = car_parking_rel_pos[:2]
         observation[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1] = car_euler[2], trailer_euler[2]
         observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1] = range_sensors
         
@@ -491,7 +491,8 @@ class CarParkingEnv(gymnasium.Env):
         self.norm_velocity_cost = 0
         self.episode_cumulative_reward = 0
         self.episode_mean_reward = 0
-        self.init_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/").qpos[:2] - self.data.site(f"{PARKING_NAME}/site_center").xpos[:2])
+        self.init_car_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/").qpos[:2] - self.data.site(f"{PARKING_NAME}/site_center_{CAR_NAME}").xpos[:2])
+        self.init_trailer_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/{TRAILER_NAME}/").qpos[:2] - self.data.site(f"{PARKING_NAME}/site_center_{TRAILER_NAME}").xpos[:2])
         self.episode_number += 1
 
         obs = self._get_obs()

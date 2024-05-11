@@ -292,31 +292,66 @@ class ParkingSpot:
         self._parking_spot_paddings = PARKING_SPOT_PADDINGS
         self._parking_line_width = PARKING_LINE_WIDTH
         self._parking_line_height_size = PARKING_LINE_HEIGHT_SIZE
+        self._car_color = CAR_COLOR
+        self._car_name = CAR_NAME
+        self._trailer_color = TRAILER_COLOR
+        self._trailer_name = TRAILER_NAME
+        
 
     def construct_tree(self):
         mjcf_model = mjcf.RootElement(model=self._model_name)
 
-        material = mjcf_model.asset.add("material", name=f"line_material",rgba=[1, 1, 1, 1])
-        self.site_center = mjcf_model.worldbody.add("site",name=f"site_center",  type="cylinder",size=[0.1, 0.001],  material=material)
-
-        self._create_parking_spot(mjcf_model, "car_parking_spot", self._carSize, material)
-        for i in range(1):
-            offset_x = -(self._carSize[0] + self._trailerSize[3])
-            self._create_parking_spot(mjcf_model, f"trailer_parking_spot_{i}", self._trailerSize, material, offset_x)
-            
-        return mjcf_model
-
-    def _create_parking_spot(self, mjcf_model, name, size, material, offset_x=0):
-        targetXSize = (size[0]/2)*self._parking_spot_paddings[0]
-        targetYSize = (size[1]/2)*self._parking_spot_paddings[1]
-        lineWidthSize = self._parking_line_width/2
-        lineHeightSize = self._parking_line_height_size
+        self.site_center = mjcf_model.worldbody.add("site",
+                                                        name=f"site_center",
+                                                        type="cylinder",
+                                                        pos = [0, 0, 0],
+                                                        size=[0.1, 0.001],
+                                                        rgba=[1, 1, 1, 1])
         
-        parking_spot = mjcf_model.worldbody.add("body", name=name, pos=[offset_x, 0, 0])
-        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[targetXSize - lineWidthSize, 0, 0], material=material, contype=0, conaffinity=0)
-        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, targetYSize - lineWidthSize, 0], material=material, contype=0, conaffinity=0)
-        parking_spot.add("geom", type="box", size=[targetXSize, lineWidthSize, lineHeightSize], pos=[0, -(targetYSize - lineWidthSize), 0], material=material, contype=0, conaffinity=0)
-        parking_spot.add("geom", type="box", size=[lineWidthSize, targetYSize, lineHeightSize], pos=[-(targetXSize - lineWidthSize), 0, 0], material=material, contype=0, conaffinity=0)
+        self.site_center_car = mjcf_model.worldbody.add("site",
+                                                        name=f"site_center_{self._car_name}",
+                                                        type="cylinder",
+                                                        pos = [self._carSize[0]/2, 0, 0],
+                                                        size=[0.1, 0.001],
+                                                        rgba=self._car_color)
+        self.site_center_trailer = mjcf_model.worldbody.add("site",
+                                                        name=f"site_center_{self._trailer_name}",
+                                                        type="cylinder",
+                                                        pos = [-(self._trailerSize[0]/2+self._trailerSize[3]), 0, 0],
+                                                        size=[0.1, 0.001],
+                                                        rgba=self._trailer_color)
+        
+        
+        longer_line_length = (self._trailerSize[0] + self._trailerSize[3] + self._carSize[0]) * self._parking_spot_paddings[0]
+        shorter_line_length = max(self._carSize[1], self._trailerSize[1]) * self._parking_spot_paddings[1]
+
+        half_longer = longer_line_length / 2
+        half_shorter = shorter_line_length / 2
+        half_width = self._parking_line_width / 2
+
+        mjcf_model.worldbody.add("site",
+                                type="box",
+                                pos=[0, -half_shorter, 0],
+                                size=[half_longer, half_width, self._parking_line_height_size / 2],
+                                rgba=[1, 1, 1, 1])
+        mjcf_model.worldbody.add("site",
+                                type="box",
+                                pos=[0, half_shorter, 0],
+                                size=[half_longer, half_width, self._parking_line_height_size / 2],
+                                rgba=[1, 1, 1, 1])
+
+        mjcf_model.worldbody.add("site",
+                                type="box",
+                                pos=[-half_longer, 0, 0],
+                                size=[half_width, half_shorter, self._parking_line_height_size / 2],
+                                rgba=[1, 1, 1, 1])
+        mjcf_model.worldbody.add("site",
+                                type="box",
+                                pos=[half_longer, 0, 0],
+                                size=[half_width, half_shorter, self._parking_line_height_size / 2],
+                                rgba=[1, 1, 1, 1])
+        
+        return mjcf_model
 
 
 class GeneratorClass:
@@ -324,7 +359,7 @@ class GeneratorClass:
         
         # FROM CONFIG
         self._map_length = MAP_LENGTH
-        self._parking_pos = PARKING_POS
+        self._parking_spot_kwargs = PARKING_SPOT_KWARGS
         self._car_name = CAR_NAME
         self._car_dims = CAR_DIMS
         self._trailer_name = TRAILER_NAME
@@ -333,8 +368,8 @@ class GeneratorClass:
         self._mjcdf_model_name = MJCF_MODEL_NAME
         self._render_off_width = RENDER_OFF_WIDTH
         self._render_off_height = RENDER_OFF_HEIGHT
-        self._spawn_points = SPAWN_POINTS
-        self._custom_obstacles = CUSTOM_OBSTACLES
+        self._spawn_points = CAR_SPAWN_KWARGS
+        self._custom_obstacles = CUSTOM_OBSTACLES_KWARGS
         self._car_spawn_height = CAR_SPAWN_HEIGHT
         # ===================================
         
@@ -370,13 +405,13 @@ class GeneratorClass:
         self._connect_bodies_at_sites(carRearAttachmentSite, TrailerFrontAttachmentSite, trailerMJCF)
 
         # Parking
-        self.parking_attachment_site = self.mjcf_model.worldbody.add("site", name="parking_attachment_site", pos=self._parking_pos)
+        self.parking_attachment_site = self.mjcf_model.worldbody.add("site", name="parking_attachment_site", **self._parking_spot_kwargs)
         parkingSpotMJCF = self.parkingSpotGenerator.construct_tree()
         self.parking_attachment_site.attach(parkingSpotMJCF)
         
         # CONNECT CAR AND PARKING WITH POS SENSOR
         self.mjcf_model.sensor.add("framepos", name=f"{self._car_name}_to_{self._parking_name}_pos", objtype="site", objname=self.carGenerator.center_site,
-                                   reftype="site", refname=self.parkingSpotGenerator.site_center)
+                                   reftype="site", refname=self.parkingSpotGenerator.site_center_car)
 
         # autopep8: on
     
@@ -399,13 +434,28 @@ class GeneratorClass:
             2, self._map_length[2]/2, self._map_length[3]/2
 
         # autopep8: off
-        self.mjcf_model.asset.add( "texture", name="sky_texture", type="skybox", file=ASSET_DIR+"/sky1.png")
-        wall_material = self.mjcf_model.asset.add(  "material",     name="wall_material",   rgba=[1, 1, 1, 0.000001])
-        ground_texture = self.mjcf_model.asset.add( "texture",      name="ground_texture",  type="2d",              file=ASSET_DIR+"/ground.png")
-        ground_material = self.mjcf_model.asset.add("material",     name="ground_material", texture=ground_texture, texrepeat=[25, 25])
-        
-        obstacle_texture = self.mjcf_model.asset.add( "texture",      name="obstacle_texture",  type="2d",              file=ASSET_DIR+"/rustymetal.png")
-        obstacle_material = self.mjcf_model.asset.add("material",     name="obstacle_material", texture=obstacle_texture, )
+        self.mjcf_model.asset.add( "texture",
+                                  name="sky_texture",
+                                  type="skybox",
+                                  file=ASSET_DIR+"/sky1.png")
+        wall_material = self.mjcf_model.asset.add("material",
+                                                  name="wall_material",
+                                                  rgba=[1, 1, 1, 0.000001])
+        ground_texture = self.mjcf_model.asset.add( "texture",
+                                                   name="ground_texture",
+                                                   type="2d",
+                                                   file=ASSET_DIR+"/ground.png")
+        ground_material = self.mjcf_model.asset.add("material",
+                                                    name="ground_material",
+                                                    texture=ground_texture,
+                                                    texrepeat=[25, 25])
+        obstacle_texture = self.mjcf_model.asset.add( "texture",
+                                                     name="obstacle_texture",
+                                                     type="2d",
+                                                     file=ASSET_DIR+"/rustymetal.png")
+        obstacle_material = self.mjcf_model.asset.add("material",
+                                                      name="obstacle_material",
+                                                      texture=obstacle_texture, )
 
         self.mjcf_model.worldbody.add("geom",   name="ground",    type="plane",   size=[x, y, t],   friction= [1.0, 0.005, 0.0001], material=ground_material)
         self.mjcf_model.worldbody.add("geom",   name="ceiling",   type="box",     size=[x, y, t],   pos= [0, 0, self._map_length[2]],rgba= [0, 0, 0, 0])
@@ -417,12 +467,12 @@ class GeneratorClass:
 
         # CUSTOM OBSTACLES
         for obstacle_kwargs in self._custom_obstacles:
-            self.mjcf_model.worldbody.add("geom",type="box", material=obstacle_material, **obstacle_kwargs)
-            
-        self._generate_spawn_points()
-            
-            
-    def _generate_spawn_points(self):
+            self.mjcf_model.worldbody.add("geom",
+                                          type="box",
+                                          material=obstacle_material,
+                                          **obstacle_kwargs)
+        
+        # SPAWN POINTS
         self.spawn_points = []
         for i, spawn_point in enumerate(self._spawn_points):
             self.spawn_points.append(
@@ -434,6 +484,8 @@ class GeneratorClass:
                                               **spawn_point
                                               )
             )
+            
+        
         
     def _generate_camera(self):
         camHeight = calculateCameraHeight(

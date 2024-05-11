@@ -1,7 +1,7 @@
 # ======================== PARKING_SPOT ====================
 PARKING_NAME = "parkingSpot"
-PARKING_POS = [4, 5, 0]
-PARKING_SPOT_PADDINGS = (1.2, 1.5)
+PARKING_SPOT_KWARGS = {"pos":(4, 5, 0), "euler":(0, 0, 0)}
+PARKING_SPOT_PADDINGS = (1.1, 1.5)
 PARKING_LINE_WIDTH = 0.15
 PARKING_LINE_HEIGHT_SIZE = 0.001
 
@@ -36,15 +36,16 @@ TRAILER_COLOR = (0.235, 0.761, 0.196, 1)
 TRAILER_N_RANGE_SENSORS = 5
 
 # ====================== GENERAL ==============================
-CUSTOM_OBSTACLES =\
+CUSTOM_OBSTACLES_KWARGS =\
 [
     {"size":[0.5, 2, 1],  "pos":[4, 1, 0]},
     {"size":[0.5, 2, 1],  "pos":[4, -7, 0]},
     {"size":[5, 1, 1],  "pos":[0, 8, 0]},
     {"size":[1, 1, 1],  "pos":[-2, -1, 0]}
 ]
-SPAWN_POINTS: list[dict[str, list[int]]] =\
-[ # Position Z will be overwritten to match surface level. 
+CAR_SPAWN_KWARGS: list[dict[str, list[int]]] =\
+[
+    # {"pos":(4, 5, CAR_SPAWN_HEIGHT), "euler":(0, 0, 0)},
     {"pos": [-5, -5, CAR_SPAWN_HEIGHT], "euler": [0, 0, -30]},
     {"pos": [-6, -5, CAR_SPAWN_HEIGHT], "euler": [0, 0, 90]},
     {"pos": [7, -5, CAR_SPAWN_HEIGHT], "euler": [0, 0, 90]},
@@ -53,8 +54,6 @@ SPAWN_POINTS: list[dict[str, list[int]]] =\
     {"pos":[-6, 3, CAR_SPAWN_HEIGHT], "euler":[0, 0, -30]},
     {"pos": [8, 8, CAR_SPAWN_HEIGHT], "euler": [0, 0, 40]},
     {"pos": [1, -6, CAR_SPAWN_HEIGHT], "euler": [0, 0, 90]},
-    # {"pos":[-3, 5, CAR_SPAWN_HEIGHT], "euler":[0, 0, -5]},
-    # {"pos":[8, 3.5, CAR_SPAWN_HEIGHT], "euler":[0, 0, -15]}
 ]
 
 

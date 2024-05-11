@@ -1,6 +1,7 @@
 # autopep8: off
 from abc import ABC
 from ast import Raise
+from math import ceil
 from pathlib import Path
 import sys
 import cv2
@@ -74,7 +75,7 @@ class BaseRender(ABC):
         # MY VARIABLES
         render_steps_per_sec = 1 / (self.env.model.opt.timestep * self.env.simulation_frame_skip)
         frame_skip_ratio = render_steps_per_sec / self._capture_fps
-        self._nth_frame_capture = round(frame_skip_ratio)
+        self._nth_frame_capture = ceil(frame_skip_ratio)
         self._nth_render_call = 0
 
     def set_capturing_frames(self, value: bool):

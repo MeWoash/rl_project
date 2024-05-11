@@ -16,7 +16,7 @@ from pathlib import Path
 from scipy.interpolate import interp1d
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcess.Utils import *
+from PostProcessing.Utils import *
 # autopep8: on
 
 

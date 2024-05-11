@@ -14,8 +14,8 @@ import pandas as pd
 import sys
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcess.Utils import *
-from PostProcess.PlotGenerators import *
+from PostProcessing.Utils import *
+from PostProcessing.PlotGenerators import *
 # autopep8: on
 
 

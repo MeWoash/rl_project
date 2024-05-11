@@ -3,6 +3,7 @@
 from math import ceil
 import os
 from pathlib import Path
+import sys
 import time
 from typing import Callable
 
@@ -12,12 +13,19 @@ from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
-# autopep8: on
+sys.path.append(str(Path(__file__,'..','..').resolve()))
+from PathsConfig import *
+from MJCFGenerator.Config import *
 
+
+# autopep8: on
 EPISODES_FILE_NAME = 'episodes_all.csv'
 SUMMARY_FILE_NAME = 'episodes_summary.csv'
-MAP_SIZE = [20, 20, 20, 5]  # MJCFGenerator.Generator._map_length
-MAP_BOUNDARY = [[-MAP_SIZE[0]/2, MAP_SIZE[0]/2],[-MAP_SIZE[1]/2, MAP_SIZE[1]/2]] # X, Y
+MAP_BOUNDARY = [[-MAP_LENGTH
+[0]/2, MAP_LENGTH
+[0]/2],[-MAP_LENGTH
+[1]/2, MAP_LENGTH
+[1]/2]] # X, Y
 
 
 def get_last_modified_file(directory_path, suffix=".zip"):

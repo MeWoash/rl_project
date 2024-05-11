@@ -10,6 +10,7 @@ from CustomEnvs import CarParkingEnv
 from ModelTools.Callbacks import *
 from PathsConfig import *
 from MJCFGenerator.Generator import generate_MJCF 
+from PostProcessing.PostProcess import generate_media
 
 # autopep8: on
 
@@ -46,7 +47,7 @@ def train_model(modelConstructor = SAC,
                 **model_kwargs
                 )
     
-    CALLBACKS = [CSVCallback(log_interval = 20)]
+    CALLBACKS = [CSVCallback(log_interval = 5)]
     
     model.learn(progress_bar=True,
                 callback=CALLBACKS,

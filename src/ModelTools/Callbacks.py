@@ -20,7 +20,7 @@ class EpisodeStatsBuffer:
         self.callback = callback
         self.env_index = env_index
         self.log_counter = 0
-        self.log_interval = 20
+        self.log_interval = log_interval
         
     def flush_all(self):
         self._add_stats_to_buffer()

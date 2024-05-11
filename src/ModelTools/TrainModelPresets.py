@@ -9,6 +9,7 @@ sys.path.append(str(Path(__file__,'..','..').resolve()))
 from ModelTools.TrainModel import train_model
 from ModelTools.Callbacks import *
 from MJCFGenerator.Generator import generate_MJCF 
+from PostProcessing.PostProcess import generate_media
 # autopep8: on
 
 if __name__ == "__main__":

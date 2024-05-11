@@ -10,7 +10,7 @@ import pandas as pd
 import sys
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcess.PostProcess import *
+from PostProcessing.PostProcess import *
 
 # autopep8: on
 

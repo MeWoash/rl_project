@@ -183,19 +183,19 @@ class CarParkingEnv(gymnasium.Env):
 
     def _set_default_action_space(self):
 
-        engineCtrlRange = np.array(
+        engine_bounds = np.array(
             [-1,
              1])
-        wheelAngleCtrlRange = np.array(
-            [-1,
-             1])
+        angle_bounds = np.array(
+            [math.radians(WHEEL_ANGLE_LIMIT[0]),
+             math.radians(WHEEL_ANGLE_LIMIT[1])]
+            )
 
-        low = np.array(
-            [engineCtrlRange[0], wheelAngleCtrlRange[0]])
-        high = np.array(
-            [engineCtrlRange[1], wheelAngleCtrlRange[1]])
+        boundMatrix = np.zeros((2,OBS_INDEX.OBS_SIZE))
+        boundMatrix[:, ACTION_INDEX.ENGINE] = engine_bounds
+        boundMatrix[:, ACTION_INDEX.ANGLE] = angle_bounds
 
-        self.action_space = Box(low=low, high=high, dtype=np.float32)
+        self.action_space = Box(low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)
         return self.action_space
 
     def _set_default_observation_space(self):
@@ -222,8 +222,7 @@ class CarParkingEnv(gymnasium.Env):
         boundMatrix[:, OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1] = angle_bounds
         boundMatrix[:, OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_END+1] = range_sensors_bounds
 
-        self.observation_space = Box(
-            low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)
+        self.observation_space = Box(low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)
         return self.observation_space
 
     def _initialize_simulation(self):
@@ -294,7 +293,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _apply_forces(self, action):
         enginePowerCtrl = action[ACTION_INDEX.ENGINE]
-        wheelsAngleCtrl = normalize_data(action[ACTION_INDEX.ANGLE], *WHEEL_ANGLE_LIMIT)
+        wheelsAngleCtrl = action[ACTION_INDEX.ANGLE]
 
         self.data.actuator(f"{CAR_NAME}/engine").ctrl = enginePowerCtrl
         self.data.actuator(f"{CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl

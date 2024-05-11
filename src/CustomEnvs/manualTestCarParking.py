@@ -10,24 +10,25 @@ import math
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from MJCFGenerator.Generator import generate_MJCF 
 from CustomEnvs.CarParking import *
-
+from MJCFGenerator.Config import *
 # autopep8: on
 
 current_action = np.array([0.0, 0.0])
 
+WHEEL_ANGLE_LIMIT_RADIANS = [math.radians(WHEEL_ANGLE_LIMIT[0]), math.radians(WHEEL_ANGLE_LIMIT[1])]
 
 def on_press(key):
     global current_action
     try:
         if key == keyboard.Key.up:
-            current_action[0] = 1.0
+            current_action[ACTION_INDEX.ENGINE] = 1.0
         elif key == keyboard.Key.down:
-            current_action[0] = -1.0
+            current_action[ACTION_INDEX.ENGINE] = -1.0
             
         if key == keyboard.Key.left:
-            current_action[1] = -1
+            current_action[ACTION_INDEX.ANGLE] = WHEEL_ANGLE_LIMIT_RADIANS[0]
         elif key == keyboard.Key.right:
-            current_action[1] = 1
+            current_action[ACTION_INDEX.ANGLE] = WHEEL_ANGLE_LIMIT_RADIANS[1]
             
     except BaseException as e:
         pass

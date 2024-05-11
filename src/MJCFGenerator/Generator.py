@@ -72,8 +72,8 @@ class Wheel:
                       material=wheelMaterial)
 
         if self._is_steering:
-            steering_joint = wheelBody.add("joint", name="steering_joint", type="hinge", axis=[
-                                           0, 1, 0], limited=True, range=self._wheel_angle_limit)
+            steering_joint = wheelBody.add("joint", name="steering_joint", type="hinge",
+                                           axis=[0, 1, 0], limited=True, range=self._wheel_angle_limit)
 
         rolling_joint = wheelBody.add("joint", name="rolling_joint")
 

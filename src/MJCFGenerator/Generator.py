@@ -371,6 +371,7 @@ class GeneratorClass:
         self._spawn_points = CAR_SPAWN_KWARGS
         self._custom_obstacles = CUSTOM_OBSTACLES_KWARGS
         self._car_spawn_height = CAR_SPAWN_HEIGHT
+        self._trailer_hitch_angle_limit = TRAILER_HITCH_ANGLE_LIMIT
         # ===================================
         
         self.carGenerator = Car(self._car_name, self._car_dims)
@@ -424,7 +425,10 @@ class GeneratorClass:
         b_attachment_body.pos = new_pos
         b_attachment_body.add("joint",
                               type="hinge",
-                              axis=[0, 0, 1], pos=site_b_pos,
+                              axis=[0, 0, 1],
+                              pos=site_b_pos,
+                              limited=True,
+                              range=self._trailer_hitch_angle_limit
                               )
             
     

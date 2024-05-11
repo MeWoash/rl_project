@@ -26,9 +26,9 @@ def on_press(key):
             current_action[ACTION_INDEX.ENGINE] = -1.0
             
         if key == keyboard.Key.left:
-            current_action[ACTION_INDEX.ANGLE] = WHEEL_ANGLE_LIMIT_RADIANS[0]
+            current_action[ACTION_INDEX.ANGLE] = -1 # WHEEL_ANGLE_LIMIT_RADIANS[0]
         elif key == keyboard.Key.right:
-            current_action[ACTION_INDEX.ANGLE] = WHEEL_ANGLE_LIMIT_RADIANS[1]
+            current_action[ACTION_INDEX.ANGLE] = 1 # WHEEL_ANGLE_LIMIT_RADIANS[1]
             
     except BaseException as e:
         pass

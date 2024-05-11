@@ -19,12 +19,12 @@ if __name__ == "__main__":
         # ===========CONFIG LEARNING===============
         {
             "modelConstructor" : SAC,
-            "total_timesteps" : 300_000,
+            "total_timesteps" : 5_000_000,
             "model_kwargs" : {
                 "device":"cuda"
             },
             "make_env_kwargs" : {
-                "vec_env_cls": DummyVecEnv,
+                "vec_env_cls": SubprocVecEnv,
                 "n_envs": 1,
                 "env_kwargs":{
                     "render_mode": "none",

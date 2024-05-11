@@ -161,8 +161,8 @@ class CarParkingEnv(gymnasium.Env):
         self.angle_cost = 0
         self.velocity_cost = 0
         
-        self.velocity_max_cost = max([abs(self.action_space.low[0]), abs(self.action_space.high[0])]) * self.episode_env_max_step
-        self.angle_max_cost = max([abs(self.action_space.low[1]), abs(self.action_space.high[1])]) * self.episode_env_max_step
+        self.velocity_max_cost = max([abs(self.action_space.low[ACTION_INDEX.ENGINE]), abs(self.action_space.high[ACTION_INDEX.ENGINE])]) * self.episode_env_max_step
+        self.angle_max_cost = max([abs(self.action_space.low[ACTION_INDEX.ANGLE]), abs(self.action_space.high[ACTION_INDEX.ANGLE])]) * self.episode_env_max_step
         
         
         self.dist_punish_weight = 0.25
@@ -183,17 +183,12 @@ class CarParkingEnv(gymnasium.Env):
 
     def _set_default_action_space(self):
 
-        engine_bounds = np.array(
-            [-1,
-             1])
-        angle_bounds = np.array(
-            [math.radians(WHEEL_ANGLE_LIMIT[0]),
-             math.radians(WHEEL_ANGLE_LIMIT[1])]
-            )
+        engine_bounds = np.array([-1,1]).reshape(2,1)
+        angle_bounds = np.array([-1,1]).reshape(2,1)
 
-        boundMatrix = np.zeros((2,OBS_INDEX.OBS_SIZE))
-        boundMatrix[:, ACTION_INDEX.ENGINE] = engine_bounds
-        boundMatrix[:, ACTION_INDEX.ANGLE] = angle_bounds
+        boundMatrix = np.zeros((2,ACTION_INDEX.ACTION_SIZE))
+        boundMatrix[:, ACTION_INDEX.ENGINE:ACTION_INDEX.ENGINE+1] = engine_bounds
+        boundMatrix[:, ACTION_INDEX.ANGLE:ACTION_INDEX.ANGLE+1] = angle_bounds
 
         self.action_space = Box(low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)
         return self.action_space
@@ -293,7 +288,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _apply_forces(self, action):
         enginePowerCtrl = action[ACTION_INDEX.ENGINE]
-        wheelsAngleCtrl = action[ACTION_INDEX.ANGLE]
+        wheelsAngleCtrl = normalize_data(action[ACTION_INDEX.ANGLE], *WHEEL_ANGLE_LIMIT_RAD, -1, 1)
 
         self.data.actuator(f"{CAR_NAME}/engine").ctrl = enginePowerCtrl
         self.data.actuator(f"{CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl
@@ -353,7 +348,7 @@ class CarParkingEnv(gymnasium.Env):
         self.angle_cost += abs(self.action[ACTION_INDEX.ANGLE])
         
         self.angle_diff = np.sum(self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])
-        DIST_SCALE = 4
+        DIST_SCALE = 2
         exp_scale = np.exp(-self.observation[OBS_INDEX.DISTANCE_BEGIN]/DIST_SCALE)
         
         self.norm_angle_diff = normalize_data(self.angle_diff,
@@ -373,11 +368,12 @@ class CarParkingEnv(gymnasium.Env):
 
     def _check_terminate_condition(self):
         terminated = False
-        if self.observation[OBS_INDEX.DISTANCE_BEGIN] <= 0.25 \
+        if self.observation[OBS_INDEX.DISTANCE_BEGIN] <= 0.5 \
                 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) <= 0.1 \
-                and self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN] <= math.radians(10)\
-                and self.observation[OBS_INDEX.ANGLE_DIFF_END] <= math.radians(10):  
+                and self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN] <= math.radians(15)\
+                and self.observation[OBS_INDEX.ANGLE_DIFF_END] <= math.radians(15):  
             terminated = True
+            self.reward += 10
         return terminated
 
     def _check_truncated_condition(self):
@@ -436,6 +432,8 @@ class CarParkingEnv(gymnasium.Env):
         targetQuat = self.data.body(f"{PARKING_NAME}/").xquat
         target_euler = quat_to_euler(targetQuat)
 
+        trailer_joint_angle = self.data.joint(f"{CAR_NAME}/{TRAILER_NAME}/").qpos
+        
         # ANGLE DIFFS
         carAngleDiff = car_euler[2] - target_euler[2]
         normalizedCarAngleDiff = normalize_angle_diff(carAngleDiff)

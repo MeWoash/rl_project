@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
 
     # ===========CONFIG LEARNING===============
-    modelConstructor = A2C
+    modelConstructor = SAC
     total_timesteps = 1_000_000
     model_kwargs = {
     "device":"cpu",

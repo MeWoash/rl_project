@@ -54,13 +54,13 @@ listener.start()
 
 def describe_obs(obs):
     d = f"""
-speed:      {obs[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}    
-dist:       {obs[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}
-adiff:      {obs[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}
-contact:    {obs[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}
-range:      {obs[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]}
-pos:        {obs[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}
-eul:        {obs[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]}"""
+speed:      {obs[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]}    
+dist:       {obs[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]}
+adiff:      {obs[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]}
+contact:    {obs[OBS_INDEX.CONTACT_BEGIN:OBS_INDEX.CONTACT_END+1]}
+range:      {obs[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_END+1]}
+pos:        {obs[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]}
+eul:        {obs[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1]}"""
 
     return d
 

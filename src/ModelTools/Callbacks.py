@@ -4,7 +4,7 @@ from cv2 import log
 from stable_baselines3.common.callbacks import BaseCallback
 from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
-from CustomEnvs.CarParking import ObsIndex
+from CustomEnvs.CarParking import EXTRA_OBS_INDEX, OBS_INDEX
 import numpy as np
 import pandas as pd
 import sys
@@ -33,10 +33,10 @@ class EpisodeStatsBuffer:
         if self.callback.dones[self.env_index] == True:
             if self.callback.infos[self.env_index].get("TimeLimit.truncated", False):
                 terminal_observation = self.callback.infos[self.env_index].get("terminal_observation")
-                self.callback.velocity[self.env_index] = terminal_observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]
-                self.callback.distance[self.env_index] = terminal_observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]
-                self.callback.angle_diff[self.env_index] = terminal_observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]
-                self.callback.pos[self.env_index] = terminal_observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]
+                self.callback.velocity[self.env_index] = terminal_observation[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]
+                self.callback.distance[self.env_index] = terminal_observation[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]
+                self.callback.angle_diff[self.env_index] = terminal_observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
+                # self.callback.pos[self.env_index] = terminal_observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]
             self.flush_all()
         else:
             if self.log_counter % self.log_interval==0:
@@ -89,8 +89,8 @@ class EpisodeStatsBuffer:
             "episode_env_step":self.callback.infos[self.env_index]['episode_env_step'],
             'dist':self.callback.distance[self.env_index, 0],
             'angle_diff':self.callback.angle_diff[self.env_index, 0],
-            'pos_X':self.callback.pos[self.env_index, 0],
-            'pos_Y':self.callback.pos[self.env_index, 1],
+            'pos_X':self.callback.global_pos[self.env_index, 0],
+            'pos_Y':self.callback.global_pos[self.env_index, 1],
             'reward':self.callback.rewards[self.env_index],
             'episode_cum_reward':self.callback.infos[self.env_index]['episode_cumulative_reward'],
             'episode_mean_reward':self.callback.infos[self.env_index]['episode_mean_reward'],
@@ -142,7 +142,6 @@ class  CSVCallback(BaseCallback):
     def _on_step(self) -> bool:
         self.infos = self.locals['infos']
         self.dones = self.locals['dones']
-            
         self.observations = self.locals['new_obs']
         self.rewards = self.locals['rewards']
         
@@ -150,14 +149,15 @@ class  CSVCallback(BaseCallback):
         if self.actions is None:
             self.actions = self.locals['actions']
         
+        self.extra_observations = np.array([info.get("extra_obs") for info in self.infos])  
+        
         # autopep8: off
-        self.velocity = self.observations[:,ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]
-        self.distance = self.observations[:,ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]
-        self.angle_diff = self.observations[:,ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]
-        # self.contact = self.observations[:,ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]
-        # self.range = self.observations[:,ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1]
-        self.pos = self.observations[:,ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]
-        # self.eul = self.observations[:,ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]
+        self.velocity = self.observations[:,OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]
+        self.distance = self.observations[:,OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]
+        self.angle_diff = self.observations[:,OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
+        self.rel_pos = self.observations[:,OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]
+        
+        self.global_pos = self.extra_observations[:,EXTRA_OBS_INDEX.GLOBAL_POS_BEGIN:EXTRA_OBS_INDEX.GLOBAL_POS_END+1]
             
         # autopep8: on
         for env_index in range(self.training_env.num_envs):

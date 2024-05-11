@@ -69,36 +69,38 @@ def euler_to_quat(roll, pitch, yaw):
     return quat.flatten()
 
 # INCLUSIVE INDEXES
-class ObsIndex(IntEnum):
+class OBS_INDEX(IntEnum):
     # 1 val
     VELOCITY_BEGIN = 0
     VELOCITY_END = 0
-
     # 1 val
     DISTANCE_BEGIN = 1
     DISTANCE_END = 1
-
     # 2 val
     ANGLE_DIFF_BEGIN = 2
     ANGLE_DIFF_END = 3
-
-    # 2 val
-    CONTACT_BEGIN = 4
-    CONTACT_END = 5
-
     # 2 val 
-    POS_BEGIN = 6
-    POS_END = 7
-
+    REL_POS_BEGIN = 4
+    REL_POS_END = 5
     # 2 val
-    YAW_BEGIN = 8
-    YAW_END = 9
+    YAW_BEGIN = 6
+    YAW_END = 7
+    # 10 val
+    RANGE_BEGIN = 8
+    RANGE_END = 17
+    # SUM
+    OBS_SIZE = 18
     
-    # 8 val
-    RANGE_BEGIN = 10
-    RANGE_END = 19
     
-    OBS_SIZE = 20
+class EXTRA_OBS_INDEX(IntEnum):
+    # 2 val
+    GLOBAL_POS_BEGIN = 0
+    GLOBAL_POS_END = 1
+    # 2 val
+    CONTACT_BEGIN = 2
+    CONTACT_END = 3
+    
+    OBS_SIZE = 4
 
 class CarParkingEnv(gymnasium.Env):
     metadata = {
@@ -191,7 +193,6 @@ class CarParkingEnv(gymnasium.Env):
         carSpeedRange = np.array([-10, 10]).reshape(2, 1)
         distRange = np.array([0, max_xy_dist]).reshape(2, 1)
         angleDiff = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
-        contactRange = np.tile(np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, 2))
         range_sensorsRange = np.tile(
             np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, N_RANGE_SENSORS))
         carPositionGlobalRange = np.array(
@@ -204,7 +205,6 @@ class CarParkingEnv(gymnasium.Env):
             [carSpeedRange,
              distRange,
              angleDiff,
-             contactRange,
              carPositionGlobalRange,
              car_eulerRange,
              range_sensorsRange])
@@ -247,15 +247,19 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("MuJoCo Step",f"{self.episode_mujoco_step:.0f} / {self.episode_mujoco_max_step:.0f}", "bottom left")
         overlay.add("episode", f"{self.episode_number}", "bottom left")
         overlay.add("time", f"{self.data.time:.2f} / {self.time_limit:.2f}", "bottom left")
+        
         overlay.add("Env stats", "values", "top left")
-        overlay.add("speed",f"{self.observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1]}", "top left")
-        overlay.add("dist",f"{self.observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1]}", "top left")
-        overlay.add("adiff",f"{self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1]}", "top left")
-        overlay.add("contact",f"{self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]}", "top left")
-        overlay.add("pos",f"{self.observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1]}", "top left")
-        overlay.add("eul",f"{self.observation[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]}", "top left")
-        overlay.add("range car",f"{self.observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_BEGIN+CAR_N_RANGE_SENSORS]}", "top left")
-        overlay.add("range trl",f"{self.observation[ObsIndex.RANGE_BEGIN+CAR_N_RANGE_SENSORS:ObsIndex.RANGE_END+1]}", "top left")
+        overlay.add("speed",f"{self.observation[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]}", "top left")
+        overlay.add("dist",f"{self.observation[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]}", "top left")
+        overlay.add("adiff",f"{self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]}", "top left")
+        overlay.add("rel pos",f"{self.observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]}", "top left")
+        overlay.add("eul",f"{self.observation[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1]}", "top left")
+        overlay.add("range car",f"{self.observation[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_BEGIN+CAR_N_RANGE_SENSORS]}", "top left")
+        overlay.add("range trl",f"{self.observation[OBS_INDEX.RANGE_BEGIN+CAR_N_RANGE_SENSORS:OBS_INDEX.RANGE_END+1]}", "top left")
+        
+        overlay.add("extra_obs",f"{self.extra_observation}", "top left")
+        
+        
         overlay.add("Model Action", "values", "top right")
         overlay.add("engine", f"{self.action[0]:.2f}", "top right")
         overlay.add("wheel", f"{self.action[1]:.2f}", "top right")
@@ -264,7 +268,7 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("reward", f"{self.reward:.2f}", "bottom right")
         overlay.add("cum_reward", f"{self.episode_cumulative_reward:.2f} ~ {self.episode_mean_reward:.2f}", "bottom right")
         
-        overlay.add("dist", f"{self.observation[ObsIndex.DISTANCE_BEGIN]:.2f} ~ {self.norm_dist:.2f}", "bottom right")
+        overlay.add("dist", f"{self.observation[OBS_INDEX.DISTANCE_BEGIN]:.2f} ~ {self.norm_dist:.2f}", "bottom right")
         overlay.add("v_sum", f"{self.velocity_cost:.2f} ~ {self.norm_velocity_cost:.2f}", "bottom right")
         overlay.add("a_sum", f"{self.angle_cost:.2f} ~ {self.norm_angle_cost:.2f}", "bottom right")
         overlay.add("a_diff", f"{self.angle_diff:.2f} ~ {self.norm_angle_diff:.2f}", "bottom right")
@@ -304,7 +308,7 @@ class CarParkingEnv(gymnasium.Env):
         self._apply_forces(action)
         self._do_simulation(self.simulation_frame_skip)
 
-        self.observation = self._get_obs()
+        self.observation, self.extra_observation = self._get_obs()
 
         self.reward = self._calculate_reward()
 
@@ -319,12 +323,15 @@ class CarParkingEnv(gymnasium.Env):
 
     def _get_info(self):
         info = {
+            "extra_obs": self.extra_observation,
+            
             "episode_mujoco_time": self.episode_mujoco_time,
             "episode_mujoco_step": self.episode_mujoco_step,
             "episode_env_step": self.episode_env_step,
             "episode_number":self.episode_number,
             "episode_cumulative_reward":self.episode_cumulative_reward,
             "episode_mean_reward": self.episode_mean_reward
+            
                      }
         return info
     
@@ -333,16 +340,16 @@ class CarParkingEnv(gymnasium.Env):
         self.velocity_cost += abs(self.action[0])
         self.angle_cost += abs(self.action[1])
         
-        self.angle_diff = np.sum(self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1])
+        self.angle_diff = np.sum(self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])
         DIST_SCALE = 4
-        exp_scale = np.exp(-self.observation[ObsIndex.DISTANCE_BEGIN]/DIST_SCALE)
+        exp_scale = np.exp(-self.observation[OBS_INDEX.DISTANCE_BEGIN]/DIST_SCALE)
         
         self.norm_angle_diff = normalize_data(self.angle_diff,
                                               0, self.angle_diff_punish_weight*exp_scale,
-                                              0, len(self.observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1])*math.pi)
+                                              0, len(self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])*math.pi)
         self.norm_angle_diff = np.clip(self.norm_angle_diff, 0, self.angle_diff_punish_weight)
         
-        self.norm_dist = normalize_data(np.clip(self.observation[ObsIndex.DISTANCE_BEGIN], 0 ,self.init_car_distance), 0, self.dist_punish_weight+self.angle_diff_punish_weight*(1-exp_scale), 0, self.init_car_distance)
+        self.norm_dist = normalize_data(np.clip(self.observation[OBS_INDEX.DISTANCE_BEGIN], 0 ,self.init_car_distance), 0, self.dist_punish_weight+self.angle_diff_punish_weight*(1-exp_scale), 0, self.init_car_distance)
         
         self.norm_velocity_cost = normalize_data(self.velocity_cost, 0, self.velocity_cost_punish_weight, 0, self.velocity_max_cost)
         self.norm_angle_cost = normalize_data(self.angle_cost, 0, self.angle_cost_punish_weight, 0, self.angle_max_cost)
@@ -354,25 +361,25 @@ class CarParkingEnv(gymnasium.Env):
 
     def _check_terminate_condition(self):
         terminated = False
-        if self.observation[ObsIndex.DISTANCE_BEGIN] <= 0.25 \
-                and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) <= 0.1 \
-                and self.observation[ObsIndex.ANGLE_DIFF_BEGIN] <= math.radians(10)\
-                and self.observation[ObsIndex.ANGLE_DIFF_END] <= math.radians(10):  
+        if self.observation[OBS_INDEX.DISTANCE_BEGIN] <= 0.25 \
+                and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) <= 0.1 \
+                and self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN] <= math.radians(10)\
+                and self.observation[OBS_INDEX.ANGLE_DIFF_END] <= math.radians(10):  
             terminated = True
         return terminated
 
     def _check_truncated_condition(self):
         truncated = False
 
-        if self.observation[ObsIndex.DISTANCE_BEGIN] < 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.3\
-                or self.observation[ObsIndex.DISTANCE_BEGIN] >= 1 and abs(self.observation[ObsIndex.VELOCITY_BEGIN]) > 0.6:
+        if self.observation[OBS_INDEX.DISTANCE_BEGIN] < 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.3\
+                or self.observation[OBS_INDEX.DISTANCE_BEGIN] >= 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.6:
             self.time_velocity_not_low = self.data.time
 
         if self.data.time - self.time_velocity_not_low >= 3:
             truncated = True
         elif self.data.time > self.time_limit:
             truncated = True
-        elif any(contact_val > 0 for contact_val in self.observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1]):
+        elif any(contact_val > 0 for contact_val in self.extra_observation[EXTRA_OBS_INDEX.CONTACT_BEGIN:EXTRA_OBS_INDEX.CONTACT_END+1]):
             truncated = True
             
         if truncated:
@@ -380,7 +387,10 @@ class CarParkingEnv(gymnasium.Env):
         return truncated
 
     def _get_obs(self):
-        car_pos = self.data.sensor(
+        observation = np.zeros(OBS_INDEX.OBS_SIZE, dtype=np.float32)
+        extra_observation = np.zeros(EXTRA_OBS_INDEX.OBS_SIZE, dtype=np.float32)
+        
+        car_global_pos = self.data.sensor(
             f'{CAR_NAME}/pos_global_sensor').data
 
         car_parking_rel_pos = self.data.sensor(
@@ -422,17 +432,18 @@ class CarParkingEnv(gymnasium.Env):
         normalizedTrailerAngleDiff = normalize_angle_diff(trailerAngleDiff)
         
         # GATHER OBS
-        observation = np.zeros(ObsIndex.OBS_SIZE, dtype=np.float32)
+        observation[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1] = carSpeed
+        observation[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1] = car_dist_to_parking
+        observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1] = normalizedCarAngleDiff, normalizedTrailerAngleDiff
+        observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1] = car_parking_rel_pos[:2]
+        observation[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1] = car_euler[2], trailer_euler[2]
+        observation[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_END+1] = range_sensors
         
-        observation[ObsIndex.VELOCITY_BEGIN:ObsIndex.VELOCITY_END+1] = carSpeed
-        observation[ObsIndex.DISTANCE_BEGIN:ObsIndex.DISTANCE_END+1] = car_dist_to_parking
-        observation[ObsIndex.ANGLE_DIFF_BEGIN:ObsIndex.ANGLE_DIFF_END+1] = normalizedCarAngleDiff, normalizedTrailerAngleDiff
-        observation[ObsIndex.CONTACT_BEGIN:ObsIndex.CONTACT_END+1] = contact_data
-        observation[ObsIndex.POS_BEGIN:ObsIndex.POS_END+1] = car_parking_rel_pos[:2]
-        observation[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1] = car_euler[2], trailer_euler[2]
-        observation[ObsIndex.RANGE_BEGIN:ObsIndex.RANGE_END+1] = range_sensors
+        # GATHER EXTRA OBS
+        extra_observation[EXTRA_OBS_INDEX.GLOBAL_POS_BEGIN:EXTRA_OBS_INDEX.GLOBAL_POS_END+1] = car_global_pos[:2]
+        extra_observation[EXTRA_OBS_INDEX.CONTACT_BEGIN:EXTRA_OBS_INDEX.CONTACT_END+1] = contact_data
         
-        return observation
+        return observation, extra_observation
 
     def random_spawn(self):
         spawn_index = np.random.randint(0, len(self.spawn_points))
@@ -484,8 +495,8 @@ class CarParkingEnv(gymnasium.Env):
         self.init_trailer_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/{TRAILER_NAME}/").qpos[:2] - self.data.site(f"{PARKING_NAME}/site_center_{TRAILER_NAME}").xpos[:2])
         self.episode_number += 1
 
-        obs = self._get_obs()
-        return obs, {}
+        obs, extra_obs = self._get_obs()
+        return obs, {"extra_obs":extra_obs}
 
 
 if __name__ == "__main__":

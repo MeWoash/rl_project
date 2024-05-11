@@ -47,7 +47,7 @@ def train_model(modelConstructor = SAC,
                 **model_kwargs
                 )
     
-    CALLBACKS = [CSVCallback(log_interval = 5)]
+    CALLBACKS = [CSVCallback(log_interval = 20)]
     
     model.learn(progress_bar=True,
                 callback=CALLBACKS,
@@ -61,10 +61,10 @@ if __name__ == "__main__":
 
 
     # ===========CONFIG LEARNING===============
-    modelConstructor = SAC
-    total_timesteps = 300_000
+    modelConstructor = A2C
+    total_timesteps = 1_000_000
     model_kwargs = {
-    "device":"cuda",
+    "device":"cpu",
     }
     make_env_kwargs = {
     "vec_env_cls": DummyVecEnv,

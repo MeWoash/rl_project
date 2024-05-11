@@ -24,6 +24,7 @@ N_RANGE_SENSORS = CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS
 
 def normalize_data(x, dst_a, dst_b, min_x=-1, max_x=1):
     normalized = dst_a + ((x - min_x)*(dst_b-dst_a))/(max_x-min_x)
+    normalized = np.clip(normalized, dst_a, dst_b)
     return normalized
 
 def normalize_angle_diff(angle_diff):

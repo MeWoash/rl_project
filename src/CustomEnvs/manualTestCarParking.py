@@ -8,7 +8,7 @@ from gymnasium.spaces import Box
 import math
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-
+from MJCFGenerator.Generator import generate_MJCF 
 from CustomEnvs.CarParking import *
 
 # autopep8: on
@@ -69,6 +69,7 @@ eul:        {obs[ObsIndex.YAW_BEGIN:ObsIndex.YAW_END+1]}"""
 
 
 if __name__ == "__main__":
+    generate_MJCF()
     env = CarParkingEnv(render_mode="human")
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
     env.reset(0)

@@ -92,6 +92,7 @@ class Trailer:
         self._trailer_wheel_spacing = TRAILER_WHEEL_SPACING
         self._trailer_wheel_mount_height = TRAILER_WHEEL_MOUNT_HEIGHT
         self._trailer_color = TRAILER_COLOR
+        self._trailer_hitbox_scale = TRAILER_HITBOX_SCALE
         
         self.wheelGenerator = Wheel("Wheel")
         
@@ -112,16 +113,35 @@ class Trailer:
             specular=0.0)
 
         self.center_site=mjcf_model.worldbody.add("site", name="site_center")
-        mjcf_model.worldbody.add("geom", type="box", size=[chassisXSize,chassisYsize,chassisZsize], mass=self._trailer_mass, material=material)
-        mjcf_model.worldbody.add("geom", type="cylinder", zaxis = [1, 0 ,0],pos = [chassisXSize+trailerHitchXsize, 0, 0], size=[0.05,trailerHitchXsize], mass=50, material=material) # HITCH
+        mjcf_model.worldbody.add("geom",
+                                 type="box",
+                                 size=[chassisXSize,chassisYsize,chassisZsize],
+                                 mass=self._trailer_mass,
+                                 material=material)
+        mjcf_model.worldbody.add("geom",
+                                 type="cylinder",
+                                 zaxis = [1, 0 ,0],
+                                 pos = [chassisXSize+trailerHitchXsize, 0, 0],
+                                 size=[0.05,trailerHitchXsize],
+                                 mass=50,
+                                 material=material) # HITCH
         
-        front_attachment_site = mjcf_model.worldbody.add("site", name="front_attachment_site", pos=[chassisXSize+self._trailerDims[3], 0, 0])
+        front_attachment_site = mjcf_model.worldbody.add("site",
+                                                         name="front_attachment_site",
+                                                         pos=[chassisXSize+self._trailerDims[3], 0, 0])
         
-        touch_site = mjcf_model.worldbody.add("site", type="box", size=[chassisXSize,chassisYsize,chassisZsize], rgba=[0, 0, 0, 0])
+        touch_site = mjcf_model.worldbody.add("site",
+                                              type="box",
+                                              size=[chassisXSize*self._trailer_hitbox_scale[0], chassisYsize*self._trailer_hitbox_scale[1], chassisZsize*self._trailer_hitbox_scale[2]],
+                                              rgba=[0, 0, 0, 0])
         
         # ADD WHEELS
-        s3=mjcf_model.worldbody.add("site", name="wheel3_attachment_site", pos=[-chassisXSize * self._trailer_wheel_axis_spacing, -chassisYsize * self._trailer_wheel_spacing, self._trailerDims[2] * self._trailer_wheel_mount_height])
-        s4=mjcf_model.worldbody.add("site", name="wheel4_attachment_site", pos=[-chassisXSize * self._trailer_wheel_axis_spacing, chassisYsize * self._trailer_wheel_spacing, self._trailerDims[2] * self._trailer_wheel_mount_height])
+        s3=mjcf_model.worldbody.add("site",
+                                    name="wheel3_attachment_site",
+                                    pos=[-chassisXSize * self._trailer_wheel_axis_spacing, -chassisYsize * self._trailer_wheel_spacing, self._trailerDims[2] * self._trailer_wheel_mount_height])
+        s4=mjcf_model.worldbody.add("site",
+                                    name="wheel4_attachment_site",
+                                    pos=[-chassisXSize * self._trailer_wheel_axis_spacing, chassisYsize * self._trailer_wheel_spacing, self._trailerDims[2] * self._trailer_wheel_mount_height])
 
         w3MJCF, w3rolling, _, = self.wheelGenerator.construct_tree("wheel3", False)
         w4MJCF, w4rolling, _, = self.wheelGenerator.construct_tree("wheel4", False)
@@ -173,6 +193,7 @@ class Car:
         self._car_wheel_mount_height = CAR_WHEEL_MOUNT_HEIGHT
         self._car_spawn_height = CAR_SPAWN_HEIGHT
         self._car_color = CAR_COLOR
+        self._car_hitbox_scale = CAR_HITBOX_SCALE
 
     def construct_tree(self):
         mjcf_model = mjcf.RootElement(model=self._car_name)
@@ -194,7 +215,10 @@ class Car:
 
         self.center_site=mjcf_model.worldbody.add("site", name="site_center")
         mjcf_model.worldbody.add("geom", type="box", size=[chassisXSize,chassisYsize,chassisZsize], mass=self._car_mass, material=material)
-        touch_site = mjcf_model.worldbody.add("site", type="box", size=[chassisXSize,chassisYsize,chassisZsize], rgba=[0, 0, 0, 0])
+        touch_site = mjcf_model.worldbody.add("site",
+                                              type="box",
+                                              size=[chassisXSize*self._car_hitbox_scale[0], chassisYsize*self._car_hitbox_scale[1],chassisZsize*self._car_hitbox_scale[2]],
+                                              rgba=[0, 0, 0, 0])
         
         rear_attachment_site = mjcf_model.worldbody.add("site", name="rear_attachment_site", pos=[-chassisXSize, 0, 0])
         

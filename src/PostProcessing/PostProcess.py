@@ -75,7 +75,11 @@ def generate_media(log_dir: str):
 def generate_media_timed(log_dir):
     generate_media(log_dir)
 
-if __name__ == "__main__":
-    # log_dir = str(Path(OUT_RL_DIR,'SAC','SAC_1'))
-    last_modified = str(Path(get_last_modified_file(OUT_RL_DIR,'.csv'),'..').resolve())
+
+def main():
+    # log_dir = str(Path(OUT_LEARNING_DIR,'SAC','SAC_1'))
+    last_modified = str(Path(get_last_modified_file(OUT_LEARNING_DIR,'.csv'),'..').resolve())
     generate_media_timed(last_modified)
+
+if __name__ == "__main__":
+    main()

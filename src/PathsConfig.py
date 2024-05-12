@@ -4,8 +4,9 @@ from pathlib import Path
 
 ROOT_WS_DIR = Path(__file__, '..', '..').resolve()
 
-ASSET_DIR = str(ROOT_WS_DIR.joinpath("assets"))
-OUT_RL_DIR = str(ROOT_WS_DIR.joinpath("out", "learning"))
-MEDIA_DIR = str(ROOT_WS_DIR.joinpath("out","media"))
-MJCF_OUT_DIR = str(ROOT_WS_DIR.joinpath("out","mjcf"))
+SRC_DIR = str(ROOT_WS_DIR.joinpath('src').resolve())
+ASSET_DIR = str(ROOT_WS_DIR.joinpath("assets").resolve())
+OUT_LEARNING_DIR = str(ROOT_WS_DIR.joinpath("out", "learning").resolve())
+MEDIA_DIR = str(ROOT_WS_DIR.joinpath("out","media").resolve())
+MJCF_OUT_DIR = str(ROOT_WS_DIR.joinpath("out","mjcf").resolve())
 MJCF_MODEL_NAME = "out.xml"

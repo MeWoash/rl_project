@@ -65,8 +65,7 @@ eul:        {obs[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1]}"""
 
     return d
 
-
-if __name__ == "__main__":
+def main():
     generate_MJCF()
     env = CarParkingEnv(render_mode="human")
     np.set_printoptions(formatter={'float': '{: 0.2f}'.format})
@@ -77,4 +76,7 @@ if __name__ == "__main__":
         # print(describe_obs(observation))
         if terminated or truncated:
             env.reset()
+
+if __name__ == "__main__":
+    main()
 

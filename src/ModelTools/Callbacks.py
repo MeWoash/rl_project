@@ -102,16 +102,16 @@ class EpisodeStatsBuffer:
                                                 pd.DataFrame.from_dict([row])])
 
 class  CSVCallback(BaseCallback):
-    def __init__(self, verbose=0, log_interval=20, **kwargs):
+    def __init__(self, out_logdir, verbose=0, log_interval=20, **kwargs):
         super().__init__(verbose)
         self.log_interval = log_interval
         self.iteration = 0
+        self.out_logdir = out_logdir
         
     def _init_callback(self):
-        self.logdir=self.logger.get_dir()
         
-        self.df_episodes_summary_path = self.ep_logdir = Path(self.logdir).joinpath("episodes_summary.csv")
-        self.df_episodes_all_path = self.ep_logdir = Path(self.logdir).joinpath("episodes_all.csv")
+        self.df_episodes_summary_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_summary.csv")
+        self.df_episodes_all_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_all.csv")
         
         self.df_episodes_summary:pd.DataFrame = pd.DataFrame()
         self.df_episodes_all:pd.DataFrame = pd.DataFrame()
@@ -134,7 +134,7 @@ class  CSVCallback(BaseCallback):
         if new_reward > self.best_reward:
             self.best_reward= new_reward
             print(f"New best mean reward: {self.best_reward:0.3f} at step: {self.num_timesteps}")
-            self.model.save(Path(self.logdir,'models', f'best_model_rew-{int(self.best_reward*1000)}_step-{self.num_timesteps}'))
+            self.model.save(Path(self.out_logdir,'models', f'best_model_rew-{int(self.best_reward*1000)}_step-{self.num_timesteps}'))
                 
     def _on_training_start(self) -> None:
         return super()._on_training_start()    

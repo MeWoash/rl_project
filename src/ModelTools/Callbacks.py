@@ -166,6 +166,6 @@ class  CSVCallback(BaseCallback):
 
         return True
     
-    # def _on_training_end(self):
-    #     self.df_episodes_summary.to_csv(self.df_episodes_summary_path, index=False)
-    #     self.df_episodes_all.to_csv(self.df_episodes_all_path, index=False)
+    def _on_training_end(self):
+        name =str(Path(self.out_logdir, 'models',f'last_model_rew-X_step-{self.num_timesteps}'))
+        self.model.save(name)

@@ -30,7 +30,7 @@ class LearningContainer:
         
     def train_model(self):
         
-        self.out_logdir = Path(OUT_LEARNING_DIR, self.train_preset['modelConstructor'].__name__, f"{self.train_preset['name']}_{datetime.now().strftime(rf'%d-%m-%y-%H-%M-%S')}")
+        self.out_logdir = Path(OUT_LEARNING_DIR, f"{self.train_preset['name']}_{self.train_preset['modelConstructor'].__name__}_{datetime.now().strftime(rf'%d-%m-%y-%H-%M-%S')}").resolve()
         self.out_logdir.mkdir(parents=True, exist_ok=False)
         self.out_logdir.joinpath('models').mkdir(parents=True, exist_ok=True)
         

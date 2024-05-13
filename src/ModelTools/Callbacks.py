@@ -51,14 +51,8 @@ class EpisodeStatsBuffer:
             "learning_step_min": self.df_episode_buffer.iloc[0,:]['learning_step'],
             "learning_step_max": self.df_episode_buffer.iloc[-1,:]['learning_step'],
             
-            "episode_cum_reward":self.df_episode_buffer.iloc[-1,:]['episode_cum_reward'],
             "episode_mean_reward":self.df_episode_buffer.iloc[-1,:]['episode_mean_reward'],
             "episode_mujoco_time":self.df_episode_buffer.iloc[-1,:]['episode_mujoco_time'],
-            
-            "dist_min":self.df_episode_buffer['dist'].min(),
-            "dist_mean":self.df_episode_buffer['dist'].mean(),
-            "pos_X_mean":self.df_episode_buffer['pos_X'].mean(),
-            "pos_Y_mean":self.df_episode_buffer['pos_Y'].mean()
             }
         self.callback.df_episodes_summary = pd.concat([self.callback.df_episodes_summary,
                                                        pd.DataFrame.from_dict([summary_row])])
@@ -67,7 +61,6 @@ class EpisodeStatsBuffer:
                                                  index=False)
         
         self.callback._log_episode_end_stats(summary_row)
-        self.callback._save_best_model(summary_row['episode_mean_reward'])
         
     def _flush_buffer(self):
         
@@ -85,14 +78,13 @@ class EpisodeStatsBuffer:
             "episode":self.callback.infos[self.env_index]['episode_number'],
             "env":self.env_index,
             "learning_step": self.callback.model.num_timesteps,
-            "episode_mujoco_time": round(self.callback.infos[self.env_index]['episode_mujoco_time']*1000),
+            "episode_mujoco_time": self.callback.infos[self.env_index]['episode_mujoco_time'],
             "episode_env_step":self.callback.infos[self.env_index]['episode_env_step'],
             'dist':self.callback.distance[self.env_index, 0],
             'angle_diff':self.callback.angle_diff[self.env_index, 0],
             'pos_X':self.callback.global_pos[self.env_index, 0],
             'pos_Y':self.callback.global_pos[self.env_index, 1],
             'reward':self.callback.rewards[self.env_index],
-            'episode_cum_reward':self.callback.infos[self.env_index]['episode_cumulative_reward'],
             'episode_mean_reward':self.callback.infos[self.env_index]['episode_mean_reward'],
             'velocity':self.callback.velocity[self.env_index, 0],
             'action_engine': self.callback.actions[self.env_index, 0],
@@ -102,11 +94,13 @@ class EpisodeStatsBuffer:
                                                 pd.DataFrame.from_dict([row])])
 
 class  CSVCallback(BaseCallback):
-    def __init__(self, out_logdir, verbose=0, log_interval=20, **kwargs):
+    def __init__(self, out_logdir, verbose=0, log_interval=20, max_saved_models = 5, **kwargs):
         super().__init__(verbose)
         self.log_interval = log_interval
         self.iteration = 0
         self.out_logdir = out_logdir
+        self.max_saved_models = max_saved_models
+        self.saved_models  = []
         
     def _init_callback(self):
         
@@ -126,15 +120,30 @@ class  CSVCallback(BaseCallback):
         self.best_reward = 0
     
     def _log_episode_end_stats(self, row):
-        self.logger.record('observation/episode_mean_reward',row['episode_mean_reward'])
-        self.logger.record('observation/dist_mean', row['dist_mean'])
+        all_epizodes_mean_reward = self.df_episodes_summary['episode_mean_reward'].mean()
+        
+        self.logger.record('observation/episode_reward',row['episode_mean_reward'])
+        self.logger.record('observation/episodes_mean_reward',all_epizodes_mean_reward)
         self.logger.record('observation/time_max', row['episode_mujoco_time'])
+        
     
-    def _save_best_model(self, new_reward):
-        if new_reward > self.best_reward:
-            self.best_reward= new_reward
-            print(f"New best mean reward: {self.best_reward:0.3f} at step: {self.num_timesteps}")
-            self.model.save(Path(self.out_logdir,'models', f'best_model_rew-{int(self.best_reward*1000)}_step-{self.num_timesteps}'))
+        if all_epizodes_mean_reward > self.best_reward:
+            self.best_reward= all_epizodes_mean_reward
+            self._save_model(all_epizodes_mean_reward)
+            
+    def _save_model(self, reward=None):
+        if reward is None:
+            reward = self.df_episodes_summary['episode_mean_reward'].mean()
+            
+        model_filename = str(Path(self.out_logdir, 'models', f'model-rew_{str(round(reward,3)).replace(".","_")}-step_{self.num_timesteps}-ep_{self.df_episodes_summary.shape[0]}'))
+        self.saved_models.append(model_filename)
+        
+        print(f"Saving model at mean reward: {reward:0.3f}, step: {self.num_timesteps}")
+        self.model.save(model_filename)
+        
+        if len(self.saved_models) > self.max_saved_models:
+            oldest_model = self.saved_models.pop(0)
+            os.remove(oldest_model+".zip")
                 
     def _on_training_start(self) -> None:
         return super()._on_training_start()    
@@ -167,5 +176,4 @@ class  CSVCallback(BaseCallback):
         return True
     
     def _on_training_end(self):
-        name =str(Path(self.out_logdir, 'models',f'last_model_rew-X_step-{self.num_timesteps}'))
-        self.model.save(name)
+        self._save_model()

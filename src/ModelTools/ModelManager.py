@@ -60,8 +60,7 @@ class LearningContainer:
         except KeyboardInterrupt:
             print("Training interrupted. Saving last model...")
             name = self.out_logdir.joinpath('models','last_model')
-            model.save(name)
-            print(f"Saved {name}")
+            callbacks[0]._save_model()
         training_env.close()
         
         

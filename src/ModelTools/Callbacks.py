@@ -94,13 +94,14 @@ class EpisodeStatsBuffer:
                                                 pd.DataFrame.from_dict([row])])
 
 class  CSVCallback(BaseCallback):
-    def __init__(self, out_logdir, verbose=0, log_interval=20, max_saved_models = 5, **kwargs):
+    def __init__(self, out_logdir, verbose=0, log_interval=20, max_saved_models = 5, window_size = 100, **kwargs):
         super().__init__(verbose)
         self.log_interval = log_interval
         self.iteration = 0
         self.out_logdir = out_logdir
         self.max_saved_models = max_saved_models
         self.saved_models  = []
+        self.window_size = window_size
         
     def _init_callback(self):
         
@@ -120,16 +121,24 @@ class  CSVCallback(BaseCallback):
         self.best_reward = 0
     
     def _log_episode_end_stats(self, row):
-        all_epizodes_mean_reward = self.df_episodes_summary['episode_mean_reward'].mean()
         
-        self.logger.record('observation/episode_reward',row['episode_mean_reward'])
-        self.logger.record('observation/episodes_mean_reward',all_epizodes_mean_reward)
-        self.logger.record('observation/time_max', row['episode_mujoco_time'])
+        if len(self.df_episodes_summary) >= self.window_size:
+            window = self.df_episodes_summary.iloc[-self.window_size:]
+        else:
+            window = self.df_episodes_summary
+            
+        mean_reward = window['episode_mean_reward'].mean()
+        
+        
+        self.logger.record('episodes_rolling_mean/mujoco_time_max', window['episode_mujoco_time'].mean())
+        self.logger.record('episodes_rolling_mean/reward', mean_reward)
+        
+        self.logger.record('episodes/episode_reward',row['episode_mean_reward'])
         
     
-        if all_epizodes_mean_reward > self.best_reward:
-            self.best_reward= all_epizodes_mean_reward
-            self._save_model(all_epizodes_mean_reward)
+        if mean_reward > self.best_reward:
+            self.best_reward= mean_reward
+            self._save_model(mean_reward)
             
     def _save_model(self, reward=None):
         if reward is None:
@@ -138,7 +147,7 @@ class  CSVCallback(BaseCallback):
         model_filename = str(Path(self.out_logdir, 'models', f'model-rew_{str(round(reward,3)).replace(".","_")}-step_{self.num_timesteps}-ep_{self.df_episodes_summary.shape[0]}'))
         self.saved_models.append(model_filename)
         
-        print(f"Saving model at mean reward: {reward:0.3f}, step: {self.num_timesteps}")
+        print(f"Saving model at mean reward: {reward:0.3f}, step: {self.num_timesteps}, ep: {self.df_episodes_summary.shape[0]}")
         self.model.save(model_filename)
         
         if len(self.saved_models) > self.max_saved_models:

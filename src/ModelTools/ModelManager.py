@@ -37,9 +37,9 @@ class LearningContainer:
         print(f"MODEL LOGDIR = {self.out_logdir}")
         
         # SAVE INFO ABOUT TRAINING
-        with open(str(self.out_logdir.joinpath('train_preset.pkl')), 'wb') as file:
+        with open(str(self.out_logdir.joinpath('train_preset.pkl').resolve()), 'wb') as file:
             pickle.dump(self.train_preset, file)
-        with open(str(self.out_logdir.joinpath('train_preset.txt')), 'w') as file:
+        with open(str(self.out_logdir.joinpath('train_preset.txt').resolve()), 'w') as file:
             file.write(str(self.train_preset))
          
         training_env =  make_vec_env("CustomEnvs/CarParkingEnv-v0", **self.train_preset['make_env_kwargs'])
@@ -100,7 +100,7 @@ def run_model(path):
     model_path = path
     if not str(path).endswith(".zip"):
         model_path = get_last_modified_file(model_path)
-    train_preset_path = Path(model_path,"..","..","train_preset.pkl")
+    train_preset_path = Path(model_path,"..","..","train_preset.pkl").resolve()
     
     with open(train_preset_path, 'rb') as file:
         train_preset = pickle.load(file)

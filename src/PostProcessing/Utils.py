@@ -19,8 +19,6 @@ from MJCFGenerator.Config import *
 
 
 # autopep8: on
-EPISODES_FILE_NAME = 'episodes_all.csv'
-SUMMARY_FILE_NAME = 'episodes_summary.csv'
 MAP_BOUNDARY = [[-MAP_LENGTH
 [0]/2, MAP_LENGTH
 [0]/2],[-MAP_LENGTH
@@ -58,17 +56,6 @@ def timeit(func):
         print(f"Function {func.__name__} finished in: {end_time - start_time:.4f} seconds.")
         return result
     return wrapper
-
-def load_dfs(log_dir:str):
-    log_dir:Path = Path(log_dir).resolve()
-    
-    summary_path = log_dir.joinpath(SUMMARY_FILE_NAME)
-    episodes_path = log_dir.joinpath(EPISODES_FILE_NAME)
-    
-    df_summary = pd.read_csv(summary_path, index_col=['episode','env'])
-    df_all = pd.read_csv(episodes_path, index_col=['episode','env'])
-    
-    return df_summary, df_all
 
 def generator_episodes(df, episode_divide_factor=100):
     max_ep = df.index.max()[0]

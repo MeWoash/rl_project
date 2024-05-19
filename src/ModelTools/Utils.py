@@ -1,8 +1,7 @@
-import datetime
+import os
 import sys
-import json
 from pathlib import Path
-import uuid
+import pandas as pd
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from PathsConfig import *
@@ -42,3 +41,56 @@ def get_all_files(directory_path, suffix=".zip"):
                     cnt+=1
                     
     return files_dict
+
+
+def generate_episodes_summary(df_episodes_all: pd.DataFrame):
+    df_episodes_summary = df_episodes_all.groupby(['episode', 'env']).agg(
+        learning_step_min=('learning_step', 'min'),
+        learning_step_max=('learning_step', 'max'),
+        episode_mean_reward=('episode_mean_reward', 'max'),
+        episode_mujoco_time=('episode_mujoco_time', 'max'),
+        timestamp=('timestamp', 'max')
+    ).reset_index()
+    df_episodes_summary.sort_values(by="learning_step_max", inplace=True)
+    return df_episodes_summary
+    
+    
+def generate_training_stats(df_episodes_summary: pd.DataFrame, window = 100):
+    df_rolling_mean_ = df_episodes_summary.rolling(window=window, min_periods=1).mean()
+    data = {
+        "learning_step":df_episodes_summary['learning_step_max'],
+        "timestamp": df_episodes_summary['timestamp'],
+        "episode_mean_reward": df_episodes_summary['episode_mean_reward']
+    }
+    df_training_stats = pd.DataFrame(data)
+    return df_training_stats
+    
+def load_generate_csvs(path_dir:str):
+    
+    df_episodes_all_path = Path(path_dir, EPISODES_ALL).resolve()
+    df_episodes_summary_path = Path(path_dir, EPISODE_STATS).resolve()
+    df_training_stats_path = Path(path_dir, TRAINING_STATS).resolve()
+    
+    
+    if not df_episodes_all_path.exists():
+        print(f"Did not find {df_episodes_all_path}")
+        return None
+    else:
+        df_episodes_all = pd.read_csv(str(df_episodes_all_path), index_col=["episode", "env"])
+    
+    if not df_episodes_summary_path.exists():
+        df_episodes_summary = generate_episodes_summary(df_episodes_all)
+        df_episodes_summary.to_csv(str(df_episodes_summary_path), index=False)
+        print(f"Generated {df_episodes_summary_path}")
+    else:
+        df_episodes_summary = pd.read_csv(str(df_episodes_summary_path))
+        
+        
+    if not df_training_stats_path.exists():
+        df_training_stats = generate_training_stats(df_episodes_summary)
+        df_training_stats.to_csv(str(df_training_stats_path), index=False)
+        print(f"Generated {df_training_stats_path}")
+    else:
+        df_training_stats = pd.read_csv(str(df_training_stats_path))
+    
+    return df_episodes_all, df_episodes_summary, df_training_stats

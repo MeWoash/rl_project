@@ -59,9 +59,7 @@ class LearningContainer:
                         callback=callbacks,
                         total_timesteps = self.train_preset['total_timesteps'])
         except KeyboardInterrupt:
-            print("Training interrupted. Saving last model...")
-            name = self.out_logdir.joinpath('models','last_model')
-            callbacks[0]._save_model()
+            print("Training interrupted")
         training_env.close()
         
         

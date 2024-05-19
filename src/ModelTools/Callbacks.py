@@ -12,6 +12,7 @@ import sys
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from PostProcessing.PostProcess import *
+from ModelTools.Utils import *
 
 # autopep8: on
 
@@ -34,7 +35,6 @@ class EpisodeStatsBuffer:
                 self.callback.angle_diff[self.env_index] = terminal_observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
                 # self.callback.pos[self.env_index] = terminal_observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]
             self._add_stats_to_buffer()
-            self._flush_summary()
             self._flush_buffer()
             self.log_counter = 0
         else:
@@ -42,39 +42,21 @@ class EpisodeStatsBuffer:
                 self._add_stats_to_buffer()
             self.log_counter += 1
     
-    def _flush_summary(self):
-        summary_row = {
-            "episode":self.callback.infos[self.env_index]['episode_number'],
-            "env":self.env_index,
-            
-            "learning_step_min": self.df_episode_buffer.iloc[0,:]['learning_step'],
-            "learning_step_max": self.df_episode_buffer.iloc[-1,:]['learning_step'],
-            
-            "episode_mean_reward":self.df_episode_buffer.iloc[-1,:]['episode_mean_reward'],
-            "episode_mujoco_time":self.df_episode_buffer.iloc[-1,:]['episode_mujoco_time'],
-            }
-        self.callback.df_episodes_summary = pd.concat([self.callback.df_episodes_summary,
-                                                       pd.DataFrame.from_dict([summary_row])])
-        
-        self.callback.df_episodes_summary.to_csv(self.callback.df_episodes_summary_path,
-                                                 index=False)
-        
-        
+
     def _flush_buffer(self):
         
         self.callback.df_episodes_all = pd.concat([self.callback.df_episodes_all,
                                                    self.df_episode_buffer])
-        
-        self.df_episode_buffer.drop(self.df_episode_buffer.index,
-                                                    inplace=True)
-        
         self.callback.df_episodes_all.to_csv(self.callback.df_episodes_all_path,
                                              index=False)
+        self.df_episode_buffer.drop(self.df_episode_buffer.index,
+                                                    inplace=True)
  
     def _add_stats_to_buffer(self):
         row: dict[str] = {
             "episode":self.callback.infos[self.env_index]['episode_number'],
             "env":self.env_index,
+            "timestamp": time.time(),
             "learning_step": self.callback.model.num_timesteps,
             "episode_mujoco_time": self.callback.infos[self.env_index]['episode_mujoco_time'],
             "episode_env_step":self.callback.infos[self.env_index]['episode_env_step'],
@@ -103,14 +85,9 @@ class  CSVCallback(BaseCallback):
         
     def _init_callback(self):
         
-        self.df_episodes_summary_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_summary.csv").resolve()
-        self.df_episodes_all_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_all.csv").resolve()
-        self.df_training_stats_path = self.ep_logdir = Path(self.out_logdir).joinpath("training_stats.csv").resolve()
+        self.df_episodes_all_path = self.ep_logdir = Path(self.out_logdir).joinpath(EPISODES_ALL).resolve()
         
-        self.df_episodes_summary:pd.DataFrame = pd.DataFrame()
         self.df_episodes_all:pd.DataFrame = pd.DataFrame()
-        self.df_training_stats:pd.DataFrame = pd.DataFrame()
-        
         self.episode_buffers: list[EpisodeStatsBuffer] = []
         
         for i in range(self.training_env.num_envs):
@@ -118,38 +95,12 @@ class  CSVCallback(BaseCallback):
             self.episode_buffers.append(buffer)
 
         self.best_reward = 0
-    
-    def _log_training_stats(self):
-        
-        if len(self.df_episodes_summary) >= self.window_size:
-            window = self.df_episodes_summary.iloc[-self.window_size:]
-        else:
-            window = self.df_episodes_summary
             
-        row: dict[str] = {
-            "learning_step": self.num_timesteps,
-            "timestamp": time.time(),
-            "mean_time_end": window['episode_mujoco_time'].mean(),
-            "mean_reward": window['episode_mean_reward'].mean()
-            }
-        
-        self.df_training_stats = pd.concat([self.df_training_stats,
-                                                pd.DataFrame.from_dict([row])])
-        self.df_training_stats.to_csv(self.df_training_stats_path,
-                                             index=False)
-        
-        # TENSORBOARD
-        self.logger.record('episodes_rolling_mean/time_end', row['mean_time_end'])
-        self.logger.record('episodes_rolling_mean/reward', row['mean_reward'])
-            
-    def _save_model(self, reward=None):
-        if reward is None:
-            reward = self.df_episodes_summary['episode_mean_reward'].mean()
-            
-        model_filename = str(Path(self.out_logdir, 'models', f'model-rew_{str(round(reward,3)).replace(".","_")}-step_{self.num_timesteps}-ep_{self.df_episodes_summary.shape[0]}'))
+    def _save_model(self, reward):    
+        model_filename = str(Path(self.out_logdir, 'models', f'model-rew_{str(round(reward,3)).replace(".","_")}-step_{self.num_timesteps}'))
         self.saved_models.append(model_filename)
         
-        print(f"Saving model at mean reward: {reward:0.3f}, step: {self.num_timesteps}, ep: {self.df_episodes_summary.shape[0]}")
+        print(f"Saving model at mean reward: {reward:0.3f}, step: {self.num_timesteps}")
         self.model.save(model_filename)
         
         if len(self.saved_models) > self.max_saved_models:
@@ -181,19 +132,15 @@ class  CSVCallback(BaseCallback):
         for env_index in range(self.training_env.num_envs):
             self.episode_buffers[env_index].update_state()
         
-        
-        # UPDATE TRAINING LOGS IF TOTAL EP NUMBER CHANGED
-        if self.last_n_episodes != len(self.df_episodes_all):
-            self.last_n_episodes = len(self.df_episodes_all)
-            self._log_training_stats()
-            
+        if any(self.dones):
             # SAVE BEST MODEL
-            last_reward = self.df_training_stats.iloc[-1,:]['mean_reward']
+            last_reward = np.mean(self.df_episodes_all.groupby(['episode', 'env'])['episode_mean_reward'].last().to_numpy()[-self.window_size:])
             if  last_reward > self.best_reward:
                 self.best_reward= last_reward
                 self._save_model(self.best_reward)
-
+            
+            
         return True
     
     def _on_training_end(self):
-        self._save_model()
+        load_generate_csvs(self.out_logdir)

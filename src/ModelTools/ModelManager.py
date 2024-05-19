@@ -42,7 +42,7 @@ class LearningContainer:
         with open(str(self.out_logdir.joinpath('train_preset.txt').resolve()), 'w') as file:
             file.write(str(self.train_preset))
          
-        training_env =  make_vec_env("CustomEnvs/CarParkingEnv-v0", **self.train_preset['make_env_kwargs'])
+        training_env =  make_vec_env("CustomEnvs/CarParkingEnv-v0", seed = self.train_preset['seed'], **self.train_preset['make_env_kwargs'])
         if self.train_preset['normalize']:
             env = VecNormalize(env, norm_obs=True, norm_reward=True)
         
@@ -50,6 +50,7 @@ class LearningContainer:
                     verbose = 0,
                     tensorboard_log=str(self.out_logdir),
                     policy="MlpPolicy",
+                    seed = self.train_preset['seed'],
                     **self.train_preset['model_kwargs']
                     )
         callbacks = [CSVCallback(out_logdir = str(self.out_logdir), log_interval = 20)]
@@ -78,7 +79,8 @@ class LearningContainer:
                                 n_envs=1,
                                 vec_env_cls=DummyVecEnv,
                                 env_kwargs={"render_mode": "human"},
-                                )
+                                seed = self.train_preset['seed'])
+        
         if self.train_preset["normalize"]:
             env = VecNormalize(env, norm_obs=True, norm_reward=True)
             

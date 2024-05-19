@@ -1,5 +1,6 @@
 # autopep8: off
 
+from datetime import datetime
 from cv2 import log
 from stable_baselines3.common.callbacks import BaseCallback
 from torch.utils.tensorboard import SummaryWriter
@@ -21,12 +22,7 @@ class EpisodeStatsBuffer:
         self.env_index = env_index
         self.log_counter = 0
         self.log_interval = log_interval
-        
-    def flush_all(self):
-        self._add_stats_to_buffer()
-        self._flush_summary()
-        self._flush_buffer()
-        self.log_counter = 0
+    
         
     def update_state(self):
         
@@ -37,7 +33,10 @@ class EpisodeStatsBuffer:
                 self.callback.distance[self.env_index] = terminal_observation[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]
                 self.callback.angle_diff[self.env_index] = terminal_observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
                 # self.callback.pos[self.env_index] = terminal_observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]
-            self.flush_all()
+            self._add_stats_to_buffer()
+            self._flush_summary()
+            self._flush_buffer()
+            self.log_counter = 0
         else:
             if self.log_counter % self.log_interval==0:
                 self._add_stats_to_buffer()
@@ -60,7 +59,6 @@ class EpisodeStatsBuffer:
         self.callback.df_episodes_summary.to_csv(self.callback.df_episodes_summary_path,
                                                  index=False)
         
-        self.callback._log_episode_end_stats(summary_row)
         
     def _flush_buffer(self):
         
@@ -97,7 +95,7 @@ class  CSVCallback(BaseCallback):
     def __init__(self, out_logdir, verbose=0, log_interval=20, max_saved_models = 5, window_size = 100, **kwargs):
         super().__init__(verbose)
         self.log_interval = log_interval
-        self.iteration = 0
+        self.last_n_episodes = 0
         self.out_logdir = out_logdir
         self.max_saved_models = max_saved_models
         self.saved_models  = []
@@ -105,8 +103,9 @@ class  CSVCallback(BaseCallback):
         
     def _init_callback(self):
         
-        self.df_episodes_summary_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_summary.csv")
-        self.df_episodes_all_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_all.csv")
+        self.df_episodes_summary_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_summary.csv").resolve()
+        self.df_episodes_all_path = self.ep_logdir = Path(self.out_logdir).joinpath("episodes_all.csv").resolve()
+        self.df_training_stats_path = self.ep_logdir = Path(self.out_logdir).joinpath("training_stats.csv").resolve()
         
         self.df_episodes_summary:pd.DataFrame = pd.DataFrame()
         self.df_episodes_all:pd.DataFrame = pd.DataFrame()
@@ -120,25 +119,28 @@ class  CSVCallback(BaseCallback):
 
         self.best_reward = 0
     
-    def _log_episode_end_stats(self, row):
+    def _log_training_stats(self):
         
         if len(self.df_episodes_summary) >= self.window_size:
             window = self.df_episodes_summary.iloc[-self.window_size:]
         else:
             window = self.df_episodes_summary
             
-        mean_reward = window['episode_mean_reward'].mean()
+        row: dict[str] = {
+            "learning_step": self.num_timesteps,
+            "timestamp": time.time(),
+            "mean_time_end": window['episode_mujoco_time'].mean(),
+            "mean_reward": window['episode_mean_reward'].mean()
+            }
         
+        self.df_training_stats = pd.concat([self.df_training_stats,
+                                                pd.DataFrame.from_dict([row])])
+        self.df_training_stats.to_csv(self.df_training_stats_path,
+                                             index=False)
         
-        self.logger.record('episodes_rolling_mean/mujoco_time_max', window['episode_mujoco_time'].mean())
-        self.logger.record('episodes_rolling_mean/reward', mean_reward)
-        
-        self.logger.record('episodes/episode_reward',row['episode_mean_reward'])
-        
-    
-        if mean_reward > self.best_reward:
-            self.best_reward= mean_reward
-            self._save_model(mean_reward)
+        # TENSORBOARD
+        self.logger.record('episodes_rolling_mean/time_end', row['mean_time_end'])
+        self.logger.record('episodes_rolling_mean/reward', row['mean_reward'])
             
     def _save_model(self, reward=None):
         if reward is None:
@@ -169,7 +171,6 @@ class  CSVCallback(BaseCallback):
         
         self.extra_observations = np.array([info.get("extra_obs") for info in self.infos])  
         
-        # autopep8: off
         self.velocity = self.observations[:,OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]
         self.distance = self.observations[:,OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]
         self.angle_diff = self.observations[:,OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
@@ -177,10 +178,20 @@ class  CSVCallback(BaseCallback):
         
         self.global_pos = self.extra_observations[:,EXTRA_OBS_INDEX.GLOBAL_POS_BEGIN:EXTRA_OBS_INDEX.GLOBAL_POS_END+1]
             
-        # autopep8: on
         for env_index in range(self.training_env.num_envs):
             self.episode_buffers[env_index].update_state()
-                
+        
+        
+        # UPDATE TRAINING LOGS IF TOTAL EP NUMBER CHANGED
+        if self.last_n_episodes != len(self.df_episodes_all):
+            self.last_n_episodes = len(self.df_episodes_all)
+            self._log_training_stats()
+            
+            # SAVE BEST MODEL
+            last_reward = self.df_training_stats.iloc[-1,:]['mean_reward']
+            if  last_reward > self.best_reward:
+                self.best_reward= last_reward
+                self._save_model(self.best_reward)
 
         return True
     

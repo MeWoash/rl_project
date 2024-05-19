@@ -128,11 +128,15 @@ class CarParkingEnv(gymnasium.Env):
                 time_limit = 30,
                 enable_random_spawn = True,
                 enable_spawn_noise = True,
+                spawn_dist_noise = 0.5,
+                spawn_angle_degrees_noise = 10,
                 **kwargs):
 
         
         self.enable_random_spawn= enable_random_spawn
         self.enable_spawn_noise=enable_spawn_noise
+        self.spawn_dist_noise = spawn_dist_noise
+        self.spawn_angle_degrees_noise = np.radians(spawn_angle_degrees_noise)
         
         self.time_limit = time_limit
         self.simulation_frame_skip = simulation_frame_skip
@@ -460,20 +464,17 @@ class CarParkingEnv(gymnasium.Env):
         self.data.joint(f"{CAR_NAME}/").qpos = self.spawn_points[spawn_index]
     
     def add_spawn_noise(self):
-        # 3 sigmas rule
-        angle_diff = np.radians(10)
-        pos_diff = 1
-        
+     
         qpos = self.data.joint(f"{CAR_NAME}/").qpos
         pos = qpos[:3]
         quat = qpos[3:]
         
         eul = quat_to_euler(quat)
-        eul[2] = eul[2] + np.random.normal(0, angle_diff/3, size=1)
+        eul[2] = eul[2] + np.random.normal(0, self.spawn_angle_degrees_noise/3, size=1)
         quat = euler_to_quat(*eul)
         
         
-        pos[0:2] = pos[0:2] + np.random.normal(0, pos_diff/3, size=2)
+        pos[0:2] = pos[0:2] + np.random.normal(0, self.spawn_dist_noise/3, size=2)
         
         maplength = MAP_LENGTH
         carSizeOffset = max(CAR_DIMS)

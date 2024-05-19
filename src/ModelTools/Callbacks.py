@@ -12,7 +12,7 @@ import sys
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from PostProcessing.PostProcess import *
-from ModelTools.Utils import *
+from ModelTools.Utils import load_generate_csvs
 
 # autopep8: on
 

@@ -53,12 +53,25 @@ def generate_episodes_summary(df_episodes_all: pd.DataFrame):
     return df_episodes_summary
     
     
-def generate_training_stats(df_episodes_summary: pd.DataFrame, window = 100):
-    df_rolling_mean_ = df_episodes_summary.rolling(window=window, min_periods=1).mean()
+def generate_training_stats(df_episodes_all: pd.DataFrame, window = 100):
+    df_aggregated = df_episodes_all.groupby(['episode', 'env']).agg(
+        learning_step=('learning_step', 'last'),
+        timestamp=('timestamp', 'last'),
+        episode_mean_reward=('episode_mean_reward', 'last'),
+    ).reset_index()
+    
+    df_aggregated2 = df_aggregated.groupby('learning_step').agg(
+        timestamp=('timestamp', 'mean'),
+        episode_mean_reward=('episode_mean_reward', 'mean'),
+    ).reset_index()
+    
+    df_rolling_mean = df_aggregated2.rolling(window=window, min_periods=1).mean()
+    
     data = {
-        "learning_step":df_episodes_summary['learning_step_max'],
-        "timestamp": df_episodes_summary['timestamp'],
-        "episode_mean_reward": df_episodes_summary['episode_mean_reward']
+        "learning_step":df_aggregated2['learning_step'],
+        "timestamp": df_aggregated2['timestamp'],
+        
+        "episode_mean_reward": df_rolling_mean['episode_mean_reward']
     }
     df_training_stats = pd.DataFrame(data)
     return df_training_stats
@@ -74,7 +87,7 @@ def load_generate_csvs(path_dir:str):
         print(f"Did not find {df_episodes_all_path}")
         return None
     else:
-        df_episodes_all = pd.read_csv(str(df_episodes_all_path), index_col=["episode", "env"])
+        df_episodes_all = pd.read_csv(str(df_episodes_all_path))
     
     if not df_episodes_summary_path.exists():
         df_episodes_summary = generate_episodes_summary(df_episodes_all)
@@ -85,10 +98,12 @@ def load_generate_csvs(path_dir:str):
         
         
     if not df_training_stats_path.exists():
-        df_training_stats = generate_training_stats(df_episodes_summary)
+        df_training_stats = generate_training_stats(df_episodes_all)
         df_training_stats.to_csv(str(df_training_stats_path), index=False)
         print(f"Generated {df_training_stats_path}")
     else:
         df_training_stats = pd.read_csv(str(df_training_stats_path))
     
+    
+    df_episodes_all.set_index(["episode", "env"], inplace=True)
     return df_episodes_all, df_episodes_summary, df_training_stats

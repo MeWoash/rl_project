@@ -51,6 +51,7 @@ class EpisodeStatsBuffer:
                                              index=False)
         self.df_episode_buffer.drop(self.df_episode_buffer.index,
                                                     inplace=True)
+        self.callback.evaluate_model = True
  
     def _add_stats_to_buffer(self):
         row: dict[str] = {
@@ -74,10 +75,10 @@ class EpisodeStatsBuffer:
                                                 pd.DataFrame.from_dict([row])])
 
 class  CSVCallback(BaseCallback):
-    def __init__(self, out_logdir, verbose=0, log_interval=20, max_saved_models = 5, window_size = 100, **kwargs):
+    def __init__(self, out_logdir, verbose=0, log_interval=20, max_saved_models = 10, window_size = 100, **kwargs):
         super().__init__(verbose)
         self.log_interval = log_interval
-        self.last_n_episodes = 0
+        self.evaluate_model = False
         self.out_logdir = out_logdir
         self.max_saved_models = max_saved_models
         self.saved_models  = []
@@ -132,8 +133,9 @@ class  CSVCallback(BaseCallback):
         for env_index in range(self.training_env.num_envs):
             self.episode_buffers[env_index].update_state()
         
-        if any(self.dones):
+        if self.evaluate_model is True:
             # SAVE BEST MODEL
+            self.evaluate_model = False
             last_reward = np.mean(self.df_episodes_all.groupby(['episode', 'env'])['episode_mean_reward'].last().to_numpy()[-self.window_size:])
             if  last_reward > self.best_reward:
                 self.best_reward= last_reward

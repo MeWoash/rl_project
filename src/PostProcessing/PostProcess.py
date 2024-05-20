@@ -26,7 +26,7 @@ from PathsConfig import *
 # autopep8: on
 
 
-def generate_media(log_dir: str):
+def generate_model_media(log_dir: str):
     media_dir = Path(log_dir, "media")
     media_dir.mkdir(exist_ok=True)
     
@@ -72,16 +72,55 @@ def generate_media(log_dir: str):
                           fig, axs)
     vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(1920, 1080), dpi=100)
     vidGen.generate_video(df_episodes_all, "trajectories.mp4", "Episodes trajectories")
+
+
+def generate_models_comparison():
+    files = get_all_files(OUT_LEARNING_DIR, "training_stats.csv")
+    
+    
+    fig, axs = plt.subplots(2, 1, figsize=(10,7))
+    
+    for key, value in files.items():
+        df_training_stats = pd.read_csv(value)
+        name = Path(value, "..").resolve().stem
+
+        y = df_training_stats['episode_mean_reward'].to_numpy()
+        x_rel = df_training_stats['rel_time'].to_numpy()
+        axs[0].plot(x_rel, y, label=name)
+       
+        x_steps = df_training_stats['learning_step'].to_numpy()
+        axs[1].plot(x_steps, y, label=name)
+    
+    axs[0].legend()
+    axs[0].grid(True)
+    axs[0].set_xlabel('time')
+    axs[0].set_ylabel('mean reward')
+    axs[0].xaxis.set_major_formatter(ticker.FuncFormatter(time_formatter))
+    
+    axs[1].set_xlabel('learning steps')
+    axs[1].set_ylabel('mean reward')
+    axs[1].grid(True)
+    axs[1].legend()
+    
+    plt.savefig(Path(OUT_LEARNING_DIR,"models_comparison.png"))
+
+@timeit
+def generate_model_media_timed(log_dir):
+    generate_model_media(log_dir)
     
 @timeit
-def generate_media_timed(log_dir):
-    generate_media(log_dir)
+def generate_models_comparison_timed():
+    generate_models_comparison()
 
 
-def main():
+def main_generate_model_media():
     # log_dir = str(Path(OUT_LEARNING_DIR,'SAC','SAC_1'))
     last_modified = str(Path(get_last_modified_file(OUT_LEARNING_DIR,'.csv'),'..').resolve())
-    generate_media_timed(last_modified)
+    generate_model_media_timed(last_modified)
+    
+def main_compare_models():
+    generate_models_comparison_timed()
 
 if __name__ == "__main__":
-    main()
+    main_generate_model_media()
+    main_compare_models()

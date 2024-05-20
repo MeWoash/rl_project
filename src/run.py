@@ -51,13 +51,15 @@ generate - generate mjcf xml file\
             import CustomEnvs.manualTestCarParking
             CustomEnvs.manualTestCarParking.main()
         case 'post-process':
-            from PostProcessing.PostProcess import generate_media_timed
+            from PostProcessing.PostProcess import generate_model_media_timed
             if args.path:
                 last_modified = str(Path(get_last_modified_file(args.path,'.csv'),'..').resolve())
-                generate_media_timed(last_modified)
+                generate_model_media_timed(last_modified)
+                generate_models_comparison
             else:
                 last_modified = str(Path(get_last_modified_file(OUT_LEARNING_DIR,'.csv'),'..').resolve())
-                generate_media_timed(last_modified)
+                generate_model_media_timed(last_modified)
+                generate_models_comparison
         case "generate":
             from MJCFGenerator.Generator import generate_MJCF
             generate_MJCF()

@@ -185,7 +185,7 @@ class PlotBestTrainingReward(PlotTrainingReward):
             self._ax.axvline(x=min_x, color='green', label=f'min={min_x}', linestyle='--')
             self._ax.axvline(x=max_x, color='green', label=f'max={max_x}', linestyle='--')
         
-        self._ax.axvspan(min_x, max_x, color='green', alpha=0.3, label='')
+            self._ax.axvspan(min_x, max_x, color='green', alpha=0.3, label='')
         
         return self._fig, self._ax
 

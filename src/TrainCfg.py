@@ -3,9 +3,9 @@ from stable_baselines3 import A2C, SAC, PPO
 
 TRAIN_VECTOR = [
     {
-        "name": "test",
+        "name": "next_test",
         "modelConstructor" : PPO,
-        "total_timesteps" : 100_000,
+        "total_timesteps" : 20_000,
         "seed": 0,
         "normalize": False,
         "model_kwargs" : {
@@ -13,7 +13,7 @@ TRAIN_VECTOR = [
         },
         "make_env_kwargs" : {
             "vec_env_cls": SubprocVecEnv,
-            "n_envs": 16,
+            "n_envs": 1,
             "env_kwargs":{
                 "render_mode": "none",
                 "enable_random_spawn": True,

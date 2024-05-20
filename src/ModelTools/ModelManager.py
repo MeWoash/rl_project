@@ -13,7 +13,7 @@ from CustomEnvs import CarParkingEnv
 from ModelTools.Callbacks import *
 from PathsConfig import *
 from MJCFGenerator.Generator import generate_MJCF 
-from PostProcessing.PostProcess import generate_media
+from PostProcessing.PostProcess import generate_model_media
 from stable_baselines3.common.vec_env import VecNormalize
 from TrainCfg import TRAIN_VECTOR
 
@@ -67,7 +67,7 @@ class LearningContainer:
         if self.out_logdir is None:
             print("Log directory does not exist!")
         try:
-            generate_media(self.out_logdir)
+            generate_model_media(self.out_logdir)
         except Exception as e:
             print(f"Failed to generate!\n{e}")
     
@@ -95,6 +95,7 @@ def train_models():
         learningContainer = LearningContainer()
         learningContainer.init_from_preset(train_preset).train_model()
         learningContainer.generate_media()
+    generate_models_comparison()
         
 def run_model(path):
     model_path = path

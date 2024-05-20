@@ -6,7 +6,7 @@ TRAIN_VECTOR = [
         "name": "test",
         "modelConstructor" : PPO,
         "total_timesteps" : 100_000,
-        "seed": 16,
+        "seed": 0,
         "normalize": False,
         "model_kwargs" : {
             "device":"cuda"

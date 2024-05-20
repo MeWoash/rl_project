@@ -57,7 +57,7 @@ class EpisodeStatsBuffer:
         row: dict[str] = {
             "episode":self.callback.infos[self.env_index]['episode_number'],
             "env":self.env_index,
-            "timestamp": time.time(),
+            "rel_time": time.time() - self.callback.training_start,
             "learning_step": self.callback.model.num_timesteps,
             "episode_mujoco_time": self.callback.infos[self.env_index]['episode_mujoco_time'],
             "episode_env_step":self.callback.infos[self.env_index]['episode_env_step'],
@@ -83,6 +83,7 @@ class  CSVCallback(BaseCallback):
         self.max_saved_models = max_saved_models
         self.saved_models  = []
         self.window_size = window_size
+        self.training_start = time.time()
         
     def _init_callback(self):
         
@@ -109,6 +110,7 @@ class  CSVCallback(BaseCallback):
             os.remove(oldest_model+".zip")
                 
     def _on_training_start(self) -> None:
+        self.training_start = time.time()
         return super()._on_training_start()    
                 
     def _on_step(self) -> bool:

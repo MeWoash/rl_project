@@ -32,7 +32,6 @@ def generate_media(log_dir: str):
     
     df_episodes_all, df_episode_stats, df_training_stats = load_generate_csvs(log_dir)
     
-    _, filltered = list(generator_episodes(df_episodes_all, 10))[0]
     
     # # BEST ACTIONS
     fig, ax = plt.subplots(1, 1, figsize=(10,7))
@@ -51,24 +50,26 @@ def generate_media(log_dir: str):
     
     #PlotBestRewardCurve
     fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotBestRewardCurve(df_episodes_all, ax, n_best=1, legend=True).plot(df_episodes_all)
+    PlotBestTrainingReward(df_training_stats, ax=ax, relative=True).plot(df_episodes_all)
     generate_fig_file(fig, media_dir, "best_rewards")
     
     # ALL IN ONE
     fig, axs = plt.subplots(2, 2, figsize=(15,10))
     wrapper = PlotWrapper([PlotHeatMap(sigma=2, bins=51),
-                           PlotBestRewardCurve(df_episodes_all, n_best=1, legend=True),
+                           PlotBestTrainingReward(df_training_stats, relative=True),
                            PlotBestTrajectory(n_best=1, legend=True),
-                           PlotBestActions(n_best=1, legend=True)], fig, axs)
+                           PlotBestActions(n_best=1, legend=True)],
+                          fig, axs)
     wrapper.plot(df_episodes_all)
     generate_fig_file(fig, media_dir, "mixed_stats")
     
     # VIDEO GENERATION
     fig, axs = plt.subplots(2, 2, figsize=(15,10))
     wrapper = PlotWrapper([PlotHeatMap(sigma=2, bins=51),
-                           PlotBestRewardCurve(df_episodes_all, n_best=1, legend=True),
+                           PlotBestTrainingReward(df_training_stats, relative=True),
                            PlotBestTrajectory(n_best=1, legend=True),
-                           PlotBestActions(n_best=1, legend=True)], fig, axs)
+                           PlotBestActions(n_best=1, legend=True)],
+                          fig, axs)
     vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(1920, 1080), dpi=100)
     vidGen.generate_video(df_episodes_all, "trajectories.mp4", "Episodes trajectories")
     

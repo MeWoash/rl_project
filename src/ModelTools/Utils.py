@@ -47,7 +47,7 @@ def generate_episodes_summary(df_episodes_all: pd.DataFrame):
         learning_step_max=('learning_step', 'max'),
         episode_mean_reward=('episode_mean_reward', 'max'),
         episode_mujoco_time=('episode_mujoco_time', 'max'),
-        timestamp=('timestamp', 'max')
+        rel_time=('rel_time', 'max')
     ).reset_index()
     df_episodes_summary.sort_values(by="learning_step_max", inplace=True)
     return df_episodes_summary
@@ -56,12 +56,12 @@ def generate_episodes_summary(df_episodes_all: pd.DataFrame):
 def generate_training_stats(df_episodes_all: pd.DataFrame, window = 100):
     df_aggregated = df_episodes_all.groupby(['episode', 'env']).agg(
         learning_step=('learning_step', 'last'),
-        timestamp=('timestamp', 'last'),
+        rel_time=('rel_time', 'last'),
         episode_mean_reward=('episode_mean_reward', 'last'),
     ).reset_index()
     
     df_aggregated2 = df_aggregated.groupby('learning_step').agg(
-        timestamp=('timestamp', 'mean'),
+        rel_time=('rel_time', 'mean'),
         episode_mean_reward=('episode_mean_reward', 'mean'),
     ).reset_index()
     
@@ -69,7 +69,7 @@ def generate_training_stats(df_episodes_all: pd.DataFrame, window = 100):
     
     data = {
         "learning_step":df_aggregated2['learning_step'],
-        "timestamp": df_aggregated2['timestamp'],
+        "rel_time": df_aggregated2['rel_time'],
         
         "episode_mean_reward": df_rolling_mean['episode_mean_reward']
     }

@@ -14,6 +14,8 @@ from scipy.ndimage import gaussian_filter
 import matplotlib.cm as cm
 from pathlib import Path
 from scipy.interpolate import interp1d
+import matplotlib.dates as mdates
+import matplotlib.ticker as ticker
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from PostProcessing.Utils import *
@@ -52,7 +54,6 @@ class PlotBaseAbstract(ABC):
         self._ax = ax
         plt.close(self._fig)
         self._fig = self._ax.get_figure()
-
 
     @property
     def fig(self) -> Axes:
@@ -116,64 +117,77 @@ class PlotBestTrajectory(PlotTrajectory):
         return super().plot(best)
 
 
-class PlotRewardCurve(PlotBaseAbstract):
+class PlotTrainingReward(PlotBaseAbstract):
     def __init__(self,
-                 df_episodes_all,
+                 df_training_stats: pd.DataFrame,
                  ax= None,
-                 legend = True
+                 relative = True,
                  )-> None:
         super().__init__(ax)
-        self.legend = legend
-        self.ax_label = "rewards"
-        self.df_episodes_all = df_episodes_all
+        self.ax_label = "training_stats"
+        self.relative = relative
+        self.df_training_stats = df_training_stats
         
-    def plot(self, df) -> Tuple[Figure | Axes]:
+    def plot(self, **kwargs) -> Tuple[Figure | Axes]:
         super().plot()
         
-        for index, grouped in group_by_envs(self.df_episodes_all):
+        if self.relative:
+            self._ax.set_xlabel('time')
+            x = self.df_training_stats['rel_time'].to_numpy()
+        else:
+            self._ax.set_xlabel('learning step')
+            x = self.df_training_stats['learning_step'].to_numpy()
             
-            learning_step = grouped['learning_step'].to_numpy()
-            episode_mean_reward = grouped['episode_mean_reward'].to_numpy()
-            
-            line  = self._ax.plot(learning_step,
-                          episode_mean_reward,
-                          color='blue',
-                          alpha=0.2)
-            
-            
-        for indexes, grouped in group_by_episodes(df):
-            learning_step = grouped['learning_step'].to_numpy()
-            episode_mean_reward = grouped['episode_mean_reward'].to_numpy()
-            
-            self._ax.plot(learning_step,
-                          episode_mean_reward,
-                          label=f"ep-{indexes[0]}_env-{indexes[1]}",
-                          color='green',
-                          linewidth=4)
+        y = self.df_training_stats['episode_mean_reward'].to_numpy()
+        self._ax.set_ylabel('mean reward')
+        
+        self._ax.plot(x, y)
+        
+        if self.relative:
+            self._ax.xaxis.set_major_formatter(ticker.FuncFormatter(time_formatter))
+            # labels = [item.get_text() for item in self._ax.get_xticklabels()]
+            # self._ax.set_xticklabels(labels, rotation=30)
         
         self._ax.grid(True)
-        self._ax.set_xlabel('learning step')
-        self._ax.set_ylabel('episode normalized cumulative reward')
-        
-        if self.legend:
-            self._ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     
         return self._fig, self._ax
      
-class PlotBestRewardCurve(PlotRewardCurve):
+class PlotBestTrainingReward(PlotTrainingReward):
     def __init__(self,
-                 df_episodes_all,
-                 ax= None,
-                 legend = True,
+                 df_training_stats: pd.DataFrame,
+                 ax = None,
+                 relative = True,
                  n_best = 1
                  ) -> None:
-        super().__init__(df_episodes_all, ax, legend)
+        
+        super().__init__(
+                 df_training_stats,
+                 ax,
+                 relative)
+        
         self.n_best = n_best
-        self.ax_label = f"top {n_best} on cumulative reward"
+        self.ax_label = f"top {n_best} mean reward"
         
     def plot(self, df):
         best = get_n_best_rewards(df, self.n_best)
-        return super().plot(best)
+        
+        # PLOT BASE
+        super().plot()
+        
+        for indexes, grouped in group_by_episodes(best):
+            if self.relative:
+                min_x = grouped['rel_time'].min()
+                max_x = grouped['rel_time'].max()
+            else:
+                min_x = grouped['learning_step'].min()
+                max_x = grouped['learning_step'].max()
+            
+            self._ax.axvline(x=min_x, color='green', label=f'min={min_x}', linestyle='--')
+            self._ax.axvline(x=max_x, color='green', label=f'max={max_x}', linestyle='--')
+        
+        self._ax.axvspan(min_x, max_x, color='green', alpha=0.3, label='')
+        
+        return self._fig, self._ax
 
 class PlotActions(PlotBaseAbstract):
     def __init__(self,

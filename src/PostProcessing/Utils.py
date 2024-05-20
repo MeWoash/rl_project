@@ -57,6 +57,21 @@ def timeit(func):
         return result
     return wrapper
 
+def generator_episodes_by_learning_step(df, df_training, episode_divide_factor=100):
+    max_ep = df.index.max()[0]
+    data_sorted = df.sort_index()
+    
+    n_episodes = ceil(max_ep/episode_divide_factor)
+    idxs = list(range(1, max_ep+n_episodes+1, n_episodes))
+    if idxs[-1]>max_ep+1:
+        idxs[-1]=max_ep+1
+
+    for i in range(len(idxs)-1):
+        lower_bound = idxs[i]
+        upper_bound = idxs[i + 1]
+        
+        yield (lower_bound, upper_bound), data_sorted.loc[(slice(lower_bound, upper_bound), slice(None)), :]
+
 def generator_episodes(df, episode_divide_factor=100):
     max_ep = df.index.max()[0]
     data_sorted = df.sort_index()
@@ -95,3 +110,23 @@ def get_n_best_rewards(df, n_episodes=10):
 def generate_fig_file(fig:Figure, dir:str, filename:str="out.png") -> None:
     p = str(Path(dir,filename))
     fig.savefig(p)
+
+def time_formatter(x, pos):
+    if x == 0:
+        return "0s"
+    
+    hours = int(x // 3600)
+    minutes = int((x % 3600) // 60)
+    seconds = int(x % 60)
+    
+    out = f""
+    if hours > 0:
+        out+= f"{hours}h"
+    
+    if minutes > 0:
+        out+= f" {minutes}m"
+        
+    if seconds > 0:
+        out+= f" {seconds}s"
+    
+    return out

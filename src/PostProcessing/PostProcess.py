@@ -22,6 +22,7 @@ from ModelTools.Utils import *
 from PostProcessing.Utils import timeit
 from PostProcessing.PlotGenerators import *
 from PostProcessing.VideoGenerators import *
+from PostProcessing.evaluation import *
 from PathsConfig import *
 # autopep8: on
 
@@ -122,5 +123,7 @@ def main_compare_models():
     generate_models_comparison_timed()
 
 if __name__ == "__main__":
+    prepare_data_for_reward_function()
     main_generate_model_media()
     main_compare_models()
+    

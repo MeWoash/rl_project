@@ -51,7 +51,7 @@ def prepare_data_for_reward_function():
     car_spawn_kwargs = CAR_SPAWN_KWARGS[:3]
     
     fig, axs = plt.subplots(len(car_spawn_kwargs), len(angles), figsize=(10,10))
-    norm = Normalize(vmin=0, vmax=1)
+    norm = Normalize(vmin=0, vmax=reward_params['max_step_reward'])
     
     for i, spawn_kwargs in enumerate(car_spawn_kwargs):
         spawn_point = np.array(spawn_kwargs['pos'][:2])
@@ -77,14 +77,14 @@ def prepare_data_for_reward_function():
             # axs[i, j].set_ylabel('Y Coordinate')
             axs[i, j].set_title(f'{angle:.2f}')
             axs[i, j].set_aspect('equal')
-    
-    
+    title = ", ".join([ f"{key}={val}" for key, val in reward_params.items()])
+    fig.suptitle(title)
     colorbar_ax = fig.add_axes([0.1, 0.05, 0.8, 0.02])
     cbar = fig.colorbar(im, cax=colorbar_ax, orientation='horizontal')
     cbar.set_label('Reward Value')
     fig.subplots_adjust(left=0.1, right=0.9, top=0.95, bottom=0.1)
     plt.show()
-    fig.savefig(str(Path(MEDIA_DIR,"reward_function.png")))
+    fig.savefig(str(Path(OUT_LEARNING_DIR,"reward_function.png")))
 
 
 if __name__ == "__main__":

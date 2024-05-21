@@ -291,14 +291,13 @@ class CarParkingEnv(gymnasium.Env):
     def _check_truncated_condition(self):
         truncated = False
 
-        # if self.observation[OBS_INDEX.DISTANCE_BEGIN] < 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.3\
-        #         or self.observation[OBS_INDEX.DISTANCE_BEGIN] >= 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.6:
-        #     self.time_velocity_not_low = self.data.time
+        if self.observation[OBS_INDEX.DISTANCE_BEGIN] < 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.3\
+                or self.observation[OBS_INDEX.DISTANCE_BEGIN] >= 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.6:
+            self.time_velocity_not_low = self.data.time
 
-        # if self.data.time - self.time_velocity_not_low >= 3:
-        #     truncated = True
-
-        if self.data.time > self.time_limit:
+        if self.data.time - self.time_velocity_not_low >= 3:
+            truncated = True
+        elif self.data.time > self.time_limit:
             truncated = True
         elif any(contact_val > 0 for contact_val in self.extra_observation[EXTRA_OBS_INDEX.CONTACT_BEGIN:EXTRA_OBS_INDEX.CONTACT_END+1]):
             truncated = True

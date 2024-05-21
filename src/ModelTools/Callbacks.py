@@ -139,6 +139,7 @@ class  CSVCallback(BaseCallback):
             # SAVE BEST MODEL
             self.evaluate_model = False
             last_reward = np.mean(self.df_episodes_all.groupby(['episode', 'env'])['episode_mean_reward'].last().to_numpy()[-self.window_size:])
+            self.logger.record('episodes_rolling_mean/reward', last_reward)
             if  last_reward > self.best_reward:
                 self.best_reward= last_reward
                 self._save_model(self.best_reward)

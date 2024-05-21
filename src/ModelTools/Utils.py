@@ -89,20 +89,20 @@ def load_generate_csvs(path_dir:str):
     else:
         df_episodes_all = pd.read_csv(str(df_episodes_all_path))
     
-    if not df_episodes_summary_path.exists():
-        df_episodes_summary = generate_episodes_summary(df_episodes_all)
-        df_episodes_summary.to_csv(str(df_episodes_summary_path), index=False)
-        print(f"Generated {df_episodes_summary_path}")
-    else:
-        df_episodes_summary = pd.read_csv(str(df_episodes_summary_path))
+    # if not df_episodes_summary_path.exists():
+    df_episodes_summary = generate_episodes_summary(df_episodes_all)
+    df_episodes_summary.to_csv(str(df_episodes_summary_path), index=False)
+    print(f"Generated {df_episodes_summary_path}")
+    # else:
+    #     df_episodes_summary = pd.read_csv(str(df_episodes_summary_path))
         
         
-    if not df_training_stats_path.exists():
-        df_training_stats = generate_training_stats(df_episodes_all)
-        df_training_stats.to_csv(str(df_training_stats_path), index=False)
-        print(f"Generated {df_training_stats_path}")
-    else:
-        df_training_stats = pd.read_csv(str(df_training_stats_path))
+    # if not df_training_stats_path.exists():
+    df_training_stats = generate_training_stats(df_episodes_all)
+    df_training_stats.to_csv(str(df_training_stats_path), index=False)
+    print(f"Generated {df_training_stats_path}")
+    # else:
+    #     df_training_stats = pd.read_csv(str(df_training_stats_path))
     
     
     df_episodes_all.set_index(["episode", "env"], inplace=True)

@@ -110,7 +110,7 @@ class CarParkingEnv(gymnasium.Env):
         self.reward_params = {
             "dist_weight": 0.25,
             "angle_diff_weight": 0.75,
-            "dist_scale":10,
+            "dist_scale":2,
             "max_step_reward": 1
         }
         
@@ -213,8 +213,8 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("reward", f"{self.reward:.2f}", "bottom right")
         overlay.add("mean reward", f"{self.episode_mean_reward:.2f}", "bottom right")
         
-        overlay.add("dist reward", f"{self.reward_info['dist_reward']:.2f}/{self.reward_info['dist_weight_scaled']:.2f}~{self.reward_params['dist_weight']:.2f}", "bottom right")
-        overlay.add("angle reward", f"{self.reward_info['angle_diff_reward']:.2f}/{self.reward_info['angle_diff_weight_scaled']:.2f}~{self.reward_params['angle_diff_weight']:.2f}", "bottom right")
+        overlay.add("dist reward", f"{self.reward_info['dist_reward']:.2f} / {self.reward_info['dist_weight_scaled']:.2f}", "bottom right")
+        overlay.add("angle reward", f"{self.reward_info['angle_diff_reward']:.2f}/{self.reward_info['angle_diff_weight_scaled']:.2f}", "bottom right")
         
     def close(self):
         """Close all processes like rendering contexts"""
@@ -255,8 +255,8 @@ class CarParkingEnv(gymnasium.Env):
 
         self.reward, self.reward_info = calculate_reward(self.observation, self.init_car_distance, self.reward_params)
 
-        self.terminated = False#self._check_terminate_condition()
-        self.truncated = False#self._check_truncated_condition()
+        self.terminated = self._check_terminate_condition()
+        self.truncated = self._check_truncated_condition()
 
         self.episode_cumulative_reward += self.reward
         self.episode_mean_reward = self.episode_cumulative_reward/(self.episode_env_step+1)
@@ -291,13 +291,14 @@ class CarParkingEnv(gymnasium.Env):
     def _check_truncated_condition(self):
         truncated = False
 
-        if self.observation[OBS_INDEX.DISTANCE_BEGIN] < 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.3\
-                or self.observation[OBS_INDEX.DISTANCE_BEGIN] >= 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.6:
-            self.time_velocity_not_low = self.data.time
+        # if self.observation[OBS_INDEX.DISTANCE_BEGIN] < 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.3\
+        #         or self.observation[OBS_INDEX.DISTANCE_BEGIN] >= 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.6:
+        #     self.time_velocity_not_low = self.data.time
 
-        if self.data.time - self.time_velocity_not_low >= 3:
-            truncated = True
-        elif self.data.time > self.time_limit:
+        # if self.data.time - self.time_velocity_not_low >= 3:
+        #     truncated = True
+
+        if self.data.time > self.time_limit:
             truncated = True
         elif any(contact_val > 0 for contact_val in self.extra_observation[EXTRA_OBS_INDEX.CONTACT_BEGIN:EXTRA_OBS_INDEX.CONTACT_END+1]):
             truncated = True

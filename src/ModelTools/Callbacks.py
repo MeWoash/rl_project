@@ -18,7 +18,7 @@ from ModelTools.Utils import load_generate_csvs
 
 class EpisodeStatsBuffer:
     def __init__(self, callback:Type[BaseCallback], env_index, log_interval=20):
-        self.df_episode_buffer = pd.DataFrame()
+        self.episode_data = []
         self.callback = callback
         self.env_index = env_index
         self.log_counter = 0
@@ -45,13 +45,12 @@ class EpisodeStatsBuffer:
 
     def _flush_buffer(self):
         
-        self.callback.df_episodes_all = pd.concat([self.callback.df_episodes_all,
-                                                   self.df_episode_buffer])
-        self.callback.df_episodes_all.to_csv(self.callback.df_episodes_all_path,
-                                             index=False)
-        self.df_episode_buffer.drop(self.df_episode_buffer.index,
-                                                    inplace=True)
+        df = pd.DataFrame(self.episode_data)
+        self.callback.df_episodes_all = pd.concat([self.callback.df_episodes_all, df])
+        self.callback.df_episodes_all.to_csv(self.callback.df_episodes_all_path, index=False)
+        self.episode_data.clear()
         self.callback.evaluate_model = True
+        
  
     def _add_stats_to_buffer(self):
         row: dict[str] = {
@@ -71,8 +70,7 @@ class EpisodeStatsBuffer:
             'action_engine': self.callback.actions[self.env_index, 0],
             'action_angle': self.callback.actions[self.env_index, 1],
             }
-        self.df_episode_buffer = pd.concat([self.df_episode_buffer,
-                                                pd.DataFrame.from_dict([row])])
+        self.episode_data.append(row)
 
 class  CSVCallback(BaseCallback):
     def __init__(self, out_logdir, verbose=0, log_interval=20, max_saved_models = 10, window_size = 100, **kwargs):

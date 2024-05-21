@@ -17,12 +17,14 @@ from ModelTools.Utils import load_generate_csvs
 # autopep8: on
 
 class EpisodeStatsBuffer:
-    def __init__(self, callback:Type[BaseCallback], env_index, log_interval=20):
+    def __init__(self, callback:Type[BaseCallback], env_index, log_interval=20, flush_epizodes_interval = 5):
         self.episode_data = []
         self.callback = callback
         self.env_index = env_index
         self.log_counter = 0
         self.log_interval = log_interval
+        self.flush_epizodes_interval = flush_epizodes_interval
+        self.flush_counter = 0
     
         
     def update_state(self):
@@ -35,8 +37,13 @@ class EpisodeStatsBuffer:
                 self.callback.angle_diff[self.env_index] = terminal_observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
                 # self.callback.pos[self.env_index] = terminal_observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]
             self._add_stats_to_buffer()
-            self._flush_buffer()
+            
+            self.flush_counter +=1
             self.log_counter = 0
+            
+            if self.flush_counter%self.flush_epizodes_interval == 0:
+                self._flush_buffer()
+                self.flush_counter = 0
         else:
             if self.log_counter % self.log_interval==0:
                 self._add_stats_to_buffer()
@@ -136,6 +143,10 @@ class  CSVCallback(BaseCallback):
         if self.evaluate_model is True:
             # SAVE BEST MODEL
             self.evaluate_model = False
+            self.df_episodes_all = self.df_episodes_all.assign(
+                max_learning_step=self.df_episodes_all.groupby(['episode', 'env'])['learning_step'].transform('max')
+                ).sort_values(by=['max_learning_step', 'episode', 'env', 'learning_step']).drop(columns=['max_learning_step'])
+            
             last_reward = np.mean(self.df_episodes_all.groupby(['episode', 'env'])['episode_mean_reward'].last().to_numpy()[-self.window_size:])
             self.logger.record('episodes_rolling_mean/reward', last_reward)
             if  last_reward > self.best_reward:

@@ -8,5 +8,5 @@ from PathsConfig import *
 
 if __name__ == "__main__":
 
-    cProfile.run("train_models()", str(Path(__file__,"..","program.prof").resolve()))
-    #snakeviz .\src\program.prof
+    cProfile.run("train_models()", str(Path(OUT_LEARNING_DIR,"program.prof").resolve()))
+    #snakeviz .\out\learning\program.prof

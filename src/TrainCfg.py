@@ -1,15 +1,21 @@
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3 import A2C, SAC, PPO
+from stable_baselines3.common.noise import VectorizedActionNoise, OrnsteinUhlenbeckActionNoise, NormalActionNoise
+import numpy as np
+
 
 TRAIN_VECTOR = [
     {
-        "name": "mulit_worker",
-        "modelConstructor" : PPO,
-        "total_timesteps" : 10_000_000,
-        "seed": 0,
+        "name": "16env_20step_noise",
+        "modelConstructor" : SAC,
+        "total_timesteps" : 50_000_000,
+        "seed": 1,
         "normalize": False,
         "model_kwargs" : {
-            "device":"cuda"
+            "device":"cuda",
+            # "buffer_size":10_000_000,
+            "use_sde":True,
+            "train_freq":(20, "step")
         },
         "make_env_kwargs" : {
             "vec_env_cls": SubprocVecEnv,

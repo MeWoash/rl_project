@@ -40,8 +40,8 @@ def calculate_reward(observation, init_car_distance, params, **kwargs):
                                             )
     
     
-    dist_clipped = np.clip(observation[OBS_INDEX.DISTANCE_BEGIN], 0, init_car_distance)
-    dist_diff_punish = normalize_data(dist_clipped,
+    # dist_clipped = np.clip(observation[OBS_INDEX.DISTANCE_BEGIN], 0, init_car_distance) 
+    dist_diff_punish = normalize_data(observation[OBS_INDEX.DISTANCE_BEGIN],
         0, reward_info['dist_weight_scaled'],
         0, init_car_distance
         )

@@ -105,4 +105,4 @@ def prepare_data_for_reward_function():
 
 if __name__ == "__main__":
     prepare_data_for_reward_function()
-    plt.show()
+    # plt.show()

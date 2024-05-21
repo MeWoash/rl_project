@@ -13,7 +13,7 @@ def normalize_data(x, dst_a, dst_b, min_x=-1, max_x=1):
     return normalized
 
 def normalize_angle_diff(angle_diff):
-    return abs(np.arctan2(np.sin(angle_diff), np.cos(angle_diff)))
+    return abs((angle_diff + math.pi) % (2 * math.pi) - math.pi)
 
 def quat_to_euler(quat):
     w, x, y, z = quat

@@ -28,25 +28,26 @@ def calculate_reward(observation, init_car_distance, params, **kwargs):
     reward_info = {}
     
     
-    # DIST_SCALE = 2
-    # exp_scale = np.exp(-observation[OBS_INDEX.DISTANCE_BEGIN]/DIST_SCALE)
+    exp_scale = np.exp(-observation[OBS_INDEX.DISTANCE_BEGIN]/params['dist_scale'])
+    
+    reward_info['angle_diff_weight_scaled'] = params['angle_diff_weight'] * exp_scale
+    reward_info['dist_weight_scaled'] = params['dist_weight'] + params['angle_diff_weight']* (1-exp_scale)
     
     angle_diff_sum = np.sum(observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])
     angle_diff_punish = normalize_data(angle_diff_sum,
-                                            0, params['angle_diff_punish_weight'],
+                                            0, reward_info['angle_diff_weight_scaled'],
                                             0, len(observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])*math.pi
                                             )
-    angle_diff_punish = np.clip(angle_diff_punish, 0, params['angle_diff_punish_weight'])
     
     
-    distance_clipped = np.clip(observation[OBS_INDEX.DISTANCE_BEGIN], 0, init_car_distance)
-    dist_diff_punish = normalize_data(distance_clipped,
-        0, params['dist_punish_weight'],
+    dist_clipped = np.clip(observation[OBS_INDEX.DISTANCE_BEGIN], 0, init_car_distance)
+    dist_diff_punish = normalize_data(dist_clipped,
+        0, reward_info['dist_weight_scaled'],
         0, init_car_distance
         )
     
-    reward_info['dist_reward'] = params['dist_punish_weight'] - dist_diff_punish
-    reward_info['angle_diff_reward'] = params['angle_diff_punish_weight'] - angle_diff_punish
+    reward_info['dist_reward'] = reward_info['dist_weight_scaled'] - dist_diff_punish
+    reward_info['angle_diff_reward'] =reward_info['angle_diff_weight_scaled'] - angle_diff_punish
 
     reward = reward_info['dist_reward'] + reward_info['angle_diff_reward']
     
@@ -107,14 +108,15 @@ class CarParkingEnv(gymnasium.Env):
         self.time_velocity_not_low = 0
         
         self.reward_params = {
-            "dist_punish_weight": 0.25,
-            "angle_diff_punish_weight": 0.75,
+            "dist_weight": 0.25,
+            "angle_diff_weight": 0.75,
+            "dist_scale":10,
             "max_step_reward": 1
         }
         
         assert\
-              self.reward_params["dist_punish_weight"] \
-            + self.reward_params["angle_diff_punish_weight"]\
+              self.reward_params["dist_weight"] \
+            + self.reward_params["angle_diff_weight"]\
                 == self.reward_params["max_step_reward"], f'Weights have to sum to {self.reward_params["max_step_reward"]}'
 
     def _set_default_action_space(self):
@@ -211,8 +213,8 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("reward", f"{self.reward:.2f}", "bottom right")
         overlay.add("mean reward", f"{self.episode_mean_reward:.2f}", "bottom right")
         
-        overlay.add("dist reward", f"{self.reward_info['dist_reward']:.2f}", "bottom right")
-        overlay.add("angle reward", f"{self.reward_info['angle_diff_reward']:.2f}", "bottom right")
+        overlay.add("dist reward", f"{self.reward_info['dist_reward']:.2f}/{self.reward_info['dist_weight_scaled']:.2f}~{self.reward_params['dist_weight']:.2f}", "bottom right")
+        overlay.add("angle reward", f"{self.reward_info['angle_diff_reward']:.2f}/{self.reward_info['angle_diff_weight_scaled']:.2f}~{self.reward_params['angle_diff_weight']:.2f}", "bottom right")
         
     def close(self):
         """Close all processes like rendering contexts"""
@@ -253,8 +255,8 @@ class CarParkingEnv(gymnasium.Env):
 
         self.reward, self.reward_info = calculate_reward(self.observation, self.init_car_distance, self.reward_params)
 
-        self.terminated = self._check_terminate_condition()
-        self.truncated = self._check_truncated_condition()
+        self.terminated = False#self._check_terminate_condition()
+        self.truncated = False#self._check_truncated_condition()
 
         self.episode_cumulative_reward += self.reward
         self.episode_mean_reward = self.episode_cumulative_reward/(self.episode_env_step+1)

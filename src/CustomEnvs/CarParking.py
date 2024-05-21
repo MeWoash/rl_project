@@ -28,7 +28,7 @@ def calculate_reward(observation, init_car_distance, params, **kwargs):
     reward_info = {}
     
     
-    exp_scale = np.exp(-observation[OBS_INDEX.DISTANCE_BEGIN]/params['dist_scale'])
+    exp_scale = np.exp(-observation[OBS_INDEX.DISTANCE_BEGIN]/params['exp_scale'])
     
     reward_info['angle_diff_weight_scaled'] = params['angle_diff_weight'] * exp_scale
     reward_info['dist_weight_scaled'] = params['dist_weight'] + params['angle_diff_weight']* (1-exp_scale)
@@ -110,7 +110,7 @@ class CarParkingEnv(gymnasium.Env):
         self.reward_params = {
             "dist_weight": 0.25,
             "angle_diff_weight": 0.75,
-            "dist_scale":2,
+            "exp_scale":2,
             "max_step_reward": 1
         }
         

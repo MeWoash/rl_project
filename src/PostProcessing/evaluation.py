@@ -31,7 +31,7 @@ def prepare_data_for_reward_function():
     reward_params = {
             "dist_weight": 0.25,
             "angle_diff_weight": 0.75,
-            "dist_scale":2,
+            "exp_scale":2,
             "max_step_reward": 1
         }
     parking_point = np.array(PARKING_SPOT_KWARGS['pos'][:2])

@@ -53,18 +53,6 @@ listener = keyboard.Listener(on_press=on_press, on_release=on_release)
 listener.start()
 
 
-def describe_obs(obs):
-    d = f"""
-speed:      {obs[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]}    
-dist:       {obs[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]}
-adiff:      {obs[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]}
-contact:    {obs[OBS_INDEX.CONTACT_BEGIN:OBS_INDEX.CONTACT_END+1]}
-range:      {obs[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_END+1]}
-pos:        {obs[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]}
-eul:        {obs[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1]}"""
-
-    return d
-
 def main():
     generate_MJCF()
     env = CarParkingEnv(render_mode="human")

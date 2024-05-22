@@ -6,16 +6,17 @@ import numpy as np
 
 TRAIN_VECTOR = [
     {
-        "name": "16env_20step_noise",
+        "name": "16env_1step_SDE_HITCH",
         "modelConstructor" : SAC,
         "total_timesteps" : 50_000_000,
-        "seed": 1,
+        "seed": 0,
         "normalize": False,
         "model_kwargs" : {
             "device":"cuda",
-            # "buffer_size":10_000_000,
+            "buffer_size":5_000_000,
+            "learning_starts":10_000,
             "use_sde":True,
-            "train_freq":(20, "step")
+            "train_freq":(1, "step")
         },
         "make_env_kwargs" : {
             "vec_env_cls": SubprocVecEnv,

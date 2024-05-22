@@ -34,7 +34,7 @@ class EpisodeStatsBuffer:
                 terminal_observation = self.callback.infos[self.env_index].get("terminal_observation")
                 self.callback.velocity[self.env_index] = terminal_observation[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]
                 self.callback.distance[self.env_index] = terminal_observation[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]
-                self.callback.angle_diff[self.env_index] = terminal_observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
+                self.callback.angle_diff[self.env_index] = terminal_observation[OBS_INDEX.CAR_ANGLE_DIFF_BEGIN:OBS_INDEX.CAR_ANGLE_DIFF_END+1]
                 # self.callback.pos[self.env_index] = terminal_observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]
             self._add_stats_to_buffer()
             
@@ -132,7 +132,7 @@ class  CSVCallback(BaseCallback):
         
         self.velocity = self.observations[:,OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]
         self.distance = self.observations[:,OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]
-        self.angle_diff = self.observations[:,OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]
+        self.angle_diff = self.observations[:,OBS_INDEX.CAR_ANGLE_DIFF_BEGIN:OBS_INDEX.CAR_ANGLE_DIFF_END+1]
         self.rel_pos = self.observations[:,OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]
         
         self.global_pos = self.extra_observations[:,EXTRA_OBS_INDEX.GLOBAL_POS_BEGIN:EXTRA_OBS_INDEX.GLOBAL_POS_END+1]

@@ -23,19 +23,23 @@ class OBS_INDEX(IntEnum):
     DISTANCE_BEGIN = 1
     DISTANCE_END = 1
     # 2 val
-    ANGLE_DIFF_BEGIN = 2
-    ANGLE_DIFF_END = 3
+    CAR_ANGLE_DIFF_BEGIN = 2
+    CAR_ANGLE_DIFF_END = 2
     # 2 val 
-    REL_POS_BEGIN = 4
-    REL_POS_END = 5
-    # 2 val
-    YAW_BEGIN = 6
-    YAW_END = 7
+    REL_POS_BEGIN = 3
+    REL_POS_END = 4
+    # 1 val
+    CAR_ANGLE_BEGIN = 5
+    CAR_ANGLE_END = 5
+    # 1 val
+    HITCH_ANGLE_BEGIN = 6
+    HITCH_ANGLE_END = 6
+
     # 10 val
-    RANGE_BEGIN = 8
-    RANGE_END = 17
+    RANGE_BEGIN = 7
+    RANGE_END = 16
     # SUM
-    OBS_SIZE = 18
+    OBS_SIZE = 17
     
     
 class EXTRA_OBS_INDEX(IntEnum):

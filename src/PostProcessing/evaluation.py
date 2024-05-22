@@ -44,25 +44,29 @@ def prepare_data_for_reward_function():
     XY = np.vstack([mesh[0].ravel(),mesh[1].ravel()]).T
     
     observation = np.zeros(OBS_INDEX.OBS_SIZE, dtype=np.float32)
-    angles = np.linspace(0, len(observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])*math.pi, 4)
+    car_angles = np.linspace(0, math.pi, 4)
+    hitch_angles = np.linspace(0, max(TRAILER_HITCH_ANGLE_LIMIT_RADIANS), 4)
     
     
     axs_2d:list[list[Axes]]
     fig_2d:Figure
-    car_spawn_kwargs = CAR_SPAWN_KWARGS[:3]
+    car_spawn_kwargs = CAR_SPAWN_KWARGS[0]
     
     
-    fig_2d, axs_2d = plt.subplots(len(car_spawn_kwargs), len(angles), figsize=(10,10))
-    fig_3d, axs_3d = plt.subplots(len(car_spawn_kwargs), len(angles), figsize=(10,10), subplot_kw={'projection': '3d'})
+    fig_2d, axs_2d = plt.subplots(len(hitch_angles), len(car_angles), figsize=(10,10))
+    fig_3d, axs_3d = plt.subplots(len(hitch_angles), len(car_angles), figsize=(10,10), subplot_kw={'projection': '3d'})
     
     norm = Normalize(vmin=0, vmax=reward_params['max_step_reward'])
     
-    for i, spawn_kwargs in enumerate(car_spawn_kwargs):
-        spawn_point = np.array(spawn_kwargs['pos'][:2])
-        init_car_distance = np.linalg.norm(spawn_point - parking_point)
-        for j, angle in enumerate(angles):
+    spawn_point = np.array(car_spawn_kwargs['pos'][:2])
+    init_car_distance = np.linalg.norm(spawn_point - parking_point)
+        
+    for i, hitch_angle in enumerate(hitch_angles):
+        observation[OBS_INDEX.HITCH_ANGLE_BEGIN] = hitch_angle
+    
+        for j, angle in enumerate(car_angles):
+            observation[OBS_INDEX.CAR_ANGLE_DIFF_BEGIN] = angle
             
-            observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1] = angle/2, angle/2
             
             rewards = []
             for xy in XY:
@@ -80,7 +84,7 @@ def prepare_data_for_reward_function():
             
             im = axs_2d[i, j].pcolormesh(mesh[0], mesh[1], rewards, shading='auto', norm=norm)
             axs_2d[i, j].scatter(*spawn_point, color="red", s=25)
-            axs_2d[i, j].set_title(f'{angle:.2f}')
+            axs_2d[i, j].set_title(f'c:{angle:.2f} h:{hitch_angle:.2f}')
             axs_2d[i, j].set_aspect('equal')
             
             

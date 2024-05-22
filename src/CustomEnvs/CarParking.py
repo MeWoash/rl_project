@@ -33,10 +33,10 @@ def calculate_reward(observation, init_car_distance, params, **kwargs):
     reward_info['angle_diff_weight_scaled'] = params['angle_diff_weight'] * exp_scale
     reward_info['dist_weight_scaled'] = params['dist_weight'] + params['angle_diff_weight']* (1-exp_scale)
     
-    angle_diff_sum = np.sum(observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])
+    angle_diff_sum = observation[OBS_INDEX.CAR_ANGLE_DIFF_BEGIN] + normalize_angle_diff(observation[OBS_INDEX.HITCH_ANGLE_BEGIN])
     angle_diff_punish = normalize_data(angle_diff_sum,
                                             0, reward_info['angle_diff_weight_scaled'],
-                                            0, len(observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1])*math.pi
+                                            0, math.pi + np.max(TRAILER_HITCH_ANGLE_LIMIT_RADIANS)
                                             )
     
     
@@ -137,22 +137,24 @@ class CarParkingEnv(gymnasium.Env):
         
         velocity_bounds = np.array([-10, 10]).reshape(2, 1)
         dist_bounds = np.array([0, max_xy_dist]).reshape(2, 1)
-        angle_diff_bounds = np.tile(np.array([0, np.pi]).reshape(2, 1), (1, 2))
+        car_angle_diff_bounds = np.array([0, np.pi]).reshape(2, 1)
         range_sensors_bounds = np.tile(
             np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS))
         car_rel_pos_bounds = np.array(
             [[-MAP_LENGTH[0], -MAP_LENGTH[1]],
              [MAP_LENGTH[0], MAP_LENGTH[1]]])
-        angle_bounds = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
+        car_angle_bounds = np.array([-np.pi, np.pi]).reshape(2, 1)
+        hitch_angle_bounds = np.array([-np.pi, np.pi]).reshape(2, 1)
 
         # KEEP ORDER AS IN OBSINDEX
         boundMatrix = np.zeros((2,OBS_INDEX.OBS_SIZE))
         
         boundMatrix[:, OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1] = velocity_bounds
         boundMatrix[:, OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1] = dist_bounds
-        boundMatrix[:, OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1] = angle_diff_bounds
+        boundMatrix[:, OBS_INDEX.CAR_ANGLE_DIFF_BEGIN:OBS_INDEX.CAR_ANGLE_DIFF_END+1] = car_angle_diff_bounds
         boundMatrix[:, OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1] = car_rel_pos_bounds
-        boundMatrix[:, OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1] = angle_bounds
+        boundMatrix[:, OBS_INDEX.CAR_ANGLE_BEGIN:OBS_INDEX.CAR_ANGLE_END+1] = car_angle_bounds
+        boundMatrix[:, OBS_INDEX.HITCH_ANGLE_BEGIN:OBS_INDEX.HITCH_ANGLE_END+1] = hitch_angle_bounds
         boundMatrix[:, OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_END+1] = range_sensors_bounds
 
         self.observation_space = Box(low=boundMatrix[0, :], high=boundMatrix[1, :], dtype=np.float32)
@@ -196,9 +198,14 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("Env stats", "values", "top left")
         overlay.add("speed",f"{self.observation[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1]}", "top left")
         overlay.add("dist",f"{self.observation[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1]}", "top left")
-        overlay.add("adiff",f"{self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]}", "top left")
+        
+        overlay.add("adiff",f"{self.observation[OBS_INDEX.CAR_ANGLE_DIFF_BEGIN:OBS_INDEX.CAR_ANGLE_DIFF_END+1]}", "top left")
+        
         overlay.add("rel pos",f"{self.observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]}", "top left")
-        overlay.add("eul",f"{self.observation[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1]}", "top left")
+        
+        overlay.add("car eul",f"{self.observation[OBS_INDEX.CAR_ANGLE_BEGIN:OBS_INDEX.CAR_ANGLE_END+1]}", "top left")
+        overlay.add("hitch eul",f"{self.observation[OBS_INDEX.HITCH_ANGLE_BEGIN:OBS_INDEX.HITCH_ANGLE_END+1]}", "top left")
+        
         overlay.add("range car",f"{self.observation[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_BEGIN+CAR_N_RANGE_SENSORS]}", "top left")
         overlay.add("range trl",f"{self.observation[OBS_INDEX.RANGE_BEGIN+CAR_N_RANGE_SENSORS:OBS_INDEX.RANGE_END+1]}", "top left")
         
@@ -282,8 +289,8 @@ class CarParkingEnv(gymnasium.Env):
         terminated = False
         if self.observation[OBS_INDEX.DISTANCE_BEGIN] <= 0.5 \
                 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) <= 0.1 \
-                and self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN] <= math.radians(15)\
-                and self.observation[OBS_INDEX.ANGLE_DIFF_END] <= math.radians(15):  
+                and self.observation[OBS_INDEX.CAR_ANGLE_DIFF_BEGIN] <= math.radians(15)\
+                and abs(self.observation[OBS_INDEX.HITCH_ANGLE_BEGIN]) <= math.radians(15):  
             terminated = True
             self.reward += 10
         return terminated
@@ -356,9 +363,10 @@ class CarParkingEnv(gymnasium.Env):
         # GATHER OBS
         observation[OBS_INDEX.VELOCITY_BEGIN:OBS_INDEX.VELOCITY_END+1] = carSpeed
         observation[OBS_INDEX.DISTANCE_BEGIN:OBS_INDEX.DISTANCE_END+1] = car_dist_to_parking
-        observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1] = normalizedCarAngleDiff, normalizedTrailerAngleDiff
+        observation[OBS_INDEX.CAR_ANGLE_DIFF_BEGIN:OBS_INDEX.CAR_ANGLE_DIFF_END+1] = normalizedCarAngleDiff
         observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1] = car_parking_rel_pos[:2]
-        observation[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1] = car_euler[2], trailer_euler[2]
+        observation[OBS_INDEX.CAR_ANGLE_BEGIN:OBS_INDEX.CAR_ANGLE_END+1] = car_euler[2]
+        observation[OBS_INDEX.HITCH_ANGLE_BEGIN:OBS_INDEX.HITCH_ANGLE_END+1] = trailer_joint_angle
         observation[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_END+1] = range_sensors
         
         # GATHER EXTRA OBS

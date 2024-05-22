@@ -26,7 +26,7 @@ from PostProcessing.evaluation import *
 from PathsConfig import *
 # autopep8: on
 
-
+@timeit
 def generate_model_media(log_dir: str):
     media_dir = Path(log_dir, "media")
     media_dir.mkdir(exist_ok=True)
@@ -74,16 +74,20 @@ def generate_model_media(log_dir: str):
     vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(1920, 1080), dpi=100)
     vidGen.generate_video(df_episodes_all, "trajectories.mp4", "Episodes trajectories")
 
-
-def generate_models_comparison():
-    files = get_all_files(OUT_LEARNING_DIR, "training_stats.csv")
+def generate_all_model_media(path_dir=OUT_LEARNING_DIR):
+    dirs =  [str(Path(file,"..")) for file in get_all_files(path_dir, "episodes_all.csv")]
     
+    for dir in dirs:
+        generate_model_media(dir)
+
+@timeit
+def generate_models_comparison():
+    all_dfs = load_generate_all_csvs()
     
     fig, axs = plt.subplots(2, 1, figsize=(10,7))
     
-    for key, value in files.items():
-        df_training_stats = pd.read_csv(value)
-        name = Path(value, "..").resolve().stem
+    for dir, (df_episodes_all, df_episodes_summary, df_training_stats) in all_dfs.items():
+        name = Path(dir).resolve().stem
 
         y = df_training_stats['episode_mean_reward'].to_numpy()
         x_rel = df_training_stats['rel_time'].to_numpy()
@@ -103,27 +107,10 @@ def generate_models_comparison():
     axs[1].grid(True)
     axs[1].legend()
     
-    plt.savefig(Path(OUT_LEARNING_DIR,"models_comparison.png"))
-
-@timeit
-def generate_model_media_timed(log_dir):
-    generate_model_media(log_dir)
+    fig.savefig(Path(OUT_LEARNING_DIR,"models_comparison.png"))
     
-@timeit
-def generate_models_comparison_timed():
-    generate_models_comparison()
-
-
-def main_generate_model_media():
-    # log_dir = str(Path(OUT_LEARNING_DIR,'SAC','SAC_1'))
-    last_modified = str(Path(get_last_modified_file(OUT_LEARNING_DIR,'.csv'),'..').resolve())
-    generate_model_media_timed(last_modified)
-    
-def main_compare_models():
-    generate_models_comparison_timed()
-
 if __name__ == "__main__":
-    prepare_data_for_reward_function()
-    main_generate_model_media()
-    main_compare_models()
+    last_modified = str(Path(get_last_modified_file(OUT_LEARNING_DIR,'.csv'),'..').resolve())
+    generate_model_media(last_modified)
     
+    generate_models_comparison()

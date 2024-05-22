@@ -28,7 +28,7 @@ from PathsConfig import *
 
 
     
-def prepare_data_for_reward_function():
+def visualize_reward_function():
     reward_params = {
             "dist_weight": 0.25,
             "angle_diff_weight": 0.75,
@@ -104,5 +104,5 @@ def prepare_data_for_reward_function():
 
 
 if __name__ == "__main__":
-    prepare_data_for_reward_function()
+    visualize_reward_function()
     # plt.show()

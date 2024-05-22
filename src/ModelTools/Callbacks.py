@@ -1,9 +1,11 @@
 # autopep8: off
 
 from datetime import datetime
+import os
+import time
+from typing import Type
 from cv2 import log
 from stable_baselines3.common.callbacks import BaseCallback
-from torch.utils.tensorboard import SummaryWriter
 from pathlib import Path
 from CustomEnvs.CarParking import EXTRA_OBS_INDEX, OBS_INDEX
 import numpy as np
@@ -11,8 +13,9 @@ import pandas as pd
 import sys
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcessing.PostProcess import *
+# from PostProcessing.PostProcess import *
 from ModelTools.Utils import load_generate_csvs
+import PathsConfig as paths_cfg
 
 # autopep8: on
 
@@ -92,7 +95,7 @@ class  CSVCallback(BaseCallback):
         
     def _init_callback(self):
         
-        self.df_episodes_all_path = self.ep_logdir = Path(self.out_logdir).joinpath(EPISODES_ALL).resolve()
+        self.df_episodes_all_path = self.ep_logdir = Path(self.out_logdir).joinpath(paths_cfg.EPISODES_ALL).resolve()
         
         self.df_episodes_all:pd.DataFrame = pd.DataFrame()
         self.episode_buffers: list[EpisodeStatsBuffer] = []

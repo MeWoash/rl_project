@@ -10,8 +10,8 @@ import numpy as np
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 
-from MJCFGenerator.Config import *
-from PathsConfig import *
+import MJCFGenerator.Config as mjcf_cfg
+import PathsConfig as paths_cfg
 
 # autopep8: on
 
@@ -27,11 +27,11 @@ class Wheel:
         self._is_steering = is_steering
         
         # FROM CONFIG
-        self._wheel_friction = WHEEL_FRICTION
-        self._wheel_mass = WHEEL_MASS
-        self._wheel_angle_limit = WHEEL_ANGLE_LIMIT
-        self._wheel_radius = WHEEL_RADIUS
-        self._wheel_thickness = WHEEL_THICKNESS
+        self._wheel_friction = mjcf_cfg.WHEEL_FRICTION
+        self._wheel_mass = mjcf_cfg.WHEEL_MASS
+        self._wheel_angle_limit = mjcf_cfg.WHEEL_ANGLE_LIMIT
+        self._wheel_radius = mjcf_cfg.WHEEL_RADIUS
+        self._wheel_thickness = mjcf_cfg.WHEEL_THICKNESS
 
     @property
     def is_steering(self):
@@ -87,12 +87,12 @@ class Trailer:
         self._trailerDims = trailerDims
         
         # FROM CONFIG
-        self._trailer_mass = TRAILER_MASS
-        self._trailer_wheel_axis_spacing = TRAILER_WHEEL_AXIS_SPACING
-        self._trailer_wheel_spacing = TRAILER_WHEEL_SPACING
-        self._trailer_wheel_mount_height = TRAILER_WHEEL_MOUNT_HEIGHT
-        self._trailer_color = TRAILER_COLOR
-        self._trailer_hitbox_scale = TRAILER_HITBOX_SCALE
+        self._trailer_mass = mjcf_cfg.TRAILER_MASS
+        self._trailer_wheel_axis_spacing = mjcf_cfg.TRAILER_WHEEL_AXIS_SPACING
+        self._trailer_wheel_spacing = mjcf_cfg.TRAILER_WHEEL_SPACING
+        self._trailer_wheel_mount_height = mjcf_cfg.TRAILER_WHEEL_MOUNT_HEIGHT
+        self._trailer_color = mjcf_cfg.TRAILER_COLOR
+        self._trailer_hitbox_scale = mjcf_cfg.TRAILER_HITBOX_SCALE
         
         self.wheelGenerator = Wheel("Wheel")
         
@@ -172,10 +172,10 @@ class Trailer:
         for index, _zaxis in enumerate(zaxis):
             _zaxis = _zaxis + _zaxis*sensor_pos_scale_factor
             sensor_site = mjcf_model.worldbody.add("site", name=f"sensor_site_{index}", type="sphere", size=sensor_size, pos=_zaxis, zaxis=_zaxis)
-            sensor = mjcf_model.sensor.add("rangefinder", name=f"range_sensor_{index}", site=sensor_site, cutoff=SENSORS_MAX_RANGE)
+            sensor = mjcf_model.sensor.add("rangefinder", name=f"range_sensor_{index}", site=sensor_site, cutoff=mjcf_cfg.SENSORS_MAX_RANGE)
             
         # ## OTHERS
-        mjcf_model.sensor.add("touch", name=f"touch_sensor", site=touch_site, cutoff=SENSORS_MAX_RANGE)
+        mjcf_model.sensor.add("touch", name=f"touch_sensor", site=touch_site, cutoff=mjcf_cfg.SENSORS_MAX_RANGE)
         
         # autopep8: on
         return mjcf_model, front_attachment_site
@@ -187,13 +187,13 @@ class Car:
         self.wheelGenerator = Wheel("Wheel")
         
         # FROM CONFIG
-        self._car_mass = CAR_MASS
-        self._car_wheel_axis_spacing = CAR_WHEEL_AXIS_SPACING
-        self._car_wheel_spacing = CAR_WHEEL_SPACING
-        self._car_wheel_mount_height = CAR_WHEEL_MOUNT_HEIGHT
-        self._car_spawn_height = CAR_SPAWN_HEIGHT
-        self._car_color = CAR_COLOR
-        self._car_hitbox_scale = CAR_HITBOX_SCALE
+        self._car_mass = mjcf_cfg.CAR_MASS
+        self._car_wheel_axis_spacing = mjcf_cfg.CAR_WHEEL_AXIS_SPACING
+        self._car_wheel_spacing = mjcf_cfg.CAR_WHEEL_SPACING
+        self._car_wheel_mount_height = mjcf_cfg.CAR_WHEEL_MOUNT_HEIGHT
+        self._car_spawn_height = mjcf_cfg.CAR_SPAWN_HEIGHT
+        self._car_color = mjcf_cfg.CAR_COLOR
+        self._car_hitbox_scale = mjcf_cfg.CAR_HITBOX_SCALE
 
     def construct_tree(self):
         mjcf_model = mjcf.RootElement(model=self._car_name)
@@ -203,7 +203,7 @@ class Car:
         chassisZsize = self._carDims[2] / 2
 
         wheelControlRange = (math.radians(
-            WHEEL_ANGLE_LIMIT[0]), math.radians(WHEEL_ANGLE_LIMIT[1]))
+            mjcf_cfg.WHEEL_ANGLE_LIMIT[0]), math.radians(mjcf_cfg.WHEEL_ANGLE_LIMIT[1]))
 
         # autopep8: off
         material = mjcf_model.asset.add("material", name="chassis_material",
@@ -266,10 +266,10 @@ class Car:
         for index, _zaxis in enumerate(zaxis):
             _zaxis = _zaxis + _zaxis*sensor_pos_scale_factor
             sensor_site = mjcf_model.worldbody.add("site", name=f"sensor_site_{index}", type="sphere", size=sensor_size, pos=_zaxis, zaxis=_zaxis)
-            sensor = mjcf_model.sensor.add("rangefinder", name=f"range_sensor_{index}", site=sensor_site, cutoff=SENSORS_MAX_RANGE)
+            sensor = mjcf_model.sensor.add("rangefinder", name=f"range_sensor_{index}", site=sensor_site, cutoff=mjcf_cfg.SENSORS_MAX_RANGE)
             
         ## OTHERS
-        mjcf_model.sensor.add("touch", name=f"touch_sensor", site=touch_site, cutoff=SENSORS_MAX_RANGE)
+        mjcf_model.sensor.add("touch", name=f"touch_sensor", site=touch_site, cutoff=mjcf_cfg.SENSORS_MAX_RANGE)
         mjcf_model.sensor.add("velocimeter", name=f"speed_sensor", site=self.center_site, cutoff=10)
         mjcf_model.sensor.add("framepos", name=f"pos_global_sensor", objtype="site", objname=self.center_site)
         
@@ -289,13 +289,13 @@ class ParkingSpot:
         self._trailerSize = trailerSize
         
         # FROM CONFIG
-        self._parking_spot_paddings = PARKING_SPOT_PADDINGS
-        self._parking_line_width = PARKING_LINE_WIDTH
-        self._parking_line_height_size = PARKING_LINE_HEIGHT_SIZE
-        self._car_color = CAR_COLOR
-        self._car_name = CAR_NAME
-        self._trailer_color = TRAILER_COLOR
-        self._trailer_name = TRAILER_NAME
+        self._parking_spot_paddings = mjcf_cfg.PARKING_SPOT_PADDINGS
+        self._parking_line_width = mjcf_cfg.PARKING_LINE_WIDTH
+        self._parking_line_height_size = mjcf_cfg.PARKING_LINE_HEIGHT_SIZE
+        self._car_color = mjcf_cfg.CAR_COLOR
+        self._car_name = mjcf_cfg.CAR_NAME
+        self._trailer_color = mjcf_cfg.TRAILER_COLOR
+        self._trailer_name = mjcf_cfg.TRAILER_NAME
         
 
     def construct_tree(self):
@@ -358,20 +358,20 @@ class GeneratorClass:
     def __init__(self):
         
         # FROM CONFIG
-        self._map_length = MAP_LENGTH
-        self._parking_spot_kwargs = PARKING_SPOT_KWARGS
-        self._car_name = CAR_NAME
-        self._car_dims = CAR_DIMS
-        self._trailer_name = TRAILER_NAME
-        self._trailer_dims = TRAILER_DIMS
-        self._parking_name = PARKING_NAME
-        self._mjcdf_model_name = MJCF_MODEL_NAME
-        self._render_off_width = RENDER_OFF_WIDTH
-        self._render_off_height = RENDER_OFF_HEIGHT
-        self._spawn_points = CAR_SPAWN_KWARGS
-        self._custom_obstacles = CUSTOM_OBSTACLES_KWARGS
-        self._car_spawn_height = CAR_SPAWN_HEIGHT
-        self._trailer_hitch_angle_limit = TRAILER_HITCH_ANGLE_LIMIT
+        self._map_length = mjcf_cfg.MAP_LENGTH
+        self._parking_spot_kwargs = mjcf_cfg.PARKING_SPOT_KWARGS
+        self._car_name = mjcf_cfg.CAR_NAME
+        self._car_dims = mjcf_cfg.CAR_DIMS
+        self._trailer_name = mjcf_cfg.TRAILER_NAME
+        self._trailer_dims = mjcf_cfg.TRAILER_DIMS
+        self._parking_name = mjcf_cfg.PARKING_NAME
+        self._mjcdf_model_name = paths_cfg.MJCF_MODEL_NAME
+        self._render_off_width = mjcf_cfg.RENDER_OFF_WIDTH
+        self._render_off_height = mjcf_cfg.RENDER_OFF_HEIGHT
+        self._spawn_points = mjcf_cfg.CAR_SPAWN_KWARGS
+        self._custom_obstacles = mjcf_cfg.CUSTOM_OBSTACLES_KWARGS
+        self._car_spawn_height = mjcf_cfg.CAR_SPAWN_HEIGHT
+        self._trailer_hitch_angle_limit = mjcf_cfg.TRAILER_HITCH_ANGLE_LIMIT
         # ===================================
         
         self.carGenerator = Car(self._car_name, self._car_dims)
@@ -441,14 +441,14 @@ class GeneratorClass:
         self.mjcf_model.asset.add( "texture",
                                   name="sky_texture",
                                   type="skybox",
-                                  file=ASSET_DIR+"/sky1.png")
+                                  file=paths_cfg.ASSET_DIR+"/sky1.png")
         wall_material = self.mjcf_model.asset.add("material",
                                                   name="wall_material",
                                                   rgba=[1, 1, 1, 0.000001])
         ground_texture = self.mjcf_model.asset.add( "texture",
                                                    name="ground_texture",
                                                    type="2d",
-                                                   file=ASSET_DIR+"/ground.png")
+                                                   file=paths_cfg.ASSET_DIR+"/ground.png")
         ground_material = self.mjcf_model.asset.add("material",
                                                     name="ground_material",
                                                     texture=ground_texture,
@@ -456,7 +456,7 @@ class GeneratorClass:
         obstacle_texture = self.mjcf_model.asset.add( "texture",
                                                      name="obstacle_texture",
                                                      type="2d",
-                                                     file=ASSET_DIR+"/rustymetal.png")
+                                                     file=paths_cfg.ASSET_DIR+"/rustymetal.png")
         obstacle_material = self.mjcf_model.asset.add("material",
                                                       name="obstacle_material",
                                                       texture=obstacle_texture, )
@@ -507,8 +507,8 @@ class GeneratorClass:
         self.mjcf_model = mjcf.from_file(str(file_path))
 
     def export_with_assets(self,
-                           dir=MJCF_OUT_DIR,
-                           model_name=MJCF_MODEL_NAME):
+                           dir=paths_cfg.MJCF_OUT_DIR,
+                           model_name=paths_cfg.MJCF_MODEL_NAME):
         mjcf.export_with_assets(self.mjcf_model, dir, model_name)
         print(f"Generated: {Path(dir, model_name)}")
 

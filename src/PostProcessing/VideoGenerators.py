@@ -2,8 +2,7 @@
 
 from math import ceil
 from pathlib import Path
-import time
-from typing import Callable, Generator
+from typing import Generator
 
 import cv2
 from matplotlib import pyplot as plt
@@ -14,8 +13,8 @@ import pandas as pd
 import sys
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcessing.Utils import *
-from PostProcessing.PlotGenerators import *
+from PostProcessing.Utils import generator_episodes
+from PostProcessing.PlotGenerators import PlotWrapper
 # autopep8: on
 
 

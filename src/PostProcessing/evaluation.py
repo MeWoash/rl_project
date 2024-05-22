@@ -1,41 +1,34 @@
 from math import ceil
 import sys
-import cv2
-import matplotlib
 from matplotlib.axes import Axes
 from matplotlib.colors import Normalize
 from matplotlib.figure import Figure
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from scipy.ndimage import gaussian_filter
+import matplotlib.pyplot as plt
+import numpy as np
 import matplotlib.cm as cm
 from pathlib import Path
+import math
 
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from CustomEnvs.Indexes import *
-from CustomEnvs.CarParking import *
-from MJCFGenerator.Config import *
-
-from ModelTools.Utils import *
-from PostProcessing.Utils import timeit
-from PostProcessing.PlotGenerators import *
-from PostProcessing.VideoGenerators import *
-from PathsConfig import *
+from CustomEnvs.Indexes import OBS_INDEX
+from CustomEnvs.CarParking import calculate_reward
+from PostProcessing.Utils import MAP_BOUNDARY
+import MJCFGenerator.Config as mjcf_cfg
+import PathsConfig as paths_cfg
 # autopep8: on
 
 
     
-def prepare_data_for_reward_function():
+def visualize_reward_function():
     reward_params = {
             "dist_weight": 0.25,
             "angle_diff_weight": 0.75,
             "exp_scale":2,
             "max_step_reward": 1
         }
-    parking_point = np.array(PARKING_SPOT_KWARGS['pos'][:2])
+    parking_point = np.array(mjcf_cfg.PARKING_SPOT_KWARGS['pos'][:2])
     
     x_values = np.linspace(MAP_BOUNDARY[0][0], MAP_BOUNDARY[0][1], 50)
     y_values = np.linspace(MAP_BOUNDARY[0][0], MAP_BOUNDARY[0][1], 50)
@@ -45,12 +38,12 @@ def prepare_data_for_reward_function():
     
     observation = np.zeros(OBS_INDEX.OBS_SIZE, dtype=np.float32)
     car_angles = np.linspace(0, math.pi, 4)
-    hitch_angles = np.linspace(0, max(TRAILER_HITCH_ANGLE_LIMIT_RADIANS), 4)
+    hitch_angles = np.linspace(0, max(mjcf_cfg.TRAILER_HITCH_ANGLE_LIMIT_RADIANS), 4)
     
     
     axs_2d:list[list[Axes]]
     fig_2d:Figure
-    car_spawn_kwargs = CAR_SPAWN_KWARGS[0]
+    car_spawn_kwargs = mjcf_cfg.CAR_SPAWN_KWARGS[0]
     
     
     fig_2d, axs_2d = plt.subplots(len(hitch_angles), len(car_angles), figsize=(10,10))
@@ -103,10 +96,10 @@ def prepare_data_for_reward_function():
     cbar.set_label('Reward Value')
     
     fig_2d.subplots_adjust(left=0.1, right=0.9, top=0.95, bottom=0.1)
-    fig_2d.savefig(str(Path(OUT_LEARNING_DIR,"reward_function_2d.png")))
-    fig_3d.savefig(str(Path(OUT_LEARNING_DIR,"reward_function_3d.png")))
+    fig_2d.savefig(str(Path(paths_cfg.OUT_LEARNING_DIR,"reward_function_2d.png")))
+    fig_3d.savefig(str(Path(paths_cfg.OUT_LEARNING_DIR,"reward_function_3d.png")))
 
 
 if __name__ == "__main__":
-    prepare_data_for_reward_function()
+    visualize_reward_function()
     # plt.show()

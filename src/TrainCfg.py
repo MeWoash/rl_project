@@ -13,8 +13,7 @@ TRAIN_VECTOR = [
         "normalize": False,
         "model_kwargs" : {
             "device":"cuda",
-            "buffer_size":5_000_000,
-            "learning_starts":10_000,
+            "buffer_size":50_000_000,
             "use_sde":True,
             "train_freq":(1, "step")
         },

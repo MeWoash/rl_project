@@ -1,6 +1,5 @@
 # autopep8: off
 from abc import ABC
-from ast import Raise
 from math import ceil
 from pathlib import Path
 import sys
@@ -8,8 +7,9 @@ import cv2
 import mujoco
 import numpy as np
 import sys
+
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PathsConfig import MEDIA_DIR
+import PathsConfig as paths_cfg
 
 # autopep8: on
 
@@ -94,7 +94,7 @@ class BaseRender(ABC):
             return
             
         # filename = f"out-thread-{threading.get_ident()}.mp4"
-        output_file = str(Path(MEDIA_DIR,filename))
+        output_file = str(Path(paths_cfg.MEDIA_DIR,filename))
         
         frame_size = (self.viewport.width, self.viewport.height)
         
@@ -111,7 +111,7 @@ class BaseRender(ABC):
         print(f"Output file at: {output_file}")
         
     def render_image(self, filename = "tmp.jpg"):
-        output_file = str(MEDIA_DIR/filename)
+        output_file = str(Path(paths_cfg.MEDIA_DIR,filename))
         
         self.rgb_arr = np.zeros(
                         3 * self.viewport.width * self.viewport.height, dtype=np.uint8

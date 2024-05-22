@@ -1,19 +1,17 @@
 # autopep8: off
 from  datetime import datetime
-import json
 from pathlib import Path
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
-from stable_baselines3 import A2C, SAC
 import sys
 import pickle
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from CustomEnvs import CarParkingEnv
-from ModelTools.Callbacks import *
-from PathsConfig import *
+from ModelTools.Callbacks import CSVCallback
+import PathsConfig as paths_cfg
 from MJCFGenerator.Generator import generate_MJCF 
-from PostProcessing.PostProcess import generate_model_media
+from PostProcessing.PostProcess import generate_model_media, generate_models_comparison, get_last_modified_file
 from stable_baselines3.common.vec_env import VecNormalize
 from TrainCfg import TRAIN_VECTOR
 
@@ -30,7 +28,7 @@ class LearningContainer:
         
     def train_model(self):
         
-        self.out_logdir = Path(OUT_LEARNING_DIR, f"{self.train_preset['name']}_{self.train_preset['modelConstructor'].__name__}_{datetime.now().strftime(rf'%d-%m-%y-%H-%M-%S')}").resolve()
+        self.out_logdir = Path(paths_cfg.OUT_LEARNING_DIR, f"{self.train_preset['name']}_{self.train_preset['modelConstructor'].__name__}_{datetime.now().strftime(rf'%d-%m-%y-%H-%M-%S')}").resolve()
         self.out_logdir.mkdir(parents=True, exist_ok=False)
         self.out_logdir.joinpath('models').mkdir(parents=True, exist_ok=True)
         

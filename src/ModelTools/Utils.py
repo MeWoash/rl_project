@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PathsConfig import *
+import PathsConfig as paths_cfg
 
 def get_last_modified_file(directory_path, suffix=".zip"):
     latest_time = 0
@@ -28,17 +28,15 @@ def get_last_modified_file(directory_path, suffix=".zip"):
     return latest_file
 
 def get_all_files(directory_path, suffix=".zip"):
-    files_dict = {}
-    cnt = 1
+    file_list = []
     for root, dirs, files in os.walk(directory_path):
         for filename in files:
             if filename.endswith(suffix):
                 filepath = os.path.join(root, filename)
                 if os.path.isfile(filepath):
-                    files_dict[cnt] = filepath
-                    cnt+=1
+                    file_list.append(filepath)
                     
-    return files_dict
+    return file_list
 
 
 def generate_episodes_summary(df_episodes_all: pd.DataFrame):
@@ -75,12 +73,12 @@ def generate_training_stats(df_episodes_all: pd.DataFrame, window = 100):
     }
     df_training_stats = pd.DataFrame(data)
     return df_training_stats
-    
+
 def load_generate_csvs(path_dir:str):
     
-    df_episodes_all_path = Path(path_dir, EPISODES_ALL).resolve()
-    df_episodes_summary_path = Path(path_dir, EPISODE_STATS).resolve()
-    df_training_stats_path = Path(path_dir, TRAINING_STATS).resolve()
+    df_episodes_all_path = Path(path_dir, paths_cfg.EPISODES_ALL).resolve()
+    df_episodes_summary_path = Path(path_dir, paths_cfg.EPISODE_STATS).resolve()
+    df_training_stats_path = Path(path_dir, paths_cfg.TRAINING_STATS).resolve()
     
     
     if not df_episodes_all_path.exists():
@@ -107,3 +105,14 @@ def load_generate_csvs(path_dir:str):
     
     df_episodes_all.set_index(["episode", "env"], inplace=True)
     return df_episodes_all, df_episodes_summary, df_training_stats
+
+
+def load_generate_all_csvs(path_dir = paths_cfg.OUT_LEARNING_DIR):
+    dirs =  [str(Path(file,"..")) for file in get_all_files(path_dir, "episodes_all.csv")]
+    
+    all_csvs = {}
+    for dir in dirs:
+        all_csvs[dir]=(load_generate_csvs(dir))
+        
+    return all_csvs
+    

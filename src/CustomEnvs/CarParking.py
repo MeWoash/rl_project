@@ -14,12 +14,13 @@ from enum import IntEnum
 from scipy.spatial.transform import Rotation
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from CustomEnvs.Utils import *
-from CustomEnvs.Indexes import *
+from CustomEnvs.Utils import normalize_data, euler_to_quat, quat_to_euler, normalize_angle_diff
+from CustomEnvs.Indexes import ACTION_INDEX, OBS_INDEX, EXTRA_OBS_INDEX
 from Rendering.RendererClass import Renderer
 from Rendering.Utils import TextOverlay
-from MJCFGenerator.Config import *
-from PathsConfig import *
+
+import MJCFGenerator.Config as mjcf_cfg
+import PathsConfig as paths_cfg
 
 # autopep8: on
 
@@ -132,17 +133,17 @@ class CarParkingEnv(gymnasium.Env):
         return self.action_space
 
     def _set_default_observation_space(self):
-        max_xy_dist = math.sqrt(MAP_LENGTH[0]**2 + MAP_LENGTH[1]**2)
+        max_xy_dist = math.sqrt(mjcf_cfg.MAP_LENGTH[0]**2 + mjcf_cfg.MAP_LENGTH[1]**2)
         
         
         velocity_bounds = np.array([-10, 10]).reshape(2, 1)
         dist_bounds = np.array([0, max_xy_dist]).reshape(2, 1)
         angle_diff_bounds = np.tile(np.array([0, np.pi]).reshape(2, 1), (1, 2))
         range_sensors_bounds = np.tile(
-            np.array([0, SENSORS_MAX_RANGE]).reshape(2, 1), (1, CAR_N_RANGE_SENSORS + TRAILER_N_RANGE_SENSORS))
+            np.array([0, mjcf_cfg.SENSORS_MAX_RANGE]).reshape(2, 1), (1, mjcf_cfg.CAR_N_RANGE_SENSORS + mjcf_cfg.TRAILER_N_RANGE_SENSORS))
         car_rel_pos_bounds = np.array(
-            [[-MAP_LENGTH[0], -MAP_LENGTH[1]],
-             [MAP_LENGTH[0], MAP_LENGTH[1]]])
+            [[-mjcf_cfg.MAP_LENGTH[0], -mjcf_cfg.MAP_LENGTH[1]],
+             [mjcf_cfg.MAP_LENGTH[0], mjcf_cfg.MAP_LENGTH[1]]])
         angle_bounds = np.tile(np.array([-np.pi, np.pi]).reshape(2, 1), (1, 2))
 
         # KEEP ORDER AS IN OBSINDEX
@@ -160,7 +161,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _initialize_simulation(self):
         
-        model_path = os.path.join(str(MJCF_OUT_DIR), MJCF_MODEL_NAME)
+        model_path = os.path.join(str(paths_cfg.MJCF_OUT_DIR), paths_cfg.MJCF_MODEL_NAME)
         self.model = mujoco.MjModel.from_xml_path(model_path)
         self.data = mujoco.MjData(self.model)
 
@@ -172,7 +173,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _calculate_spawn_points(self):
         self.spawn_points = []
-        for spawn_params in CAR_SPAWN_KWARGS:
+        for spawn_params in mjcf_cfg.CAR_SPAWN_KWARGS:
             pos = spawn_params['pos']
             quat = euler_to_quat(*np.radians(spawn_params['euler']))
             self.spawn_points.append([*pos, *quat])
@@ -199,8 +200,8 @@ class CarParkingEnv(gymnasium.Env):
         overlay.add("adiff",f"{self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN:OBS_INDEX.ANGLE_DIFF_END+1]}", "top left")
         overlay.add("rel pos",f"{self.observation[OBS_INDEX.REL_POS_BEGIN:OBS_INDEX.REL_POS_END+1]}", "top left")
         overlay.add("eul",f"{self.observation[OBS_INDEX.YAW_BEGIN:OBS_INDEX.YAW_END+1]}", "top left")
-        overlay.add("range car",f"{self.observation[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_BEGIN+CAR_N_RANGE_SENSORS]}", "top left")
-        overlay.add("range trl",f"{self.observation[OBS_INDEX.RANGE_BEGIN+CAR_N_RANGE_SENSORS:OBS_INDEX.RANGE_END+1]}", "top left")
+        overlay.add("range car",f"{self.observation[OBS_INDEX.RANGE_BEGIN:OBS_INDEX.RANGE_BEGIN+mjcf_cfg.CAR_N_RANGE_SENSORS]}", "top left")
+        overlay.add("range trl",f"{self.observation[OBS_INDEX.RANGE_BEGIN+mjcf_cfg.CAR_N_RANGE_SENSORS:OBS_INDEX.RANGE_END+1]}", "top left")
         
         overlay.add("extra_obs",f"{self.extra_observation}", "top left")
         
@@ -224,11 +225,11 @@ class CarParkingEnv(gymnasium.Env):
 
     def _apply_forces(self, action):
         enginePowerCtrl = action[ACTION_INDEX.ENGINE]
-        wheelsAngleCtrl = normalize_data(action[ACTION_INDEX.ANGLE], *WHEEL_ANGLE_LIMIT_RAD, -1, 1)
+        wheelsAngleCtrl = normalize_data(action[ACTION_INDEX.ANGLE], *mjcf_cfg.WHEEL_ANGLE_LIMIT_RAD, -1, 1)
 
-        self.data.actuator(f"{CAR_NAME}/engine").ctrl = enginePowerCtrl
-        self.data.actuator(f"{CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl
-        self.data.actuator(f"{CAR_NAME}/wheel2_angle").ctrl = wheelsAngleCtrl
+        self.data.actuator(f"{mjcf_cfg.CAR_NAME}/engine").ctrl = enginePowerCtrl
+        self.data.actuator(f"{mjcf_cfg.CAR_NAME}/wheel1_angle").ctrl = wheelsAngleCtrl
+        self.data.actuator(f"{mjcf_cfg.CAR_NAME}/wheel2_angle").ctrl = wheelsAngleCtrl
 
 
     def _do_simulation(self, n_frames):
@@ -311,40 +312,40 @@ class CarParkingEnv(gymnasium.Env):
         extra_observation = np.zeros(EXTRA_OBS_INDEX.OBS_SIZE, dtype=np.float32)
         
         car_global_pos = self.data.sensor(
-            f'{CAR_NAME}/pos_global_sensor').data
+            f'{mjcf_cfg.CAR_NAME}/pos_global_sensor').data
 
         car_parking_rel_pos = self.data.sensor(
-            f"{CAR_NAME}_to_{PARKING_NAME}_pos").data
+            f"{mjcf_cfg.CAR_NAME}_to_{mjcf_cfg.PARKING_NAME}_pos").data
 
-        carSpeed = self.data.sensor(f'{CAR_NAME}/speed_sensor').data[0]
+        carSpeed = self.data.sensor(f'{mjcf_cfg.CAR_NAME}/speed_sensor').data[0]
 
         range_sensors = []
-        for i in range(CAR_N_RANGE_SENSORS):
+        for i in range(mjcf_cfg.CAR_N_RANGE_SENSORS):
             range_sensors.append(self.data.sensor(
-                f'{CAR_NAME}/range_sensor_{i}').data[0])
-        for i in range(TRAILER_N_RANGE_SENSORS):
+                f'{mjcf_cfg.CAR_NAME}/range_sensor_{i}').data[0])
+        for i in range(mjcf_cfg.TRAILER_N_RANGE_SENSORS):
             range_sensors.append(self.data.sensor(
-                f'{CAR_NAME}/{TRAILER_NAME}/range_sensor_{i}').data[0])
+                f'{mjcf_cfg.CAR_NAME}/{mjcf_cfg.TRAILER_NAME}/range_sensor_{i}').data[0])
 
         car_dist_to_parking = np.linalg.norm(car_parking_rel_pos[:2])
 
         contact_data = [
-            self.data.sensor(f"{CAR_NAME}/touch_sensor").data[0],
-            self.data.sensor(f"{CAR_NAME}/{TRAILER_NAME}/touch_sensor").data[0]
+            self.data.sensor(f"{mjcf_cfg.CAR_NAME}/touch_sensor").data[0],
+            self.data.sensor(f"{mjcf_cfg.CAR_NAME}/{mjcf_cfg.TRAILER_NAME}/touch_sensor").data[0]
         ]
         
         
         # GET ANGLES
-        carQuat = self.data.body(f"{CAR_NAME}/").xquat
+        carQuat = self.data.body(f"{mjcf_cfg.CAR_NAME}/").xquat
         car_euler = quat_to_euler(carQuat)
         
-        trailerQuat = self.data.body(f"{CAR_NAME}/{TRAILER_NAME}/").xquat
+        trailerQuat = self.data.body(f"{mjcf_cfg.CAR_NAME}/{mjcf_cfg.TRAILER_NAME}/").xquat
         trailer_euler = quat_to_euler(trailerQuat)
         
-        targetQuat = self.data.body(f"{PARKING_NAME}/").xquat
+        targetQuat = self.data.body(f"{mjcf_cfg.PARKING_NAME}/").xquat
         target_euler = quat_to_euler(targetQuat)
 
-        trailer_joint_angle = self.data.joint(f"{CAR_NAME}/{TRAILER_NAME}/").qpos
+        trailer_joint_angle = self.data.joint(f"{mjcf_cfg.CAR_NAME}/{mjcf_cfg.TRAILER_NAME}/").qpos
         
         # ANGLE DIFFS
         carAngleDiff = car_euler[2] - target_euler[2]
@@ -369,11 +370,11 @@ class CarParkingEnv(gymnasium.Env):
 
     def random_spawn(self):
         spawn_index = np.random.randint(0, len(self.spawn_points))
-        self.data.joint(f"{CAR_NAME}/").qpos = self.spawn_points[spawn_index]
+        self.data.joint(f"{mjcf_cfg.CAR_NAME}/").qpos = self.spawn_points[spawn_index]
     
     def add_spawn_noise(self):
      
-        qpos = self.data.joint(f"{CAR_NAME}/").qpos
+        qpos = self.data.joint(f"{mjcf_cfg.CAR_NAME}/").qpos
         pos = qpos[:3]
         quat = qpos[3:]
         
@@ -384,12 +385,12 @@ class CarParkingEnv(gymnasium.Env):
         
         pos[0:2] = pos[0:2] + np.random.normal(0, self.spawn_dist_noise/3, size=2)
         
-        maplength = MAP_LENGTH
-        carSizeOffset = max(CAR_DIMS)
+        maplength = mjcf_cfg.MAP_LENGTH
+        carSizeOffset = max(mjcf_cfg.CAR_DIMS)
         pos[0] = np.clip(pos[0],  -maplength[0]/2 + carSizeOffset, maplength[0]/2 - carSizeOffset)
         pos[1] = np.clip(pos[1], -maplength[1]/2 + carSizeOffset , maplength[1]/2 - carSizeOffset)
         
-        self.data.joint(f"{CAR_NAME}/").qpos = [*pos, *quat]
+        self.data.joint(f"{mjcf_cfg.CAR_NAME}/").qpos = [*pos, *quat]
         
     def reset(self, seed = None, **kwargs):
         super().reset(seed=seed, **kwargs)
@@ -409,8 +410,8 @@ class CarParkingEnv(gymnasium.Env):
         self.norm_velocity_cost = 0
         self.episode_cumulative_reward = 0
         self.episode_mean_reward = 0
-        self.init_car_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/").qpos[:2] - self.data.site(f"{PARKING_NAME}/site_center_{CAR_NAME}").xpos[:2])
-        self.init_trailer_distance = np.linalg.norm(self.data.joint(f"{CAR_NAME}/{TRAILER_NAME}/").qpos[:2] - self.data.site(f"{PARKING_NAME}/site_center_{TRAILER_NAME}").xpos[:2])
+        self.init_car_distance = np.linalg.norm(self.data.joint(f"{mjcf_cfg.CAR_NAME}/").qpos[:2] - self.data.site(f"{mjcf_cfg.PARKING_NAME}/site_center_{mjcf_cfg.CAR_NAME}").xpos[:2])
+        self.init_trailer_distance = np.linalg.norm(self.data.joint(f"{mjcf_cfg.CAR_NAME}/{mjcf_cfg.TRAILER_NAME}/").qpos[:2] - self.data.site(f"{mjcf_cfg.PARKING_NAME}/site_center_{mjcf_cfg.TRAILER_NAME}").xpos[:2])
         self.episode_number += 1
 
         obs, extra_obs = self._get_obs()

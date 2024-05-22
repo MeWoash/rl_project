@@ -1,9 +1,8 @@
 # autopep8: off
 from abc import ABC, abstractmethod
-import enum
 from math import ceil
 import sys
-from typing import Any, Tuple, Type, TypeVar, Union
+from typing import Any, Tuple, Type
 import matplotlib
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -11,14 +10,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
-import matplotlib.cm as cm
 from pathlib import Path
-from scipy.interpolate import interp1d
-import matplotlib.dates as mdates
 import matplotlib.ticker as ticker
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcessing.Utils import *
+from PostProcessing.Utils import MAP_BOUNDARY, group_by_episodes, get_n_best_rewards, time_formatter
 # autopep8: on
 
 

@@ -5,24 +5,20 @@ import os
 from pathlib import Path
 import sys
 import time
-from typing import Callable
 
-import cv2
-from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PathsConfig import *
-from MJCFGenerator.Config import *
+import MJCFGenerator.Config as mjcf_cfg
 
 
 # autopep8: on
-MAP_BOUNDARY = [[-MAP_LENGTH
-[0]/2, MAP_LENGTH
-[0]/2],[-MAP_LENGTH
-[1]/2, MAP_LENGTH
+MAP_BOUNDARY = [[-mjcf_cfg.MAP_LENGTH
+[0]/2, mjcf_cfg.MAP_LENGTH
+[0]/2],[-mjcf_cfg.MAP_LENGTH
+[1]/2, mjcf_cfg.MAP_LENGTH
 [1]/2]] # X, Y
 
 

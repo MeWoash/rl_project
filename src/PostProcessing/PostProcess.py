@@ -3,27 +3,18 @@ import os
 
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-from math import ceil
 import sys
-import cv2
-import matplotlib
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.ndimage import gaussian_filter
-import matplotlib.cm as cm
 from pathlib import Path
-
+import matplotlib.ticker as ticker
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from ModelTools.Utils import *
-from PostProcessing.Utils import timeit
-from PostProcessing.PlotGenerators import *
-from PostProcessing.VideoGenerators import *
-from PostProcessing.evaluation import *
-from PathsConfig import *
+from PostProcessing.Utils import timeit, generate_fig_file, time_formatter
+from PostProcessing.PlotGenerators import PlotBestActions, PlotHeatMap, PlotBestTrajectory, PlotBestTrainingReward, PlotWrapper
+from PostProcessing.VideoGenerators import VideoGenerator
+import PathsConfig as paths_cfg
 # autopep8: on
 
 @timeit
@@ -74,7 +65,7 @@ def generate_model_media(log_dir: str):
     vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(1920, 1080), dpi=100)
     vidGen.generate_video(df_episodes_all, "trajectories.mp4", "Episodes trajectories")
 
-def generate_all_model_media(path_dir=OUT_LEARNING_DIR):
+def generate_all_model_media(path_dir=paths_cfg.OUT_LEARNING_DIR):
     dirs =  [str(Path(file,"..")) for file in get_all_files(path_dir, "episodes_all.csv")]
     
     for dir in dirs:
@@ -107,10 +98,10 @@ def generate_models_comparison():
     axs[1].grid(True)
     axs[1].legend()
     
-    fig.savefig(Path(OUT_LEARNING_DIR,"models_comparison.png"))
+    fig.savefig(Path(paths_cfg.OUT_LEARNING_DIR,"models_comparison.png"))
     
 if __name__ == "__main__":
-    last_modified = str(Path(get_last_modified_file(OUT_LEARNING_DIR,'.csv'),'..').resolve())
+    last_modified = str(Path(get_last_modified_file(paths_cfg.OUT_LEARNING_DIR,'.csv'),'..').resolve())
     generate_model_media(last_modified)
     
     generate_models_comparison()

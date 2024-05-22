@@ -9,13 +9,14 @@ import math
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from MJCFGenerator.Generator import generate_MJCF 
-from CustomEnvs.CarParking import *
-from MJCFGenerator.Config import *
+from CustomEnvs.CarParking import CarParkingEnv
+from CustomEnvs.Indexes import ACTION_INDEX
+import MJCFGenerator.Config as mjcf_cfg
 # autopep8: on
 
 current_action = np.array([0.0, 0.0])
 
-WHEEL_ANGLE_LIMIT_RADIANS = [math.radians(WHEEL_ANGLE_LIMIT[0]), math.radians(WHEEL_ANGLE_LIMIT[1])]
+WHEEL_ANGLE_LIMIT_RADIANS = [math.radians(mjcf_cfg.WHEEL_ANGLE_LIMIT[0]), math.radians(mjcf_cfg.WHEEL_ANGLE_LIMIT[1])]
 
 def on_press(key):
     global current_action

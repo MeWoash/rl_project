@@ -1,14 +1,8 @@
 # autopep8: off
-from abc import ABC
 import collections
-import os
 from pathlib import Path
 import sys
-from typing import Optional
 import mujoco
-import numpy as np
-import glfw
-import matplotlib.pyplot as plt
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 

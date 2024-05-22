@@ -13,9 +13,9 @@ TRAIN_VECTOR = [
         "normalize": False,
         "model_kwargs" : {
             "device":"cuda",
-            # "buffer_size":10_000_000,
+            "buffer_size":50_000_000,
             "use_sde":True,
-            "train_freq":(20, "step")
+            "train_freq":(1, "step")
         },
         "make_env_kwargs" : {
             "vec_env_cls": SubprocVecEnv,

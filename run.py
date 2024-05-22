@@ -7,7 +7,6 @@ sys.path.append(str(Path(__file__,'..','src').resolve()))
 from PathsConfig import *
 from ModelTools.Utils import *
 from ModelTools.ModelManager import *
-import TrainCfg
 
 
 def main():

@@ -1,13 +1,12 @@
 import argparse
 import sys
 from pathlib import Path
-import subprocess
 
 sys.path.append(str(Path(__file__,'..','src').resolve()))
-from PathsConfig import *
-from ModelTools.Utils import *
-from ModelTools.ModelManager import *
-
+import PathsConfig as paths_cfg
+from ModelTools.Utils import get_all_files, get_last_modified_file
+from ModelTools.ModelManager import train_models, run_model
+from PostProcessing.PostProcess import generate_all_model_media, generate_models_comparison
 
 def main():
     parser = argparse.ArgumentParser(description="Model management script")
@@ -39,9 +38,9 @@ compare - generates models comparison plots\
             if args.path:
                 run_model(args.path)
             else:
-                run_model(Path(OUT_LEARNING_DIR))
+                run_model(Path(paths_cfg.OUT_LEARNING_DIR))
         case "run_list":
-            files = get_all_files(OUT_LEARNING_DIR)
+            files = get_all_files(paths_cfg.OUT_LEARNING_DIR)
             
             for i, file in enumerate(files):
                 print(f"{[i]}: {file}")
@@ -61,7 +60,7 @@ compare - generates models comparison plots\
             elif args.all:
                 generate_all_model_media()  
             else:
-                last_modified = str(Path(get_last_modified_file(OUT_LEARNING_DIR,'.csv'),'..').resolve())
+                last_modified = str(Path(get_last_modified_file(paths_cfg.OUT_LEARNING_DIR,'.csv'),'..').resolve())
                 generate_model_media(last_modified)
         case "generate":
             from MJCFGenerator.Generator import generate_MJCF

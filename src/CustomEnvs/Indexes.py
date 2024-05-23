@@ -45,5 +45,8 @@ class EXTRA_OBS_INDEX(IntEnum):
     # 2 val
     CONTACT_BEGIN = 2
     CONTACT_END = 3
+    # 1 val
+    HITCH_JOINT_ANGLE_BEGIN = 4
+    HITCH_JOINT_ANGLE_END = 4
     
-    OBS_SIZE = 4
+    OBS_SIZE = 5

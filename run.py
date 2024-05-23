@@ -1,4 +1,6 @@
 import argparse
+from collections import defaultdict
+import os
 import sys
 from pathlib import Path
 
@@ -8,11 +10,17 @@ from ModelTools.Utils import get_all_files, get_last_modified_file
 from ModelTools.ModelManager import train_models, run_model
 from PostProcessing.PostProcess import generate_all_model_media, generate_models_comparison
 
+
+def cls():
+    try:
+        os.system('cls' if os.name=='nt' else 'clear')
+    except:
+        pass
+
 def main():
     parser = argparse.ArgumentParser(description="Model management script")
     parser.add_argument('mode', choices=['train',
                                          'run',
-                                         'run_list',
                                          "manual",
                                          'post-process',
                                          'generate',
@@ -20,7 +28,6 @@ def main():
 help="""\
 train - train model,
 run - run last modified model or model from path if provided with --path,
-run_list - choose model from list,
 manual - run manual car parking,
 postprocess - run post-process for last edited or at path,
 generate - generate mjcf xml file
@@ -35,20 +42,33 @@ compare - generates models comparison plots\
         case 'train':
             train_models()
         case 'run':
-            if args.path:
-                run_model(args.path)
-            else:
-                run_model(Path(paths_cfg.OUT_LEARNING_DIR))
-        case "run_list":
             files = get_all_files(paths_cfg.OUT_LEARNING_DIR)
+            files_dict = defaultdict(list)
             
-            for i, file in enumerate(files):
-                print(f"{[i]}: {file}")
+            print("======================== Detected model dirs ========================")
+            for file in files:
+                tmp_path = Path(file)
+                directory = tmp_path.parent
+                files_dict[directory].append(tmp_path)
+            
+            
+            for i, (key, val) in enumerate(files_dict.items()):
+                print(f"[{i}] {key} | n:{len(val)}")
+            
+            choice_dir = int(input("Choose directory: "))
+            key = list(files_dict.keys())[choice_dir]
+            
+            print("======================== Detected models in dir ========================")
+            print(f"{key}:")
+            for i, file in enumerate(files_dict[key]):
+                print(f"{[i]}: {file.stem}")
                 
-            choice = int(input("Choose number of path to load:\n"))
-            path = files[choice]
-            print(f"choice [{choice}]: {path}")
-            run_model(path)   
+            choice_model = int(input("Choose number of path to load: "))
+            
+            model = files_dict[key][choice_model]
+            print(f"choice {model}")
+            run_model(model)
+            
         case "manual":
             import CustomEnvs.manualTestCarParking
             CustomEnvs.manualTestCarParking.main()
@@ -69,4 +89,5 @@ compare - generates models comparison plots\
             generate_models_comparison()
         
 if __name__ == '__main__':
+    cls()
     main()

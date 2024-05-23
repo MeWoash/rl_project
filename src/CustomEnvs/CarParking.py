@@ -73,8 +73,8 @@ class CarParkingEnv(gymnasium.Env):
                 time_limit = 30,
                 enable_random_spawn = True,
                 enable_spawn_noise = True,
-                spawn_dist_noise = 0.5,
-                spawn_angle_degrees_noise = 10,
+                spawn_dist_noise = 1,
+                spawn_angle_degrees_noise = 15,
                 **kwargs):
 
         
@@ -93,6 +93,7 @@ class CarParkingEnv(gymnasium.Env):
         self.camera_name = None
         self.camera_id = 0
         self.episode_number = 0
+        self.episode_end_reason = ""
 
         self._initialize_simulation()
         self._set_default_action_space()
@@ -268,7 +269,7 @@ class CarParkingEnv(gymnasium.Env):
     def _get_info(self):
         info = {
             "extra_obs": self.extra_observation,
-            
+            "episode_end_reason": self.episode_end_reason,
             "episode_mujoco_time": self.episode_mujoco_time,
             "episode_mujoco_step": self.episode_mujoco_step,
             "episode_env_step": self.episode_env_step,
@@ -281,7 +282,7 @@ class CarParkingEnv(gymnasium.Env):
 
     def _check_terminate_condition(self):
         terminated = False
-        if self.observation[OBS_INDEX.DISTANCE_BEGIN] <= 0.5 \
+        if self.observation[OBS_INDEX.DISTANCE_BEGIN] <= 1 \
                 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) <= 0.1 \
                 and self.observation[OBS_INDEX.ANGLE_DIFF_BEGIN] <= math.radians(15)\
                 and self.observation[OBS_INDEX.ANGLE_DIFF_END] <= math.radians(15):  
@@ -292,19 +293,25 @@ class CarParkingEnv(gymnasium.Env):
     def _check_truncated_condition(self):
         truncated = False
 
+        if abs(self.extra_observation[EXTRA_OBS_INDEX.HITCH_JOINT_ANGLE_BEGIN]) >= np.radians(92):
+            self.reward -= 1
+        
         if self.observation[OBS_INDEX.DISTANCE_BEGIN] < 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.3\
                 or self.observation[OBS_INDEX.DISTANCE_BEGIN] >= 1 and abs(self.observation[OBS_INDEX.VELOCITY_BEGIN]) > 0.6:
             self.time_velocity_not_low = self.data.time
 
         if self.data.time - self.time_velocity_not_low >= 3:
             truncated = True
+            self.reward -= 5
         elif self.data.time > self.time_limit:
             truncated = True
+            self.reward -= 5
         elif any(contact_val > 0 for contact_val in self.extra_observation[EXTRA_OBS_INDEX.CONTACT_BEGIN:EXTRA_OBS_INDEX.CONTACT_END+1]):
             truncated = True
+            self.reward -= 10
             
-        if truncated:
-            self.reward -= 1
+        # if truncated:
+        #     self.reward -= 10
         return truncated
 
     def _get_obs(self):
@@ -365,6 +372,8 @@ class CarParkingEnv(gymnasium.Env):
         # GATHER EXTRA OBS
         extra_observation[EXTRA_OBS_INDEX.GLOBAL_POS_BEGIN:EXTRA_OBS_INDEX.GLOBAL_POS_END+1] = car_global_pos[:2]
         extra_observation[EXTRA_OBS_INDEX.CONTACT_BEGIN:EXTRA_OBS_INDEX.CONTACT_END+1] = contact_data
+        extra_observation[EXTRA_OBS_INDEX.HITCH_JOINT_ANGLE_BEGIN:EXTRA_OBS_INDEX.HITCH_JOINT_ANGLE_END+1] = trailer_joint_angle
+        
         
         return observation, extra_observation
 
@@ -413,6 +422,7 @@ class CarParkingEnv(gymnasium.Env):
         self.init_car_distance = np.linalg.norm(self.data.joint(f"{mjcf_cfg.CAR_NAME}/").qpos[:2] - self.data.site(f"{mjcf_cfg.PARKING_NAME}/site_center_{mjcf_cfg.CAR_NAME}").xpos[:2])
         self.init_trailer_distance = np.linalg.norm(self.data.joint(f"{mjcf_cfg.CAR_NAME}/{mjcf_cfg.TRAILER_NAME}/").qpos[:2] - self.data.site(f"{mjcf_cfg.PARKING_NAME}/site_center_{mjcf_cfg.TRAILER_NAME}").xpos[:2])
         self.episode_number += 1
+        self.episode_end_reason = ""
 
         obs, extra_obs = self._get_obs()
         return obs, {"extra_obs":extra_obs}

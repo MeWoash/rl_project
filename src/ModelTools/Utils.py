@@ -74,7 +74,7 @@ def generate_training_stats(df_episodes_all: pd.DataFrame, window = 100):
     df_training_stats = pd.DataFrame(data)
     return df_training_stats
 
-def load_generate_csvs(path_dir:str):
+def load_generate_csvs(path_dir:str, overwrite:bool = True):
     
     df_episodes_all_path = Path(path_dir, paths_cfg.EPISODES_ALL).resolve()
     df_episodes_summary_path = Path(path_dir, paths_cfg.EPISODE_STATS).resolve()
@@ -87,32 +87,32 @@ def load_generate_csvs(path_dir:str):
     else:
         df_episodes_all = pd.read_csv(str(df_episodes_all_path))
     
-    # if not df_episodes_summary_path.exists():
-    df_episodes_summary = generate_episodes_summary(df_episodes_all)
-    df_episodes_summary.to_csv(str(df_episodes_summary_path), index=False)
-    print(f"Generated {df_episodes_summary_path}")
-    # else:
-    #     df_episodes_summary = pd.read_csv(str(df_episodes_summary_path))
+    if not df_episodes_summary_path.exists() or overwrite:
+        df_episodes_summary = generate_episodes_summary(df_episodes_all)
+        df_episodes_summary.to_csv(str(df_episodes_summary_path), index=False)
+        print(f"Generated {df_episodes_summary_path}")
+    else:
+        df_episodes_summary = pd.read_csv(str(df_episodes_summary_path))
         
         
-    # if not df_training_stats_path.exists():
-    df_training_stats = generate_training_stats(df_episodes_all)
-    df_training_stats.to_csv(str(df_training_stats_path), index=False)
-    print(f"Generated {df_training_stats_path}")
-    # else:
-    #     df_training_stats = pd.read_csv(str(df_training_stats_path))
+    if not df_training_stats_path.exists() or overwrite:
+        df_training_stats = generate_training_stats(df_episodes_all)
+        df_training_stats.to_csv(str(df_training_stats_path), index=False)
+        print(f"Generated {df_training_stats_path}")
+    else:
+        df_training_stats = pd.read_csv(str(df_training_stats_path))
     
     
     df_episodes_all.set_index(["episode", "env"], inplace=True)
     return df_episodes_all, df_episodes_summary, df_training_stats
 
 
-def load_generate_all_csvs(path_dir = paths_cfg.OUT_LEARNING_DIR):
-    dirs =  [str(Path(file,"..")) for file in get_all_files(path_dir, "episodes_all.csv")]
+def load_generate_all_csvs(path_dir = paths_cfg.OUT_LEARNING_DIR, overwrite: bool = True):
     
+    dirs =  [str(Path(file,"..").resolve()) for file in get_all_files(path_dir, "episodes_all.csv")]
     all_csvs = {}
     for dir in dirs:
-        all_csvs[dir]=(load_generate_csvs(dir))
+        all_csvs[dir]=(load_generate_csvs(dir, overwrite))
         
     return all_csvs
     

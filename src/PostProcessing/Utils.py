@@ -118,11 +118,34 @@ def time_formatter(x, pos):
     out = f""
     if hours > 0:
         out+= f"{hours}h"
-    
-    if minutes > 0:
+        if minutes > 0:
+            out+= f" {minutes}m"
+    elif minutes > 0:
         out+= f" {minutes}m"
-        
-    if seconds > 0:
+        if seconds > 0:
+            out+= f" {seconds}s"
+    else:
         out+= f" {seconds}s"
     
     return out
+
+@timeit
+def divide_by_steps(df_all, N=5, min_step = None, max_step = None):
+    df = df_all.copy()
+    
+    _min = df['learning_step'].min()
+    _max =df['learning_step'].max()
+    
+    if min_step is None or min_step < _min:
+        min_step = _min
+    if max_step is None or max_step > _max:
+        max_step = _max
+        
+    range_step = max_step - min_step
+
+    bins = [min_step + i * (range_step / N) for i in range(N)] + [max_step]
+    df['part'] = pd.cut(df['learning_step'], bins=bins, labels=False, include_lowest=True)
+    
+    parts = [df[df['part'] == i].copy().drop(columns=['part']) for i in range(N)]
+
+    return parts, bins

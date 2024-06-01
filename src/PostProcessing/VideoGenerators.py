@@ -13,7 +13,7 @@ import pandas as pd
 import sys
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcessing.Utils import generator_episodes
+from PostProcessing.Utils import generator_episodes, divide_by_steps
 from PostProcessing.PlotGenerators import PlotWrapper
 # autopep8: on
 
@@ -24,12 +24,14 @@ class VideoGenerator():
                 dir:str,
                 frame_size = (1080, 1080),
                 fps = 10,
+                length = 3,
                 dpi = 100) -> None:
         
         self._plot_wrapper:PlotWrapper = plot_wrapper
         self._frame_size= frame_size
         self._fps = fps
         self._dpi = dpi
+        self._length = length
         fig_size = (frame_size[0] / dpi, frame_size[1] / dpi)
 
         self._fig: Figure = self._plot_wrapper.fig
@@ -51,11 +53,15 @@ class VideoGenerator():
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         out = cv2.VideoWriter(output_file, fourcc, self._fps, self._frame_size)
         arr = []
-    
-        for (lower_bound, upper_bound), filtered in generator_function(df):
+
+        n_parts = self._fps * self._length
+        parts, bins = divide_by_steps(df, n_parts)
+        
+        for i in range(n_parts):
+        
+            self._plot_wrapper.plot(parts[i])
             
-            self._plot_wrapper.plot(filtered)
-            title = f"{fig_title}\nepisode: <{lower_bound}, {upper_bound})"
+            title = f"step: {int(bins[i+1])}"
             self._fig.suptitle(title)
             self._fig.canvas.draw()
 

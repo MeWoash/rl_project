@@ -10,8 +10,31 @@ import matplotlib.pyplot as plt
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 from Rendering.BaseRendererClass import BaseRender
+import MJCFGenerator.Config as mjcf_cfg
+from CustomEnvs.Indexes import ACTION_INDEX, OBS_INDEX, EXTRA_OBS_INDEX
 
 # autopep8: on
+
+
+def update_trail(position, trail, max_length=100):
+    trail.append(position.copy())
+    if len(trail) > max_length:
+        trail.pop(0)
+        
+
+def add_visual_capsule(scene, point1, point2, radius, rgba):
+  """Adds one capsule to an mjvScene."""
+  if scene.ngeom >= scene.maxgeom:
+    return
+  scene.ngeom += 1  # increment ngeom
+  # initialise a new capsule, add it to the scene using mjv_makeConnector
+  mujoco.mjv_initGeom(scene.geoms[scene.ngeom-1],
+                      mujoco.mjtGeom.mjGEOM_CAPSULE, np.zeros(3),
+                      np.zeros(3), np.zeros(9), rgba.astype(np.float32))
+  mujoco.mjv_makeConnector(scene.geoms[scene.ngeom-1],
+                           mujoco.mjtGeom.mjGEOM_CAPSULE, radius,
+                           point1[0], point1[1], point1[2],
+                           point2[0], point2[1], point2[2])
 
 class WindowViewer(BaseRender):
     """Class for window rendering in all MuJoCo environments."""
@@ -36,6 +59,9 @@ class WindowViewer(BaseRender):
         self._loop_count = 0
         # self._advance_by_one_step = False
         self._hide_menu = False
+        self._enable_trails = False
+        self._trails = []
+        self._trail_cnt = 0
 
         # width, height = glfw.get_video_mode(glfw.get_primary_monitor()).size
         glfw.window_hint(glfw.VISIBLE, 1)
@@ -78,7 +104,23 @@ class WindowViewer(BaseRender):
         """Eliminate all of the OpenGL glfw contexts and windows"""
         # self.free()
         pass
+    
+    def add_trails(self):
+        
+        if self._trail_cnt % 50 == 0:
+            pos = self.env.data.sensor(f'{mjcf_cfg.CAR_NAME}/pos_global_sensor').data
+            update_trail(pos, self._trails)
+        self._trail_cnt += 1
 
+        if len(self._trails) > 1:
+            for i in range(len(self._trails) - 1):
+                point1 = self._trails[i]
+                point2 = self._trails[i + 1]
+                rgba = np.array([1, 1, 1, 0.5], dtype=np.float32)  # Kolor kapsuły (czerwony)
+                radius = 0.05  # Promień kapsuły
+
+                add_visual_capsule(self.scn, point1, point2, radius, rgba)
+            
     def render(self,
                camera_id,
                overlay = None):
@@ -118,7 +160,10 @@ class WindowViewer(BaseRender):
                 mujoco.mjtCatBit.mjCAT_ALL.value,
                 self.scn,
             )
-
+            
+            if self._enable_trails:
+                self.add_trails()
+        
             # render
             mujoco.mjr_render(self.viewport, self.scn, self.con)
 
@@ -175,6 +220,8 @@ class WindowViewer(BaseRender):
                 self._hide_menu = not self._hide_menu
             case glfw.KEY_R:
                 self.env.reset()
+                self._trails.clear()
+                self._trail_cnt = 0
             case glfw.KEY_S:
                 self.render_movie()
             case glfw.KEY_C:
@@ -183,6 +230,10 @@ class WindowViewer(BaseRender):
                 self._frames.clear()
             case glfw.KEY_F:
                 self.render_image()
+            case glfw.KEY_T:
+                self._enable_trails = not self._enable_trails
+                self._trails.clear()
+                self._trail_cnt = 0
             
         if key == glfw.KEY_ESCAPE:
             print("Pressed ESC")

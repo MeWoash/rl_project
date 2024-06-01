@@ -58,12 +58,9 @@ CAR_SPAWN_KWARGS: list[dict[str, list[int]]] =\
     {"pos": [-1, -6, CAR_SPAWN_HEIGHT], "euler": [0, 0, 135]},
     
     
-    # {"pos": [-6, -5, CAR_SPAWN_HEIGHT], "euler": [0, 0, 90]},
-    # {"pos": [7, -5, CAR_SPAWN_HEIGHT], "euler": [0, 0, 90]},
-    # {"pos":[-7, -3, CAR_SPAWN_HEIGHT], "euler":[0, 0, 60]},
-    # {"pos":[-6, 3, CAR_SPAWN_HEIGHT], "euler":[0, 0, -30]},
 
-    
+
+    # {"pos": [7, -6, CAR_SPAWN_HEIGHT], "euler": [0, 0, 60]},
 ]
 
 
@@ -73,3 +70,7 @@ SENSORS_MAX_RANGE = 5
 
 RENDER_OFF_HEIGHT = 720
 RENDER_OFF_WIDTH = 1280
+
+# ADDITIONAL CALCULATED
+PARKING_SPOT_CAR_CENTER = np.array(PARKING_SPOT_KWARGS['pos'])
+PARKING_SPOT_CAR_CENTER[0] += CAR_DIMS[0]/2

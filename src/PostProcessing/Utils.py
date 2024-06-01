@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 import time
 
+import matplotlib.patheffects as path_effects
 from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
@@ -117,15 +118,18 @@ def time_formatter(x, pos):
     
     out = f""
     if hours > 0:
-        out+= f"{hours}h"
+        out+= f"{hours}"
         if minutes > 0:
-            out+= f" {minutes}m"
+            out+= f",{minutes}"
+        out+="h"
+            
     elif minutes > 0:
-        out+= f" {minutes}m"
+        out+= f"{minutes}"
         if seconds > 0:
-            out+= f" {seconds}s"
+            out+= f"{seconds}"
+        out+="m"
     else:
-        out+= f" {seconds}s"
+        out+= f"{seconds}s"
     
     return out
 
@@ -149,3 +153,24 @@ def divide_by_steps(df_all, N=5, min_step = None, max_step = None):
     parts = [df[df['part'] == i].copy().drop(columns=['part']) for i in range(N)]
 
     return parts, bins
+
+def point_parking(ax):
+    
+    ax.scatter(*mjcf_cfg.PARKING_SPOT_CAR_CENTER[:2], c='black', s=500, alpha=0.2, edgecolors="black", linewidths=2)
+    
+    xy = mjcf_cfg.PARKING_SPOT_CAR_CENTER[:2]
+    xy_text = np.array([-2, 3])
+    text = 'parking'
+
+    annotation = ax.annotate(
+        text, 
+        xy=xy, 
+        xytext=xy + xy_text,
+        arrowprops=dict(facecolor='black', shrink=0.05, width=0.5, headwidth=4, headlength=6),
+        color="White"
+        )
+    
+    annotation.set_path_effects([
+        path_effects.Stroke(linewidth=3, foreground='black'),
+        path_effects.Normal()
+    ])

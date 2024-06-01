@@ -26,44 +26,44 @@ def generate_model_media(log_dir: str):
     
     
     # # BEST ACTIONS
-    fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotBestActions(ax, n_best=1, legend=True).plot(df_episodes_all)
-    generate_fig_file(fig, media_dir, "best_actions")
+    # fig, ax = plt.subplots(1, 1, figsize=(10,7))
+    # PlotBestActions(ax, n_best=1, legend=True).plot(df_episodes_all)
+    # generate_fig_file(fig, media_dir, "best_actions")
     
     # #HEATMAP
-    fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotHeatMap(ax, sigma=2, bins=51).plot(df_episodes_all)
-    generate_fig_file(fig, media_dir, "heat_map")
+    # fig, ax = plt.subplots(1, 1, figsize=(10,7))
+    # PlotHeatMap(ax, sigma=2, bins=51).plot(df_episodes_all)
+    # generate_fig_file(fig, media_dir, "heat_map")
     
     # #PlotBestTrajectory
-    fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotBestTrajectory(ax, n_best=5, legend=True).plot(df_episodes_all)
-    generate_fig_file(fig, media_dir, "best_trajectories")
+    # fig, ax = plt.subplots(1, 1, figsize=(10,7))
+    # PlotBestTrajectory(ax, n_best=5, legend=True).plot(df_episodes_all)
+    # generate_fig_file(fig, media_dir, "best_trajectories")
     
-    #PlotBestRewardCurve
-    fig, ax = plt.subplots(1, 1, figsize=(10,7))
-    PlotBestTrainingReward(df_training_stats, ax=ax, relative=True).plot(df_episodes_all)
-    generate_fig_file(fig, media_dir, "best_rewards")
+    # #PlotBestRewardCurve
+    # fig, ax = plt.subplots(1, 1, figsize=(10,7))
+    # PlotBestTrainingReward(df_training_stats, ax=ax, relative=True).plot(df_episodes_all)
+    # generate_fig_file(fig, media_dir, "best_rewards")
     
     # ALL IN ONE
     fig, axs = plt.subplots(2, 2, figsize=(15,10))
     wrapper = PlotWrapper([PlotHeatMap(sigma=2, bins=51),
-                           PlotBestTrainingReward(df_training_stats, relative=True),
-                           PlotBestTrajectory(n_best=1, legend=True),
+                           PlotBestTrainingReward(df_training_stats, relative=True, n_best=5),
+                           PlotBestTrajectory(n_best=5, legend=True),
                            PlotBestActions(n_best=1, legend=True)],
                           fig, axs)
     wrapper.plot(df_episodes_all)
     generate_fig_file(fig, media_dir, "mixed_stats")
     
     # VIDEO GENERATION
-    fig, axs = plt.subplots(2, 2, figsize=(15,10))
-    wrapper = PlotWrapper([PlotHeatMap(sigma=2, bins=51),
-                           PlotBestTrainingReward(df_training_stats, relative=True),
-                           PlotBestTrajectory(n_best=1, legend=True),
-                           PlotBestActions(n_best=1, legend=True)],
-                          fig, axs)
-    vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(1920, 1080), dpi=100)
-    vidGen.generate_video(df_episodes_all, "trajectories.mp4", "Episodes trajectories")
+    # fig, axs = plt.subplots(2, 2, figsize=(15,10))
+    # wrapper = PlotWrapper([PlotHeatMap(sigma=2, bins=51),
+    #                        PlotBestTrainingReward(df_training_stats, relative=True),
+    #                        PlotBestTrajectory(n_best=1, legend=True),
+    #                        PlotBestActions(n_best=1, legend=True)],
+    #                       fig, axs)
+    # vidGen:VideoGenerator = VideoGenerator(wrapper, media_dir, frame_size=(1920, 1080), dpi=100)
+    # vidGen.generate_video(df_episodes_all, "trajectories.mp4", "Episodes trajectories")
 
 def generate_all_model_media(path_dir=paths_cfg.OUT_LEARNING_DIR):
     dirs =  [str(Path(file,"..")) for file in get_all_files(path_dir, "episodes_all.csv")]

@@ -14,7 +14,8 @@ from pathlib import Path
 import matplotlib.ticker as ticker
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
-from PostProcessing.Utils import MAP_BOUNDARY, group_by_episodes, get_n_best_rewards, time_formatter
+from PostProcessing.Utils import MAP_BOUNDARY, group_by_episodes, get_n_best_rewards, time_formatter, point_parking
+import MJCFGenerator.Config as mjcf_cfg
 # autopep8: on
 
 
@@ -81,7 +82,12 @@ class PlotTrajectory(PlotBaseAbstract):
         for indexes, grouped in group_by_episodes(df):
             x = grouped['pos_X'].to_numpy()
             y = grouped['pos_Y'].to_numpy()
-            self._ax.plot(x, y, label=f"ep-{indexes[0]}_en-{indexes[1]}")
+            
+            label = f"{df['episode_mean_reward'].iloc[-1]:.4f}"
+            # label=f"ep-{indexes[0]}_en-{indexes[1]}"
+            
+            self._ax.plot(x, y, label = label)
+            
 
             self._ax.grid(True)
             self._ax.set_xlim(MAP_BOUNDARY[0])
@@ -110,6 +116,8 @@ class PlotBestTrajectory(PlotTrajectory):
         
     def plot(self, df):
         best = get_n_best_rewards(df, self.n_best)
+        point_parking(self._ax)
+        
         return super().plot(best)
 
 
@@ -267,6 +275,7 @@ class PlotHeatMap(PlotBaseAbstract):
         self._ax.set_aspect('equal')
         
         self._ax.imshow(heatmap.T, extent=extent, origin='lower',interpolation='nearest', cmap = matplotlib.colormaps['plasma'])
+        point_parking(self._ax)
         
         return self._fig, self._ax
 

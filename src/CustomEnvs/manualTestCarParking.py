@@ -8,6 +8,7 @@ from gymnasium.spaces import Box
 import math
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
+import MJCFGenerator.Config as mjcf_cfg
 from MJCFGenerator.Generator import generate_MJCF 
 from CustomEnvs.CarParking import CarParkingEnv
 from CustomEnvs.Indexes import ACTION_INDEX

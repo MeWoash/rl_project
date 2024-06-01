@@ -7,6 +7,7 @@ import cv2
 import mujoco
 import numpy as np
 import sys
+from  datetime import datetime
 
 sys.path.append(str(Path(__file__,'..','..').resolve()))
 import PathsConfig as paths_cfg
@@ -88,13 +89,12 @@ class BaseRender(ABC):
                 print("Wrong Argument!")
                 
     
-    def render_movie(self, filename = "tmp.mp4"):
+    def render_movie(self):
         if self._capture_frames == False:
             print("To save video enable capturing frames [c].")
             return
             
-        # filename = f"out-thread-{threading.get_ident()}.mp4"
-        output_file = str(Path(paths_cfg.MEDIA_DIR,filename))
+        output_file = str(Path(paths_cfg.MEDIA_DIR, f"movie_{datetime.now().strftime(rf'%d-%m-%y-%H-%M-%S')}.mp4"))
         
         frame_size = (self.viewport.width, self.viewport.height)
         
@@ -110,8 +110,8 @@ class BaseRender(ABC):
         self._nth_render_call = 0
         print(f"Output file at: {output_file}")
         
-    def render_image(self, filename = "tmp.jpg"):
-        output_file = str(Path(paths_cfg.MEDIA_DIR,filename))
+    def render_image(self):
+        output_file = str(Path(paths_cfg.MEDIA_DIR, f"screen_{datetime.now().strftime(rf'%d-%m-%y-%H-%M-%S')}.png"))
         
         self.rgb_arr = np.zeros(
                         3 * self.viewport.width * self.viewport.height, dtype=np.uint8

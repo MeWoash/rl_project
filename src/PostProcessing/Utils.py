@@ -174,3 +174,8 @@ def point_parking(ax):
         path_effects.Stroke(linewidth=3, foreground='black'),
         path_effects.Normal()
     ])
+    
+def exclude_outliers(y, lower_percentile=1, upper_percentile=99):
+    lower_bound = np.percentile(y, lower_percentile)
+    upper_bound = np.percentile(y, upper_percentile)
+    return y[(y >= lower_bound) & (y <= upper_bound)]

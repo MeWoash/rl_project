@@ -116,7 +116,7 @@ class WindowViewer(BaseRender):
             for i in range(len(self._trails) - 1):
                 point1 = self._trails[i]
                 point2 = self._trails[i + 1]
-                rgba = np.array([0.408, 0.592, 0.941, 0.1], dtype=np.float32)  # Kolor kapsuły (czerwony)
+                rgba = np.array([1, 0.592, 0, 1], dtype=np.float32)  # Kolor kapsuły (czerwony)
                 radius = 0.05  # Promień kapsuły
 
                 add_visual_capsule(self.scn, point1, point2, radius, rgba)
